@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, View, type ViewToken } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, View, type ListViewToken } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QURAN_EDITIONS } from '../constants/defaults';
 import { useApp } from '../context/AppContext';
@@ -63,7 +63,7 @@ export function QuranReaderScreen({ route }: Props) {
     };
   }, [settings.activeFamilyMemberId, surahNumber, edition, surahName, refreshReadingProgress, trackActivity]);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
     const visible = viewableItems.filter((v) => v.isViewable && v.item).map((v) => (v.item as Ayah).numberInSurah);
     if (visible.length > 0) lastAyahRef.current = Math.max(...visible);
   }).current;

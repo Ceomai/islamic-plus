@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   View,
+  type ScrollViewInstance,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -22,7 +23,7 @@ export function AIAssistantScreen() {
   const { colors } = useTheme();
   const { t, appLanguage: lang } = useTranslation();
   const [input, setInput] = useState('');
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   useEffect(() => {
     if (aiMessages.length === 0) {
