@@ -2,16 +2,14 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '../context/AppContext';
-import { getProfileJson, setProfileJson } from '../services/profileData';
-import { storageKeys } from '../services/storage';
+import { incrementTasbih, loadTasbihData, resetTasbihSession, setTasbihTarget } from '../services/tasbihStorage';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 
 const TARGETS = [33, 99, 100];
 
 export function TasbihScreen() {
-  const { settings, trackActivity } = useApp();
-  const memberId = settings.activeFamilyMemberId;
+  const { trackActivity } = useApp();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [count, setCount] = useState(0);
@@ -19,28 +17,34 @@ export function TasbihScreen() {
   const [totalLifetime, setTotalLifetime] = useState(0);
 
   useEffect(() => {
-    getProfileJson(storageKeys.tasbih, memberId, { count: 0, total: 0 }).then((d) => {
+    loadTasbihData().then((d) => {
       setCount(d.count);
       setTotalLifetime(d.total);
     });
-  }, [memberId]);
+  }, []);
 
   const increment = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const next = count + 1;
-    const total = totalLifetime + 1;
-    setCount(next);
-    setTotalLifetime(total);
-    await setProfileJson(storageKeys.tasbih, memberId, { count: next, total });
+    const data = await incrementTasbih();
+    setCount(data.count);
+    setTotalLifetime(data.total);
     void trackActivity('tasbih');
-    if (next >= target) {
+    if (data.count >= target) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
   const reset = async () => {
-    setCount(0);
-    await setProfileJson(storageKeys.tasbih, memberId, { count: 0, total: totalLifetime });
+    const data = await resetTasbihSession(target);
+    setCount(data.count);
+    setTotalLifetime(data.total);
+  };
+
+  const changeTarget = async (tgt: number) => {
+    const data = await setTasbihTarget(tgt);
+    setTarget(tgt);
+    setCount(data.count);
+    setTotalLifetime(data.total);
   };
 
   const progress = Math.min(count / target, 1);
@@ -51,7 +55,7 @@ export function TasbihScreen() {
         {TARGETS.map((tgt) => (
           <Pressable
             key={tgt}
-            onPress={() => { setTarget(tgt); setCount(0); }}
+            onPress={() => changeTarget(tgt)}
             style={[
               styles.targetBtn,
               { backgroundColor: target === tgt ? colors.primary : colors.surface, borderColor: colors.border },

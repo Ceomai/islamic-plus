@@ -43,16 +43,6 @@ export function HadithScreen() {
     );
   }, [selected]);
 
-  const selectIndex = async (index: number) => {
-    await updateHadithLastRead(settings.activeFamilyMemberId, selected, collectionName, index);
-    await refreshReadingProgress();
-  };
-
-  const bookmark = async (index: number, label: string) => {
-    await addHadithBookmark(settings.activeFamilyMemberId, selected, collectionName, index, label);
-    await refreshReadingProgress();
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {hadithProgress.lastRead && (
@@ -85,31 +75,28 @@ export function HadithScreen() {
         )}
       />
       <Text style={[styles.note, { color: colors.textSecondary }]}>{t('hadith.offlineNote')}</Text>
-      <FlatList
-        data={hadiths}
-        keyExtractor={(_, i) => String(i)}
-        renderItem={({ item, index }) => {
-          const active =
-            hadithProgress.lastRead?.collectionId === selected &&
-            hadithProgress.lastRead.itemIndex === index;
-          return (
-            <Card>
-              {active && (
-                <Text style={{ color: colors.accent, fontWeight: '700', marginBottom: 6 }}>
-                  {t('reading.progress')}
-                </Text>
-              )}
-              <Pressable onPress={() => selectIndex(index)}>
-                <Text style={[styles.text, { color: colors.text }]}>{item.text}</Text>
-                <Text style={[styles.narrator, { color: colors.textSecondary }]}>— {item.narrator}</Text>
-              </Pressable>
-              <Pressable onPress={() => bookmark(index, item.text.slice(0, 40))} style={{ marginTop: 10 }}>
-                <Text style={{ color: colors.primary }}>{t('reading.bookmark')}</Text>
-              </Pressable>
-            </Card>
-          );
-        }}
-      />
+      {hadiths.map((h, i) => (
+        <Card key={i}>
+          <Pressable
+            onPress={async () => {
+              await updateHadithLastRead(settings.activeFamilyMemberId, selected, collectionName, i);
+              await refreshReadingProgress();
+            }}
+          >
+            <Text style={[styles.text, { color: colors.text }]}>{h.text}</Text>
+            <Text style={[styles.narrator, { color: colors.textSecondary }]}>— {h.narrator}</Text>
+          </Pressable>
+          <Pressable
+            onPress={async () => {
+              await addHadithBookmark(settings.activeFamilyMemberId, selected, collectionName, i, h.text.slice(0, 40));
+              await refreshReadingProgress();
+            }}
+            style={{ marginTop: 10 }}
+          >
+            <Text style={{ color: colors.primary }}>{t('reading.bookmark')}</Text>
+          </Pressable>
+        </Card>
+      ))}
     </View>
   );
 }

@@ -1,90 +1,141 @@
-import * as Crypto from 'expo-crypto';
-import type { AuthSession, StoredAuthUser } from '../types';
-import { getJson, setJson, storageKeys } from './storage';
+import * as Notifications from 'expo-notifications';
+import type { AuthSession } from '../types';
+import { DEFAULT_SETTINGS } from '../constants/defaults';
+import { isSupabaseConfigured } from '../config/supabase';
+import { resetAIChatSessionId } from './cloudAnalytics';
+import {
+  continueLocalGuest,
+  deleteLocalUser,
+  getLocalAuthSession,
+  loginLocalUser,
+  logoutLocalUser,
+  registerLocalUser,
+  setLocalAuthSession,
+} from './localAuth';
+import { cancelReadingProgressCloudSync, flushReadingProgressCloudSync } from './readingProgressCloud';
+import { cancelUserDataCloudSync, flushUserDataCloudSync } from './userDataCloud';
+import {
+  clearScopedStorage,
+  getJson,
+  migrateLegacyStorage,
+  setStorageUser,
+  storageKeys,
+  storageScopeFor,
+} from './storage';
+import {
+  confirmSupabasePasswordReset,
+  deleteSupabaseAccount,
+  logGuestStartSupabase,
+  loginSupabaseUser,
+  logoutSupabaseUser,
+  registerSupabaseUser,
+  requestSupabasePasswordReset,
+  restoreSupabaseSession,
+} from './supabaseAuth';
 
-const USERS_KEY = '@islamic/auth/users';
-const SESSION_KEY = storageKeys.authSession;
+export type AuthBackend = 'supabase' | 'local';
 
-async function hashPassword(password: string, salt: string): Promise<string> {
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, `${salt}:${password}`);
+export function getAuthBackend(): AuthBackend {
+  return isSupabaseConfigured ? 'supabase' : 'local';
 }
 
-function pseudonymFromEmail(email: string): string {
-  const [local, domain] = email.trim().toLowerCase().split('@');
-  if (!domain) return 'user';
-  const masked = local.length <= 2 ? '••' : `${local[0]}•••${local.slice(-1)}`;
-  return `${masked}@${domain}`;
-}
-
-async function hashEmail(email: string): Promise<string> {
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, email.trim().toLowerCase());
-}
-
-async function loadUsers(): Promise<StoredAuthUser[]> {
-  return getJson<StoredAuthUser[]>(USERS_KEY, []);
-}
-
-async function saveUsers(users: StoredAuthUser[]): Promise<void> {
-  await setJson(USERS_KEY, users);
-}
-
-export async function getAuthSession(): Promise<AuthSession | null> {
-  return getJson<AuthSession | null>(SESSION_KEY, null);
-}
-
-export async function setAuthSession(session: AuthSession | null): Promise<void> {
-  await setJson(SESSION_KEY, session);
-}
-
-export async function registerUser(email: string, password: string): Promise<{ ok: true; session: AuthSession } | { ok: false; error: string }> {
-  const normalized = email.trim().toLowerCase();
-  if (!normalized.includes('@') || password.length < 6) {
-    return { ok: false, error: 'invalid' };
-  }
-  const emailHash = await hashEmail(normalized);
-  const users = await loadUsers();
-  if (users.some((u) => u.emailHash === emailHash)) {
-    return { ok: false, error: 'exists' };
-  }
-  const salt = Crypto.randomUUID();
-  const passwordHash = await hashPassword(password, salt);
-  const user: StoredAuthUser = {
-    id: Crypto.randomUUID(),
-    emailHash,
-    passwordHash,
-    salt,
-    pseudonym: pseudonymFromEmail(normalized),
-    createdAt: new Date().toISOString(),
-  };
-  users.push(user);
-  await saveUsers(users);
-  const session: AuthSession = { userId: user.id, isGuest: false, pseudonym: user.pseudonym };
-  await setAuthSession(session);
-  return { ok: true, session };
-}
-
-export async function loginUser(email: string, password: string): Promise<{ ok: true; session: AuthSession } | { ok: false; error: string }> {
-  const emailHash = await hashEmail(email);
-  const users = await loadUsers();
-  const user = users.find((u) => u.emailHash === emailHash);
-  if (!user) return { ok: false, error: 'not_found' };
-  const passwordHash = await hashPassword(password, user.salt);
-  if (passwordHash !== user.passwordHash) return { ok: false, error: 'wrong_password' };
-  const session: AuthSession = { userId: user.id, isGuest: false, pseudonym: user.pseudonym };
-  await setAuthSession(session);
-  return { ok: true, session };
-}
-
-export async function continueAsGuest(): Promise<AuthSession> {
-  const session: AuthSession = {
-    userId: `guest-${Crypto.randomUUID()}`,
-    isGuest: true,
-    pseudonym: 'Guest',
-  };
-  await setAuthSession(session);
+/** Point local storage at the session's own bucket before any app data is read. */
+async function activateSession<T extends AuthSession | null>(session: T): Promise<T> {
+  const scope = storageScopeFor(session);
+  if (session && !session.isGuest && scope) await migrateLegacyStorage(scope);
+  setStorageUser(scope);
   return session;
 }
 
+type AuthResult = { ok: true; session: AuthSession } | { ok: false; error: string };
+
+async function activateResult(result: AuthResult): Promise<AuthResult> {
+  if (result.ok) await activateSession(result.session);
+  return result;
+}
+
+export async function getAuthSession(): Promise<AuthSession | null> {
+  if (isSupabaseConfigured) {
+    const restored = await restoreSupabaseSession();
+    if (restored) return activateSession(restored);
+    // Supabase aktifken yalnızca misafir oturumu yerelden geri yüklenebilir
+    const local = await getLocalAuthSession();
+    if (local?.isGuest) return activateSession(local);
+    await setLocalAuthSession(null);
+    return activateSession(null);
+  }
+  return activateSession(await getLocalAuthSession());
+}
+
+export async function setAuthSession(session: AuthSession | null): Promise<void> {
+  await setLocalAuthSession(session);
+}
+
+export async function registerUser(email: string, password: string): Promise<AuthResult> {
+  if (isSupabaseConfigured) return activateResult(await registerSupabaseUser(email, password));
+  return activateResult(await registerLocalUser(email, password));
+}
+
+export async function loginUser(email: string, password: string): Promise<AuthResult> {
+  if (isSupabaseConfigured) return activateResult(await loginSupabaseUser(email, password));
+  return activateResult(await loginLocalUser(email, password));
+}
+
+export async function continueAsGuest(): Promise<AuthSession> {
+  const session = await continueLocalGuest();
+  if (isSupabaseConfigured) {
+    await logGuestStartSupabase(session.userId);
+  }
+  return activateSession(session);
+}
+
 export async function logoutUser(): Promise<void> {
-  await setAuthSession(null);
+  // Push pending changes while storage still points at the outgoing account
+  const settings = await getJson(storageKeys.settings, DEFAULT_SETTINGS);
+  await flushReadingProgressCloudSync(settings.activeFamilyMemberId);
+  await flushUserDataCloudSync();
+  if (isSupabaseConfigured) {
+    await logoutSupabaseUser();
+  }
+  await logoutLocalUser();
+  await endLocalSession();
+}
+
+async function endLocalSession(): Promise<void> {
+  // Reminders carry the previous user's titles and schedule — the next session reschedules its own
+  await Notifications.cancelAllScheduledNotificationsAsync().catch(() => undefined);
+  resetAIChatSessionId();
+  setStorageUser(null);
+}
+
+/** Permanently deletes the signed-in account (cloud + this device). Requires the current password. */
+export async function deleteAccount(
+  session: AuthSession,
+  password: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (session.isGuest) return { ok: false, error: 'unknown' };
+
+  cancelUserDataCloudSync();
+  cancelReadingProgressCloudSync();
+
+  const result = isSupabaseConfigured
+    ? await deleteSupabaseAccount(password)
+    : await deleteLocalUser(session.userId, password);
+  if (!result.ok) return result;
+
+  const scope = storageScopeFor(session);
+  if (scope) await clearScopedStorage(scope);
+  await logoutLocalUser();
+  await endLocalSession();
+  return { ok: true };
+}
+
+export async function requestPasswordReset(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured) return { ok: false, error: 'reset_unavailable' };
+  return requestSupabasePasswordReset(email);
+}
+
+export async function confirmPasswordReset(email: string, code: string, newPassword: string): Promise<AuthResult> {
+  if (!isSupabaseConfigured) return { ok: false, error: 'reset_unavailable' };
+  return activateResult(await confirmSupabasePasswordReset(email, code, newPassword));
 }

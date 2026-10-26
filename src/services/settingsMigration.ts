@@ -12,7 +12,6 @@ export function migrateSettings(raw: unknown): UserSettings {
 
   const withPro = {
     ...base,
-    homeLauncher: base.homeLauncher ?? DEFAULT_SETTINGS.homeLauncher,
     themeId: base.themeId ?? 'emerald',
     familyModeEnabled: base.familyModeEnabled ?? false,
     activeFamilyMemberId: base.activeFamilyMemberId ?? null,
@@ -20,6 +19,8 @@ export function migrateSettings(raw: unknown): UserSettings {
     widgetPrefs: base.widgetPrefs ?? DEFAULT_SETTINGS.widgetPrefs,
     customReminders: base.customReminders ?? [],
     offlineAudioEnabled: base.offlineAudioEnabled ?? true,
+    homeLauncher: base.homeLauncher ?? DEFAULT_SETTINGS.homeLauncher,
+    darkMode: base.darkMode ?? false,
   };
 
   if (legacy.appLanguage && legacy.quranEditionId) {

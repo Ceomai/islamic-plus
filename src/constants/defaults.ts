@@ -1,5 +1,5 @@
-import { DEFAULT_HOME_LAUNCHER_ORDER } from './homeFeatures';
 import type { PrayerName, UserSettings } from '../types';
+import { DEFAULT_HOME_LAUNCHER_ORDER } from './homeFeatures';
 
 const defaultPrayerNotification = {
   enabled: true,
@@ -20,7 +20,6 @@ const defaultWidgetPrefs = {
 export const DEFAULT_SETTINGS: UserSettings = {
   appLanguage: 'en',
   quranEditionId: 'en.sahih',
-  homeLauncher: { order: [...DEFAULT_HOME_LAUNCHER_ORDER] },
   madhab: 'hanafi',
   calculationMethod: 'muslimWorldLeague',
   sectPreference: 'neutral',
@@ -38,6 +37,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   widgetPrefs: defaultWidgetPrefs,
   customReminders: [],
   offlineAudioEnabled: true,
+  homeLauncher: { order: [...DEFAULT_HOME_LAUNCHER_ORDER] },
+  darkMode: false,
 };
 
 export const CALCULATION_METHODS = [

@@ -1,0 +1,16 @@
+{
+  "projectUrl": "https://expo.dev/accounts/aimelih/projects/islamic",
+  "buildsUrl": "https://expo.dev/accounts/aimelih/projects/islamic/builds",
+  "privacyPolicyUrl": "https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md",
+  "feedbackFormUrl": "https://forms.google.com/YOUR_FORM_ID",
+  "android": {
+    "latestApkInstallUrl": null,
+    "latestBuildId": null,
+    "notes": "Run: npm run build:preview:android — then paste Install URL from expo.dev Builds"
+  },
+  "ios": {
+    "testFlightPublicLink": null,
+    "latestBuildId": null,
+    "notes": "After eas submit, copy External Testing public link from App Store Connect"
+  }
+}

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '../context/AppContext';
-import { DUAS } from '../data/duas';
+import { DUAS, getDuaAudioUrl } from '../data/duas';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { downloadAudioForOffline, isAudioAvailable, isAudioDownloaded, playDuaAudio, stopAudio } from '../services/audio';
@@ -42,23 +42,24 @@ export function DuaDetailScreen({ route, navigation }: Props) {
   }
 
   const translation = lang === 'tr' ? dua.translationTr : dua.translationEn;
+  const audioUrl = dua.audioUrl ?? getDuaAudioUrl(dua.id);
 
   const handlePlay = async () => {
     if (!isAudioAvailable()) return;
     setLoadingAudio(true);
     try {
       setPlaying(true);
-      await playDuaAudio(dua.id, dua.audioUrl);
+      await playDuaAudio(dua.id, audioUrl);
     } finally {
       setLoadingAudio(false);
     }
   };
 
   const handleDownload = async () => {
-    if (!dua.audioUrl || !settings.offlineAudioEnabled) return;
+    if (!audioUrl || !settings.offlineAudioEnabled) return;
     setLoadingAudio(true);
     try {
-      await downloadAudioForOffline(dua.id, dua.audioUrl);
+      await downloadAudioForOffline(dua.id, audioUrl);
       setDownloaded(true);
     } finally {
       setLoadingAudio(false);
@@ -93,7 +94,7 @@ export function DuaDetailScreen({ route, navigation }: Props) {
             </>
           )}
         </Pressable>
-        {dua.audioUrl && settings.offlineAudioEnabled ? (
+        {audioUrl && settings.offlineAudioEnabled ? (
           <Pressable
             onPress={handleDownload}
             style={[styles.btnOutline, { borderColor: colors.primary }]}

@@ -121,3 +121,31 @@ Kamera ile QR okutunca Expo Go açılır. Timeout alırsanız Expo Go'yu doğrud
 | Expo Go (telefon) | En güncel sürüm |
 
 Sorun **Windows sürücüsü** değil; **yazılım paket sürümlerinin** birbiriyle ve telefonunuzdaki **Expo Go** ile uyuşmamasıydı. Güncellemeden sonra yukarıdaki adımlarla çalışması gerekir.
+
+---
+
+## Arkadaş test sürümü (App Store öncesi)
+
+**Expo Go QR kodunu arkadaşlarınıza göndermeyin** — uzaktaki kişiler bağlanamaz; bildirimler de sınırlıdır.
+
+| Kim | Nasıl |
+|-----|--------|
+| Siz (geliştirme) | `npx expo start` + Expo Go |
+| Arkadaşlar | **APK** (Android) veya **TestFlight** (iPhone) |
+
+### Hızlı başlangıç
+
+1. Detaylı rehber: **[BETA-TEST.md](BETA-TEST.md)**
+2. İlk Android APK: **`baslat-beta-android.bat`** çift tık (keystore sorusuna **Yes**)
+3. iPhone TestFlight: **`baslat-beta-ios.bat`**
+4. Build listesi: https://expo.dev/accounts/aimelih/projects/islamic/builds
+
+### Komutlar
+
+```powershell
+npm run build:preview:android
+npm run build:preview:ios
+npm run submit:ios
+```
+
+Gizlilik metni (TestFlight): [docs/PRIVACY.md](docs/PRIVACY.md)

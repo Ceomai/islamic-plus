@@ -1,6 +1,6 @@
-# Islamic
+# Islamic+
 
-A comprehensive mobile companion app that consolidates prayer times, Quran & Hadith, Qibla, nearby mosques, halal dining, spiritual habits, Islamic calendar, education, and Zakat/Sadaqa tools into one experience.
+A comprehensive mobile companion app: prayer times, Quran & Hadith, Qibla, nearby mosques, halal dining, spiritual habits, Islamic calendar, education, and Zakat/Sadaqa tools.
 
 Built with **React Native** and **Expo SDK 54** (iOS & Android).
 
@@ -8,25 +8,17 @@ Built with **React Native** and **Expo SDK 54** (iOS & Android).
 
 | Module | Description |
 |--------|-------------|
-| **Prayer Times** | Location-based times via the `adhan` library; 12 calculation methods; Hanafi/Shafi Asr |
-| **Notifications** | Per-prayer enable/disable, custom sounds, disable specific weekdays |
-| **Quran** | Full surah list via [Al Quran Cloud API](https://alquran.cloud) with multiple translations |
-| **Hadith** | Collections filtered by sect preference (Sunni/Shia/neutral); ready for API integration |
-| **Qibla** | Compass + bearing to Kaaba using device magnetometer |
-| **Nearby Places** | Mosques, prayer rooms, halal restaurants via OpenStreetMap Overpass |
-| **Tasbih** | Digital dhikr counter with haptic feedback and lifetime total |
-| **Islamic Calendar** | Hijri date conversion and upcoming events |
-| **Education** | Multi-perspective topics for all sects |
-| **Spiritual Habits** | Track daily worship goals locally |
-| **Zakat & Sadaqa** | Wealth-based Zakat estimator and charity planner |
-| **Settings** | Language, madhab, calculation method, dark mode, sect content filter |
+| **Prayer Times** | Location-based times via `adhan`; 12 calculation methods; Hanafi/Shafi Asr |
+| **Notifications** | Per-prayer enable/disable, custom sounds, weekday rules |
+| **Quran** | Surah list via [Al Quran Cloud API](https://alquran.cloud) |
+| **Hadith** | Collections by sect preference |
+| **Qibla** | Compass using device magnetometer |
+| **Nearby Places** | Mosques and halal restaurants (OpenStreetMap) |
+| **Tasbih** | Dhikr counter with haptics |
+| **Home launcher** | iPhone-style customizable home screen |
+| **Auth** | Sign up / sign in or guest mode |
 
-## Prerequisites
-
-1. Install [Node.js LTS](https://nodejs.org/) (includes npm)
-2. Install [Expo Go](https://expo.dev/go) on your phone, or Android Studio / Xcode for emulators
-
-## Setup
+## Quick start (developers)
 
 ```bash
 cd Islamic
@@ -34,54 +26,69 @@ npm install
 npx expo start
 ```
 
-Scan the QR code with Expo Go (Android) or the Camera app (iOS).
+Scan the QR code with Expo Go. For local Wi‑Fi issues see [KURULUM.md](KURULUM.md).
 
-## Project Structure
+## Beta testing (friends, before App Store)
+
+**Do not share Expo Go QR codes with testers.** Use EAS builds instead:
+
+| Platform | Method | Guide |
+|----------|--------|--------|
+| Android | APK install link | [BETA-TEST.md](BETA-TEST.md) |
+| iPhone | TestFlight | [BETA-TEST.md](BETA-TEST.md) |
+
+```bash
+npm run build:preview:android   # APK for friends
+npm run build:preview:ios       # TestFlight build
+npm run submit:ios              # Upload latest iOS build
+```
+
+Privacy policy (TestFlight / store): [docs/PRIVACY.md](docs/PRIVACY.md)
+
+## Project structure
 
 ```
 Islamic/
-├── App.tsx                 # Root component
+├── App.tsx
+├── eas.json              # EAS Build profiles
 ├── src/
-│   ├── components/         # Reusable UI
-│   ├── constants/          # Theme, defaults
-│   ├── context/            # Global app state
-│   ├── data/               # Education content
-│   ├── navigation/         # Tab + stack navigators
-│   ├── screens/            # Feature screens
-│   ├── services/           # Prayer, Qibla, APIs, storage
-│   └── types/              # TypeScript definitions
-└── assets/                 # Icons, sounds (see assets/README.md)
+│   ├── components/
+│   ├── config/           # e.g. guest feature access
+│   ├── constants/
+│   ├── context/
+│   ├── navigation/
+│   ├── screens/
+│   ├── services/
+│   └── types/
+├── assets/
+└── docs/PRIVACY.md
 ```
 
-## Configuration
-
-- **Prayer calculation**: Settings → Calculation method (MWL, ISNA, Umm al-Qura, etc.)
-- **Madhab**: Affects Asr shadow length (Hanafi vs standard)
-- **Notifications**: Home → Prayer Notifications; tap day chips to mute specific weekdays
-- **Hadith API**: Replace sample data in `HadithScreen.tsx` with [sunnah.com API](https://sunnah.com) or similar
-
-## Production Checklist
-
-- [ ] Add app icons and adhan sound files under `assets/`
-- [ ] Configure EAS Build (`eas build:configure`)
-- [ ] Replace Overpass demo fallback with Google Places API key for dense halal data
-- [ ] Integrate full Hadith database
-- [ ] Add privacy policy for location & notification permissions
-- [ ] Test notifications on physical devices (simulators are limited)
-
-## Tech Stack
+## Tech stack
 
 - React Native 0.81 + Expo 54
-- TypeScript
-- `adhan` — prayer time calculations
-- `hijri-converter` — Islamic calendar
-- `@react-navigation` — navigation
-- `@react-native-async-storage/async-storage` — local persistence
+- TypeScript, React Navigation
+- `adhan`, `hijri-converter`
 - `expo-location`, `expo-notifications`, `expo-audio`, `expo-sensors`
+- **Supabase** (optional): auth, anonymized `profiles`, `auth_logs` — see [supabase/README.md](supabase/README.md)
 
-### Notifications in Expo Go
+## Dua audio
 
-Local prayer reminders need a **development build** on Android (Expo Go SDK 53+). Use [EAS Build](https://docs.expo.dev/develop/development-builds/introduction/) or `npx expo run:ios` / `run:android` for full notification support. Expo Go on iOS may work with limitations.
+Each dua has a dedicated MP3 (Hisnul Muslim via [Alsarmad/Adhkar-json](https://github.com/Alsarmad/Adhkar-json)). Regenerate mapping:
+
+```bash
+npm run dua-audio:sync
+```
+
+## Production checklist
+
+- [x] EAS Build configured (`eas.json`)
+- [x] Placeholder app icons under `assets/`
+- [x] Privacy policy ([docs/PRIVACY.md](docs/PRIVACY.md))
+- [ ] Replace placeholder icons with final branding
+- [ ] Add adhan sound files under `assets/sounds/`
+- [ ] Full Hadith API integration
+- [ ] App Store / Play Store listing (after beta)
 
 ## License
 

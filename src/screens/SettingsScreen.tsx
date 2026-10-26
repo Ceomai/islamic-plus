@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { APP_LANGUAGES, CALCULATION_METHODS, MADHABS, QURAN_EDITIONS } from '../constants/defaults';
 import { Card } from '../components/Card';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -24,6 +25,7 @@ const PREMIUM_LINKS: { route: keyof RootStackParamList; icon: keyof typeof Ionic
 
 export function SettingsScreen({ navigation }: Props) {
   const { settings, updateSettings, darkMode, toggleDarkMode } = useApp();
+  const { logout, isGuest, session, backend } = useAuth();
   const { colors } = useTheme();
   const { t } = useTranslation();
 
@@ -37,6 +39,40 @@ export function SettingsScreen({ navigation }: Props) {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <Text style={[styles.appTitle, { color: colors.primary }]}>{t('app.name')}</Text>
       <Text style={[styles.version, { color: colors.textSecondary }]}>{t('app.tagline')}</Text>
+
+      <Text style={[styles.section, { color: colors.text, marginTop: 0 }]}>{t('auth.accountSection')}</Text>
+      <Card>
+        <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
+          {isGuest ? t('auth.guestMode') : t('auth.signedInAs', { name: session?.pseudonym ?? '—' })}
+        </Text>
+        {!isGuest && backend === 'supabase' && (
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>{t('auth.cloudAccount')}</Text>
+        )}
+        {isGuest && (
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8, lineHeight: 18 }}>
+            {t('auth.guestBanner')}
+          </Text>
+        )}
+        <Pressable
+          onPress={logout}
+          style={[styles.accountBtn, { borderColor: isGuest ? colors.primary : colors.error }]}
+        >
+          <Ionicons
+            name={isGuest ? 'log-in-outline' : 'log-out-outline'}
+            size={20}
+            color={isGuest ? colors.primary : colors.error}
+            style={{ marginRight: 8 }}
+          />
+          <Text style={{ color: isGuest ? colors.primary : colors.error, fontWeight: '700' }}>
+            {isGuest ? t('auth.signInOrRegister') : t('auth.logout')}
+          </Text>
+        </Pressable>
+        {!isGuest && (
+          <Pressable onPress={() => navigation.navigate('DeleteAccount')} style={styles.deleteLink}>
+            <Text style={{ color: colors.error, fontSize: 13 }}>{t('account.deleteTitle')}</Text>
+          </Pressable>
+        )}
+      </Card>
 
       <Pressable
         onPress={() => navigation.navigate('HomeLauncherEdit')}
@@ -154,4 +190,14 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, marginBottom: 10, lineHeight: 18 },
   option: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  deleteLink: { alignItems: 'center', paddingTop: 12 },
+  accountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 4,
+  },
 });

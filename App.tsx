@@ -8,6 +8,18 @@ import { AuthScreen } from './src/screens/AuthScreen';
 
 function Root() {
   const { darkMode } = useApp();
+  const { session } = useAuth();
+
+  return (
+    <>
+      <StatusBar style={darkMode ? 'light' : 'dark'} />
+      {session ? <AppNavigator /> : <AuthScreen />}
+    </>
+  );
+}
+
+/** Remount all app state when the account changes so one user's data never leaks into another's. */
+function SessionScopedApp() {
   const { session, authReady } = useAuth();
 
   if (!authReady) {
@@ -18,29 +30,17 @@ function Root() {
     );
   }
 
-  if (!session) {
-    return (
-      <>
-        <StatusBar style={darkMode ? 'light' : 'dark'} />
-        <AuthScreen />
-      </>
-    );
-  }
-
   return (
-    <>
-      <StatusBar style={darkMode ? 'light' : 'dark'} />
-      <AppNavigator />
-    </>
+    <AppProvider key={session?.userId ?? 'signed-out'}>
+      <Root />
+    </AppProvider>
   );
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <AppProvider>
-        <Root />
-      </AppProvider>
+      <SessionScopedApp />
     </AuthProvider>
   );
 }

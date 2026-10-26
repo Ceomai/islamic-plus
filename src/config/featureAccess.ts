@@ -1,9 +1,7 @@
 /**
- * Developer configuration — change guest restrictions here (no UI edits needed).
- * Set `requiresAuth: true` to block guests; registered users always have access.
+ * Developer configuration — guest-restricted features (no UI edits needed).
  */
 export const FEATURE_ACCESS = {
-  /** Feature IDs disabled for guest (continue as guest) sessions */
   guestDisabled: [
     'ai_assistant',
     'cloud_sync',

@@ -1,18 +1,26 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
+import { useAuth } from './AuthContext';
 import { scheduleCustomReminders } from '../services/advancedReminders';
 import { initAudio } from '../services/audio';
-import { buildSyncPayload, loadFromCloudBlob, performCloudSync, type SyncPayload } from '../services/cloudSync';
+import { buildSyncPayload, importSyncPayloadToStorage, performCloudSync, type SyncPayload } from '../services/cloudSync';
 import { getCachedLocation, getCurrentLocation, type StoredLocation } from '../services/location';
+import { getTodayCompletions, togglePrayerCompletion } from '../services/prayerTracking';
+import {
+  notifyAppDataChanged,
+  registerAppDataPayloadBuilder,
+  syncUserDataFromCloud,
+} from '../services/userDataCloud';
 import { schedulePrayerNotifications, setupNotificationChannels } from '../services/notifications';
 import { migrateSettings } from '../services/settingsMigration';
-import { getProfileJson, setProfileJson } from '../services/profileData';
-import {
-  loadHadithProgress,
-  loadQuranProgress,
-} from '../services/readingProgress';
 import { computeHabitScore, loadStats, recordActivity } from '../services/statistics';
+import { logAIChatExchange, resetAIChatSessionId, trackFeatureAction } from '../services/cloudAnalytics';
 import { getJson, setJson, storageKeys } from '../services/storage';
+import { loadHadithProgress, loadQuranProgress, onReadingProgressChanged } from '../services/readingProgress';
+import {
+  scheduleReadingProgressCloudSync,
+  syncReadingProgressFromCloud,
+} from '../services/readingProgressCloud';
 import type {
   ActivityStats,
   AIChatMessage,
@@ -20,6 +28,8 @@ import type {
   FamilyMember,
   HadithProgress,
   HomeFeatureId,
+  PrayerCompletion,
+  PrayerName,
   QuranProgress,
   SpiritualHabit,
   ThemeId,
@@ -55,7 +65,9 @@ interface AppContextValue {
   hadithProgress: HadithProgress;
   refreshReadingProgress: () => Promise<void>;
   updateHomeLauncher: (order: HomeFeatureId[]) => Promise<void>;
-  reloadProfileData: () => Promise<void>;
+  todayPrayers: PrayerCompletion[];
+  togglePrayerComplete: (prayer: PrayerName) => Promise<void>;
+  refreshTodayPrayers: () => Promise<void>;
   loading: boolean;
   darkMode: boolean;
   toggleDarkMode: () => void;
@@ -65,6 +77,7 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const { session, authReady } = useAuth();
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [location, setLocation] = useState<StoredLocation | null>(null);
   const [habits, setHabits] = useState<SpiritualHabit[]>([]);
@@ -83,62 +96,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [hadithProgress, setHadithProgress] = useState<HadithProgress>({ lastRead: null, bookmarks: [] });
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [todayPrayers, setTodayPrayers] = useState<PrayerCompletion[]>([]);
 
-  const profileId = settings.activeFamilyMemberId;
+  const refreshTodayPrayers = useCallback(async () => {
+    setTodayPrayers(await getTodayCompletions());
+  }, []);
+
+  // Latest state for async sync work — keeps sync callbacks stable so they don't retrigger effects
+  const stateRef = useRef({ settings, habits, family, stats, darkMode, location });
+  stateRef.current = { settings, habits, family, stats, darkMode, location };
+
+  useEffect(() => {
+    registerAppDataPayloadBuilder(async () => {
+      const s = stateRef.current;
+      return buildSyncPayload(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
+    });
+    return () => registerAppDataPayloadBuilder(null);
+  }, []);
 
   const refreshStats = useCallback(async () => {
-    const s = await loadStats(profileId);
+    const s = await loadStats();
     setStats(s);
-  }, [profileId]);
-
-  const reloadProfileData = useCallback(async () => {
-    const memberId = settings.activeFamilyMemberId;
-    const [h, s, q, hd] = await Promise.all([
-      getProfileJson<SpiritualHabit[]>(storageKeys.habits, memberId, []),
-      loadStats(memberId),
-      loadQuranProgress(memberId),
-      loadHadithProgress(memberId),
-    ]);
-    setHabits(h);
-    setStats(s);
-    setQuranProgress(q);
-    setHadithProgress(hd);
-  }, [settings.activeFamilyMemberId]);
-
-  const refreshReadingProgress = useCallback(async () => {
-    const memberId = settings.activeFamilyMemberId;
-    const [q, hd] = await Promise.all([loadQuranProgress(memberId), loadHadithProgress(memberId)]);
-    setQuranProgress(q);
-    setHadithProgress(hd);
-  }, [settings.activeFamilyMemberId]);
+  }, []);
 
   useEffect(() => {
     (async () => {
       await setupNotificationChannels();
       void initAudio();
-      const [rawSettings, cachedLoc, savedFamily, savedChat] = await Promise.all([
+      const [rawSettings, savedHabits, cachedLoc, savedFamily, savedStats, savedChat] = await Promise.all([
         getJson(storageKeys.settings, DEFAULT_SETTINGS),
+        getJson<SpiritualHabit[]>(storageKeys.habits, []),
         getCachedLocation(),
         getJson<FamilyMember[]>(storageKeys.family, []),
+        loadStats(),
         getJson<AIChatMessage[]>(storageKeys.aiChat, []),
       ]);
       const savedSettings = migrateSettings(rawSettings);
       setSettings(savedSettings);
+      setDarkMode(savedSettings.darkMode ?? false);
       void setJson(storageKeys.settings, savedSettings);
+      setHabits(savedHabits);
       setLocation(cachedLoc);
       setFamily(savedFamily);
-      setAiMessages(savedChat);
-      const memberId = savedSettings.activeFamilyMemberId;
-      const [savedHabits, savedStats, qProg, hProg] = await Promise.all([
-        getProfileJson<SpiritualHabit[]>(storageKeys.habits, memberId, []),
-        loadStats(memberId),
-        loadQuranProgress(memberId),
-        loadHadithProgress(memberId),
-      ]);
-      setHabits(savedHabits);
       setStats(savedStats);
-      setQuranProgress(qProg);
-      setHadithProgress(hProg);
+      setAiMessages(savedChat);
+      const [qp, hp] = await Promise.all([
+        loadQuranProgress(savedSettings.activeFamilyMemberId),
+        loadHadithProgress(savedSettings.activeFamilyMemberId),
+      ]);
+      setQuranProgress(qp);
+      setHadithProgress(hp);
+      await refreshTodayPrayers();
       if (savedSettings.customReminders.length > 0) {
         void scheduleCustomReminders(savedSettings.customReminders);
       }
@@ -146,15 +154,80 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  const refreshReadingProgress = useCallback(async () => {
+    const memberId = settings.activeFamilyMemberId;
+    const [qp, hp] = await Promise.all([loadQuranProgress(memberId), loadHadithProgress(memberId)]);
+    setQuranProgress(qp);
+    setHadithProgress(hp);
+  }, [settings.activeFamilyMemberId]);
+
+  const syncReadingFromCloud = useCallback(async () => {
+    const memberId = stateRef.current.settings.activeFamilyMemberId;
+    const { quran, hadith } = await syncReadingProgressFromCloud(memberId);
+    setQuranProgress(quran);
+    setHadithProgress(hadith);
+  }, []);
+
+  const syncAppDataFromCloud = useCallback(async () => {
+    const s = stateRef.current;
+    const merged = await syncUserDataFromCloud(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
+    setSettings(merged.settings);
+    setDarkMode(merged.darkMode);
+    setHabits(merged.habits);
+    setFamily(merged.family);
+    setStats(merged.stats);
+    if (merged.locationPref) {
+      setLocation({
+        latitude: merged.locationPref.latitude,
+        longitude: merged.locationPref.longitude,
+        city: merged.locationPref.city,
+        country: merged.locationPref.country,
+        updatedAt: merged.locationPref.updatedAt,
+      });
+    }
+    await refreshTodayPrayers();
+    await refreshStats();
+  }, [refreshStats, refreshTodayPrayers]);
+
+  // Pull from cloud once per mount (AppProvider is remounted per account), after local data has loaded
+  const initialSyncDone = useRef(false);
   useEffect(() => {
-    if (!loading) void reloadProfileData();
-  }, [settings.activeFamilyMemberId, loading]);
+    if (loading || initialSyncDone.current || !authReady || !session || session.isGuest) return;
+    initialSyncDone.current = true;
+    void syncAppDataFromCloud();
+    void syncReadingFromCloud();
+  }, [loading, authReady, session, syncAppDataFromCloud, syncReadingFromCloud]);
+
+  // Switching family member loads that member's cloud scope
+  const lastMemberId = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (loading) return;
+    const memberId = settings.activeFamilyMemberId;
+    if (lastMemberId.current === undefined) {
+      lastMemberId.current = memberId;
+      return;
+    }
+    if (lastMemberId.current === memberId) return;
+    lastMemberId.current = memberId;
+    if (!session || session.isGuest) return;
+    void syncReadingFromCloud();
+    void syncAppDataFromCloud();
+  }, [loading, settings.activeFamilyMemberId, session, syncReadingFromCloud, syncAppDataFromCloud]);
+
+  useEffect(() => {
+    return onReadingProgressChanged((memberId) => {
+      if (session && !session.isGuest) {
+        scheduleReadingProgressCloudSync(memberId);
+      }
+    });
+  }, [session?.userId, session?.isGuest]);
 
   const refreshLocation = useCallback(async () => {
     const loc = await getCurrentLocation();
     setLocation(loc);
     if (loc) {
       await schedulePrayerNotifications(loc.latitude, loc.longitude, settings);
+      notifyAppDataChanged();
     }
   }, [settings]);
 
@@ -174,9 +247,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (patch.customReminders || next.customReminders) {
         void scheduleCustomReminders(next.customReminders);
       }
+      notifyAppDataChanged();
       return next;
     });
   }, [location]);
+
+  const updateHomeLauncher = useCallback(
+    async (order: HomeFeatureId[]) => {
+      await updateSettings({ homeLauncher: { order } });
+    },
+    [updateSettings]
+  );
 
   const addHabit = useCallback(async (habit: Omit<SpiritualHabit, 'id' | 'completedDates'>) => {
     const newHabit: SpiritualHabit = {
@@ -186,10 +267,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     setHabits((prev) => {
       const next = [...prev, newHabit];
-      void setProfileJson(storageKeys.habits, settings.activeFamilyMemberId, next);
+      setJson(storageKeys.habits, next);
+      notifyAppDataChanged();
       return next;
     });
-  }, [settings.activeFamilyMemberId]);
+  }, []);
 
   const toggleHabitToday = useCallback(async (id: string) => {
     const today = new Date().toISOString().split('T')[0];
@@ -197,7 +279,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const next = prev.map((h) => {
         if (h.id !== id) return h;
         const has = h.completedDates.includes(today);
-        if (!has) void recordActivity(settings.activeFamilyMemberId, 'habit');
+        if (!has) void recordActivity('habit');
         return {
           ...h,
           completedDates: has
@@ -205,11 +287,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             : [...h.completedDates, today],
         };
       });
-      void setProfileJson(storageKeys.habits, settings.activeFamilyMemberId, next);
+      setJson(storageKeys.habits, next);
       void refreshStats();
+      notifyAppDataChanged();
       return next;
     });
-  }, [refreshStats, settings.activeFamilyMemberId]);
+  }, [refreshStats]);
 
   const addFamilyMember = useCallback(async (member: Omit<FamilyMember, 'id' | 'habitIds'>) => {
     const newMember: FamilyMember = {
@@ -220,6 +303,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFamily((prev) => {
       const next = [...prev, newMember];
       void setJson(storageKeys.family, next);
+      notifyAppDataChanged();
       return next;
     });
   }, []);
@@ -228,6 +312,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFamily((prev) => {
       const next = prev.filter((m) => m.id !== id);
       void setJson(storageKeys.family, next);
+      notifyAppDataChanged();
       return next;
     });
     if (settings.activeFamilyMemberId === id) {
@@ -242,70 +327,89 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [updateSettings]
   );
 
-  const updateHomeLauncher = useCallback(
-    async (order: HomeFeatureId[]) => {
-      await updateSettings({ homeLauncher: { order } });
-    },
-    [updateSettings]
-  );
-
   const trackActivity = useCallback(
     async (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer') => {
-      const next = await recordActivity(settings.activeFamilyMemberId, type);
+      const next = await recordActivity(type);
       setStats(next);
+      void trackFeatureAction(type, 'activity_recorded');
+      notifyAppDataChanged();
     },
-    [settings.activeFamilyMemberId]
+    []
+  );
+
+  const togglePrayerComplete = useCallback(
+    async (prayer: PrayerName) => {
+      const added = await togglePrayerCompletion(prayer);
+      if (added) await trackActivity('prayer');
+      await refreshTodayPrayers();
+    },
+    [trackActivity, refreshTodayPrayers]
   );
 
   const sendAIMessage = useCallback(async (text: string, reply: string) => {
     const now = new Date().toISOString();
+    const userText = text.trim();
+    const assistantText = reply.trim();
+
     setAiMessages((prev) => {
-      const next: AIChatMessage[] = [
-        ...prev,
-        { id: `${now}-u`, role: 'user', content: text, timestamp: now },
-        { id: `${now}-a`, role: 'assistant', content: reply, timestamp: now },
-      ];
+      const next: AIChatMessage[] = [...prev];
+      if (userText) {
+        next.push({ id: `${now}-u`, role: 'user', content: userText, timestamp: now });
+      }
+      if (assistantText) {
+        next.push({ id: `${now}-a`, role: 'assistant', content: assistantText, timestamp: now });
+      }
       void setJson(storageKeys.aiChat, next);
       return next;
     });
+
+    if (userText || assistantText) {
+      void logAIChatExchange(userText, assistantText);
+    }
   }, []);
 
   const clearAIChat = useCallback(async () => {
     setAiMessages([]);
     await setJson(storageKeys.aiChat, []);
+    resetAIChatSessionId();
   }, []);
 
   const exportSyncPayload = useCallback(async () => {
-    return buildSyncPayload(settings, habits, family, stats);
-  }, [settings, habits, family, stats]);
+    return buildSyncPayload(settings, habits, family, stats, darkMode, location);
+  }, [settings, habits, family, stats, darkMode, location]);
 
   const importSyncPayload = useCallback(async (payload: SyncPayload) => {
+    await importSyncPayloadToStorage(payload);
     setSettings(payload.settings);
+    setDarkMode(payload.darkMode);
     setHabits(payload.habits);
     setFamily(payload.family);
     setStats(payload.stats);
-    await Promise.all([
-      setJson(storageKeys.settings, payload.settings),
-      setJson(storageKeys.habits, payload.habits),
-      setJson(storageKeys.family, payload.family),
-      setJson(storageKeys.stats, payload.stats),
-      setJson(storageKeys.tasbih, payload.tasbih),
-      setJson(storageKeys.duaProgress, payload.duaProgress),
-    ]);
+    if (payload.locationPref) {
+      setLocation({
+        latitude: payload.locationPref.latitude,
+        longitude: payload.locationPref.longitude,
+        city: payload.locationPref.city,
+        country: payload.locationPref.country,
+        updatedAt: payload.locationPref.updatedAt,
+      });
+    }
+    await refreshTodayPrayers();
     if (payload.settings.customReminders.length > 0) {
       await scheduleCustomReminders(payload.settings.customReminders);
     }
-  }, []);
+  }, [refreshTodayPrayers]);
 
   const syncNow = useCallback(async () => {
-    const local = await buildSyncPayload(settings, habits, family, stats);
+    const local = await buildSyncPayload(settings, habits, family, stats, darkMode, location);
     const result = await performCloudSync(local, importSyncPayload);
     await updateSettings({
       cloudSync: { ...settings.cloudSync, lastSyncAt: result.mergedAt, syncEnabled: true },
     });
     await refreshStats();
+    notifyAppDataChanged();
     return result;
-  }, [settings, habits, family, stats, importSyncPayload, updateSettings, refreshStats]);
+  }, [settings, habits, family, stats, darkMode, location, importSyncPayload, updateSettings, refreshStats]);
 
   const addCustomReminder = useCallback(
     async (reminder: Omit<CustomReminder, 'id'>) => {
@@ -331,9 +435,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     progress[duaId] = (progress[duaId] ?? 0) + 1;
     await setJson(storageKeys.duaProgress, progress);
     await trackActivity('dua');
+    notifyAppDataChanged();
   }, [trackActivity]);
 
-  const toggleDarkMode = useCallback(() => setDarkMode((d) => !d), []);
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode((d) => {
+      const next = !d;
+      void updateSettings({ darkMode: next });
+      return next;
+    });
+  }, [updateSettings]);
 
   const setThemeId = useCallback(
     async (id: ThemeId) => {
@@ -375,7 +486,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         hadithProgress,
         refreshReadingProgress,
         updateHomeLauncher,
-        reloadProfileData,
+        todayPrayers,
+        togglePrayerComplete,
+        refreshTodayPrayers,
         loading,
         darkMode,
         toggleDarkMode,

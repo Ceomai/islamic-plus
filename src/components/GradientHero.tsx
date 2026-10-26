@@ -6,7 +6,7 @@ let LinearGradient: React.ComponentType<{
   colors: string[];
   start?: { x: number; y: number };
   end?: { x: number; y: number };
-  style?: ViewStyle;
+  style?: any;
   children?: React.ReactNode;
 }> | null = null;
 

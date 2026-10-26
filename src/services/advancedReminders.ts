@@ -1,9 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import type { CustomReminder } from '../types';
-import { supportsScheduledNotifications } from '../utils/runtime';
 
 export async function scheduleCustomReminders(reminders: CustomReminder[]): Promise<void> {
-  if (!supportsScheduledNotifications()) return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const n of scheduled) {
     if (n.identifier.startsWith('custom-')) {

@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+.git/
+*.md
+!app.json
+KURULUM.md
+IPHONE-TIMEOUT-COZUM.md
+GUNCELLEME-README.txt
+baslat-*.bat
+firewall-izin-ver.bat

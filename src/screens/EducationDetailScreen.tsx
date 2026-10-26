@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/Card';
 import { getEducationTopics } from '../data/education';
 import { useApp } from '../context/AppContext';
+import { markEducationTopicRead } from '../services/educationProgress';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -15,6 +16,10 @@ export function EducationDetailScreen({ route }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const topic = getEducationTopics(settings.appLanguage).find((x) => x.id === route.params.topicId);
+
+  useEffect(() => {
+    if (topic) void markEducationTopicRead(topic.id);
+  }, [topic?.id]);
 
   if (!topic) {
     return (

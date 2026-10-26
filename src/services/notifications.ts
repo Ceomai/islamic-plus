@@ -2,7 +2,6 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { getPrayerLabel, translate } from '../i18n';
 import type { DisabledPrayerRule, PrayerName, UserSettings } from '../types';
-import { supportsScheduledNotifications } from '../utils/runtime';
 import { getPrayerTimes } from './prayerTimes';
 
 Notifications.setNotificationHandler({
@@ -43,7 +42,6 @@ function parseTimeOnDate(timeStr: string, date: Date): Date {
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
-  if (!supportsScheduledNotifications()) return false;
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === 'granted') return true;
   const { status } = await Notifications.requestPermissionsAsync();
@@ -51,7 +49,6 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 }
 
 async function cancelPrayerNotifications(): Promise<void> {
-  if (!supportsScheduledNotifications()) return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const n of scheduled) {
     if (n.identifier.startsWith('prayer-')) {
@@ -67,7 +64,6 @@ export async function schedulePrayerNotifications(
 ): Promise<void> {
   await cancelPrayerNotifications();
   if (!settings.globalNotificationsEnabled) return;
-  if (!supportsScheduledNotifications()) return;
 
   const granted = await requestNotificationPermissions();
   if (!granted) return;
@@ -121,7 +117,6 @@ export async function schedulePrayerNotifications(
 }
 
 export async function setupNotificationChannels(): Promise<void> {
-  if (!supportsScheduledNotifications()) return;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('prayer-times', {
       name: 'Prayer Times',

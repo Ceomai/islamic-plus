@@ -18,13 +18,17 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.islamic.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Islamic uses your location for prayer times, Qibla direction, and nearby mosques.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Islamic uses your location for prayer reminders and location-based features.",
+        "NSLocationWhenInUseUsageDescription": "Islamic+ uses your location for prayer times, Qibla direction, and nearby mosques.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Islamic+ uses your location for prayer reminders and location-based features.",
         "UIBackgroundModes": [
           "location",
           "fetch"
         ]
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,24 +42,37 @@
         "ACCESS_FINE_LOCATION",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "plugins": [
       [
         "expo-notifications",
         {
+          "icon": "./assets/notification-icon.png",
           "color": "#0D3B2E"
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Islamic to use your location for prayer times and Qibla."
+          "locationAlwaysAndWhenInUsePermission": "Allow Islamic+ to use your location for prayer times and Qibla."
         }
       ],
       "expo-font",
-      "expo-audio"
-    ]
+      "expo-audio",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "privacyPolicyUrl": "https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md",
+      "eas": {
+        "projectId": "f0b025b3-ca20-44b4-98e6-e257b7124521"
+      }
+    },
+    "owner": "aimelih"
   }
 }
