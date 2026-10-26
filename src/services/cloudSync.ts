@@ -185,7 +185,14 @@ function mergeStats(a: ActivityStats, b: ActivityStats): ActivityStats {
     prayerStreakDays: Math.max(a.prayerStreakDays, b.prayerStreakDays),
     lastActiveDate: a.lastActiveDate > b.lastActiveDate ? a.lastActiveDate : b.lastActiveDate,
     weeklyActivity: a.weeklyActivity.map((v, i) => Math.max(v, b.weeklyActivity[i] ?? 0)),
+    dailyPoints: mergeDailyPoints(a.dailyPoints, b.dailyPoints),
   };
+}
+
+function mergeDailyPoints(a: Record<string, number> = {}, b: Record<string, number> = {}): Record<string, number> {
+  const out: Record<string, number> = { ...a };
+  for (const [k, v] of Object.entries(b)) out[k] = Math.max(out[k] ?? 0, v);
+  return out;
 }
 
 function mergeTasbih(a: TasbihData, b: TasbihData): TasbihData {
@@ -196,8 +203,21 @@ function mergeTasbih(a: TasbihData, b: TasbihData): TasbihData {
   return {
     count: b.count,
     total: Math.max(a.total, b.total),
-    sessions: [...sessionMap.values()].sort((x, y) => y.completedAt.localeCompare(x.completedAt)).slice(0, 100),
+    sessions: [...sessionMap.values()].sort((x, y) => y.completedAt.localeCompare(x.completedAt)).slice(0, 200),
+    log: mergeTasbihLogs(a.log, b.log),
   };
+}
+
+function mergeTasbihLogs(
+  a: Record<string, number[]> = {},
+  b: Record<string, number[]> = {}
+): Record<string, number[]> {
+  const out: Record<string, number[]> = { ...a };
+  for (const [day, hours] of Object.entries(b)) {
+    const mine = out[day] ?? new Array(24).fill(0);
+    out[day] = mine.map((v, i) => Math.max(v, hours[i] ?? 0));
+  }
+  return out;
 }
 
 function mergeDuaProgress(a: Record<string, number>, b: Record<string, number>): Record<string, number> {

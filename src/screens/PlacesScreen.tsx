@@ -1,75 +1,145 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Linking, Platform, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import { getCurrentLocation } from '../services/location';
+import type { RootStackParamList } from '../navigation/types';
 import { fetchNearbyPlaces } from '../services/places';
 import type { NearbyPlace } from '../types';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/types';
+import { AppText, Button, Chip, IconBadge, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Places'>;
 
-export function PlacesScreen({ route }: Props) {
-  const { type } = route.params;
-  const { location, refreshLocation } = useApp();
-  const { colors } = useTheme();
-  const { t } = useTranslation();
-  const [places, setPlaces] = useState<NearbyPlace[]>([]);
-  const [loading, setLoading] = useState(true);
+const RADII = [2000, 5000, 10000];
 
-  useEffect(() => {
-    (async () => {
-      const loc = location ?? (await getCurrentLocation());
-      if (!loc) await refreshLocation();
-      const coords = loc ?? location;
-      if (coords) {
-        const results = await fetchNearbyPlaces(coords.latitude, coords.longitude, type);
-        setPlaces(results);
-      }
-      setLoading(false);
-    })();
-  }, [location, type]);
-
-  const openMaps = (p: NearbyPlace) => {
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`);
-  };
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>{t(`places.${type}`)}</Text>
-      {loading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={places}
-          keyExtractor={(item) => item.id}
-          ListEmptyComponent={
-            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 40 }}>
-              {t('places.empty')}
-            </Text>
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => openMaps(item)}
-            >
-              <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
-              <Text style={{ color: colors.textSecondary }}>
-                {item.distanceKm} {t('qibla.km')} {item.address ? `· ${item.address}` : ''}
-              </Text>
-            </Pressable>
-          )}
-        />
-      )}
-    </View>
+function openDirections(p: NearbyPlace) {
+  const label = encodeURIComponent(p.name);
+  const url =
+    Platform.OS === 'ios'
+      ? `https://maps.apple.com/?daddr=${p.latitude},${p.longitude}&q=${label}`
+      : Platform.OS === 'android'
+        ? `geo:${p.latitude},${p.longitude}?q=${p.latitude},${p.longitude}(${label})`
+        : `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
+  void Linking.openURL(url).catch(() =>
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`)
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 20, fontWeight: '600', marginBottom: 16 },
-  row: { padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 10 },
-  name: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
-});
+export function PlacesScreen({ route, navigation }: Props) {
+  const { type } = route.params;
+  const { location, refreshLocation } = useApp();
+  const { colors, space } = useTheme();
+  const { t, lang } = useTranslation();
+  const [places, setPlaces] = useState<NearbyPlace[]>([]);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'noLocation'>('loading');
+  const [radius, setRadius] = useState(5000);
+
+  useEffect(() => {
+    navigation.setOptions({ title: t(`places.${type}`) });
+  }, [navigation, t, type]);
+
+  // Ask for a location once if none is cached; the search below reruns when it arrives
+  useEffect(() => {
+    if (!location) void refreshLocation();
+  }, []);
+
+  const search = useCallback(async () => {
+    if (!location) {
+      setStatus('noLocation');
+      return;
+    }
+    setStatus('loading');
+    try {
+      setPlaces(await fetchNearbyPlaces(location.latitude, location.longitude, type, radius));
+      setStatus('ready');
+    } catch {
+      setStatus('error');
+    }
+  }, [location?.latitude, location?.longitude, type, radius]);
+
+  useEffect(() => {
+    void search();
+  }, [search]);
+
+  const distance = (km: number) =>
+    km < 1 ? `${Math.round(km * 1000)} m` : `${km.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} km`;
+
+  const header = (
+    <View style={{ flexDirection: 'row', gap: space[2], marginBottom: space[4] }}>
+      {RADII.map((r) => (
+        <Chip key={r} label={`${r / 1000} km`} selected={radius === r} onPress={() => setRadius(r)} />
+      ))}
+    </View>
+  );
+
+  if (status === 'loading') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator color={colors.primary} />
+        <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[3], paddingHorizontal: space[6] }}>
+          {t('places.loading')}
+        </AppText>
+      </View>
+    );
+  }
+
+  if (status === 'error' || status === 'noLocation') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6], backgroundColor: colors.background }}>
+        <IconBadge name={status === 'error' ? 'cloud-offline-outline' : 'location-outline'} size="lg" tone="neutral" />
+        <AppText variant="body" tone="secondary" align="center" style={{ marginVertical: space[4] }}>
+          {status === 'error' ? t('places.error') : t('qibla.enableLocation')}
+        </AppText>
+        <Button
+          label={status === 'error' ? t('common.retry') : t('qibla.useLocation')}
+          icon={status === 'error' ? 'refresh' : 'locate'}
+          onPress={status === 'error' ? search : refreshLocation}
+          variant="secondary"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: space[4], paddingBottom: space[8] }}
+      data={places}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={header}
+      ListEmptyComponent={
+        <Surface variant="muted">
+          <AppText variant="callout" tone="secondary" align="center">
+            {t('places.empty')}
+          </AppText>
+        </Surface>
+      }
+      ListFooterComponent={
+        places.length > 0 ? (
+          <AppText variant="caption" tone="muted" style={{ marginTop: space[2] }}>
+            {places[0]?.source === 'google' ? t('places.googleNote') : t('places.osmNote')}
+          </AppText>
+        ) : undefined
+      }
+      renderItem={({ item }) => (
+        <Surface
+          onPress={() => openDirections(item)}
+          accessibilityLabel={`${item.name}, ${distance(item.distanceKm)}`}
+          style={{ marginBottom: space[3], flexDirection: 'row', alignItems: 'center', gap: space[3] }}
+        >
+          <IconBadge name={type === 'halal_restaurant' ? 'restaurant-outline' : 'business-outline'} />
+          <View style={{ flex: 1 }}>
+            <AppText variant="bodyStrong">{item.name}</AppText>
+            <AppText variant="caption" tone="secondary">
+              {distance(item.distanceKm)}
+              {item.address ? ` · ${item.address}` : ''}
+            </AppText>
+          </View>
+          <Ionicons name="navigate-outline" size={18} color={colors.primary} />
+        </Surface>
+      )}
+    />
+  );
+}

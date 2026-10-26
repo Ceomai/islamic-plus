@@ -1,9 +1,10 @@
+import { localDateKey } from '../utils/date';
 import type { PrayerCompletion, PrayerName } from '../types';
 import { getJson, setJson, storageKeys } from './storage';
 import { notifyAppDataChanged } from './userDataCloud';
 
 function todayKey(): string {
-  return new Date().toISOString().split('T')[0];
+  return localDateKey();
 }
 
 export async function loadPrayerCompletions(): Promise<PrayerCompletion[]> {

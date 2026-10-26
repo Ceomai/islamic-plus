@@ -3,11 +3,12 @@ export type RootStackParamList = {
   Home: undefined;
   HomeLauncherEdit: undefined;
   Quran: undefined;
-  QuranReader: { surahNumber: number; edition: string; surahName: string };
+  QuranReader: { surahNumber: number; edition: string; surahName: string; startAyah?: number };
   Hadith: undefined;
   Qibla: undefined;
   Places: { type: 'mosque' | 'prayer_room' | 'halal_restaurant' };
   Tasbih: undefined;
+  TasbihStats: undefined;
   Calendar: undefined;
   Education: undefined;
   EducationDetail: { topicId: string };

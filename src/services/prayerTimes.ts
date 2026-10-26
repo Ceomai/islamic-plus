@@ -1,11 +1,5 @@
-import {
-  CalculationMethod,
-  Coordinates,
-  Madhab as AdhanMadhab,
-  Prayer,
-  PrayerTimes as AdhanPrayerTimes,
-} from 'adhan';
-import type { CalculationMethodId, Madhab, PrayerName, PrayerSchedule } from '../types';
+import { CalculationMethod, Coordinates, Madhab as AdhanMadhab, PrayerTimes as AdhanPrayerTimes } from 'adhan';
+import type { CalculationMethodId, Madhab, PrayerName } from '../types';
 
 const methodMap: Record<CalculationMethodId, () => ReturnType<typeof CalculationMethod.MuslimWorldLeague>> = {
   muslimWorldLeague: CalculationMethod.MuslimWorldLeague,
@@ -22,37 +16,14 @@ const methodMap: Record<CalculationMethodId, () => ReturnType<typeof Calculation
   turkey: CalculationMethod.Turkey,
 };
 
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-}
-
-export function getPrayerTimes(
-  latitude: number,
-  longitude: number,
-  date: Date,
-  calculationMethod: CalculationMethodId,
-  madhab: Madhab
-): PrayerSchedule {
-  const coords = new Coordinates(latitude, longitude);
-  const params = methodMap[calculationMethod]();
+function calculate(latitude: number, longitude: number, date: Date, method: CalculationMethodId, madhab: Madhab) {
+  const params = methodMap[method]();
+  // Only the Asr shadow length differs by madhab in adhan: Hanafi uses twice the length
   params.madhab = madhab === 'hanafi' ? AdhanMadhab.Hanafi : AdhanMadhab.Shafi;
-
-  const times = new AdhanPrayerTimes(coords, date, params);
-
-  return {
-    date: date.toISOString().split('T')[0],
-    times: {
-      fajr: formatTime(times.fajr),
-      sunrise: formatTime(times.sunrise),
-      dhuhr: formatTime(times.dhuhr),
-      asr: formatTime(times.asr),
-      maghrib: formatTime(times.maghrib),
-      isha: formatTime(times.isha),
-    },
-  };
+  return new AdhanPrayerTimes(new Coordinates(latitude, longitude), date, params);
 }
 
-/** Same calculation as getPrayerTimes, but as Date objects so screens can format and compare them. */
+/** The day's prayer times as Date objects; format them with formatClock, never parse clock strings. */
 export function getPrayerDates(
   latitude: number,
   longitude: number,
@@ -60,9 +31,7 @@ export function getPrayerDates(
   calculationMethod: CalculationMethodId,
   madhab: Madhab
 ): Record<PrayerName, Date> {
-  const params = methodMap[calculationMethod]();
-  params.madhab = madhab === 'hanafi' ? AdhanMadhab.Hanafi : AdhanMadhab.Shafi;
-  const times = new AdhanPrayerTimes(new Coordinates(latitude, longitude), date, params);
+  const times = calculate(latitude, longitude, date, calculationMethod, madhab);
   return {
     fajr: times.fajr,
     sunrise: times.sunrise,
@@ -82,51 +51,21 @@ export function formatClock(date: Date, lang: 'en' | 'tr'): string {
   return `${h12}:${m} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
+const DAILY: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+/** Next obligatory prayer from now; after Isha this is tomorrow's Fajr. */
 export function getNextPrayer(
   latitude: number,
   longitude: number,
   calculationMethod: CalculationMethodId,
   madhab: Madhab
-): { name: PrayerName; time: Date; remaining: string } | null {
+): { name: PrayerName; time: Date } | null {
   const now = new Date();
-  const coords = new Coordinates(latitude, longitude);
-  const params = methodMap[calculationMethod]();
-  params.madhab = madhab === 'hanafi' ? AdhanMadhab.Hanafi : AdhanMadhab.Shafi;
-  const times = new AdhanPrayerTimes(coords, now, params);
-
-  const sequence: { name: PrayerName; time: Date }[] = [
-    { name: 'fajr', time: times.fajr },
-    { name: 'dhuhr', time: times.dhuhr },
-    { name: 'asr', time: times.asr },
-    { name: 'maghrib', time: times.maghrib },
-    { name: 'isha', time: times.isha },
-  ];
-
-  for (const p of sequence) {
-    if (p.time > now) {
-      const diff = p.time.getTime() - now.getTime();
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      return { name: p.name, time: p.time, remaining: `${h}h ${m}m` };
-    }
-  }
+  const today = getPrayerDates(latitude, longitude, now, calculationMethod, madhab);
+  const next = DAILY.find((p) => today[p] > now);
+  if (next) return { name: next, time: today[next] };
 
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowTimes = new AdhanPrayerTimes(coords, tomorrow, params);
-  const diff = tomorrowTimes.fajr.getTime() - now.getTime();
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  return { name: 'fajr', time: tomorrowTimes.fajr, remaining: `${h}h ${m}m` };
-}
-
-export function prayerNameToAdhan(prayer: PrayerName): (typeof Prayer)[keyof typeof Prayer] | null {
-  const map: Partial<Record<PrayerName, (typeof Prayer)[keyof typeof Prayer]>> = {
-    fajr: Prayer.Fajr,
-    dhuhr: Prayer.Dhuhr,
-    asr: Prayer.Asr,
-    maghrib: Prayer.Maghrib,
-    isha: Prayer.Isha,
-  };
-  return map[prayer] ?? null;
+  return { name: 'fajr', time: getPrayerDates(latitude, longitude, tomorrow, calculationMethod, madhab).fajr };
 }

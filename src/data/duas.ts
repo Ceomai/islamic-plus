@@ -1,111 +1,170 @@
-import { DUA_AUDIO_URLS } from './duaAudioUrls';
+import type { Ionicons } from '@expo/vector-icons';
+import type { AppLanguage } from '../types';
+import library from './duaLibrary.json';
+
+/**
+ * Dua library. Content lives in duaLibrary.json; every Arabic text there is checked against
+ * Hisnul Muslim or the Quran by `node scripts/verify-duas.js`, which also fills in audio URLs.
+ */
+export type DuaCategory =
+  | 'morning_evening'
+  | 'sleep'
+  | 'home'
+  | 'purification'
+  | 'mosque'
+  | 'food'
+  | 'travel'
+  | 'distress'
+  | 'health'
+  | 'forgiveness'
+  | 'family'
+  | 'provision'
+  | 'knowledge'
+  | 'protection'
+  | 'nature'
+  | 'loss'
+  | 'daily'
+  | 'dhikr'
+  | 'quranic';
 
 export interface Dua {
   id: string;
-  category: 'morning' | 'evening' | 'prayer' | 'travel' | 'food' | 'general';
-  titleKey: string;
+  category: DuaCategory;
+  title: Record<AppLanguage, string>;
   arabic: string;
   transliteration: string;
-  translationEn: string;
-  translationTr: string;
-  /** Remote audio URL (can be cached offline) */
-  audioUrl?: string;
+  translation: Record<AppLanguage, string>;
+  /** Purpose keywords used by search ("sınav", "anxiety", …) */
+  tags: Record<AppLanguage, string[]>;
   repeat?: number;
+  source: { type: 'hisn'; chapter?: string } | { type: 'quran'; ref: string };
+  audioUrl?: string;
+  verified?: boolean;
 }
 
-export const DUAS: Dua[] = [
-  {
-    id: 'morning-1',
-    category: 'morning',
-    titleKey: 'duas.morning1',
-    arabic: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ',
-    transliteration: 'Asbahna wa asbahal-mulku lillah',
-    translationEn: 'We have reached the morning and at this very time all sovereignty belongs to Allah.',
-    translationTr: 'Sabaha erdik; mülk bu sabah da Allah\'ındır.',
-    audioUrl: DUA_AUDIO_URLS['morning-1'],
-    repeat: 1,
-  },
-  {
-    id: 'evening-1',
-    category: 'evening',
-    titleKey: 'duas.evening1',
-    arabic: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ',
-    transliteration: 'Amsayna wa amsal-mulku lillah',
-    translationEn: 'We have reached the evening and at this very time all sovereignty belongs to Allah.',
-    translationTr: 'Akşama erdik; mülk bu akşam da Allah\'ındır.',
-    audioUrl: DUA_AUDIO_URLS['evening-1'],
-    repeat: 1,
-  },
-  {
-    id: 'before-food',
-    category: 'food',
-    titleKey: 'duas.beforeFood',
-    arabic: 'بِسْمِ اللَّهِ',
-    transliteration: 'Bismillah',
-    translationEn: 'In the name of Allah.',
-    translationTr: 'Allah\'ın adıyla.',
-    audioUrl: DUA_AUDIO_URLS['before-food'],
-    repeat: 1,
-  },
-  {
-    id: 'after-food',
-    category: 'food',
-    titleKey: 'duas.afterFood',
-    arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنَا وَسَقَانَا وَجَعَلَنَا مُسْلِمِينَ',
-    transliteration: 'Alhamdu lillahil-ladhi at\'amana wa saqana wa ja\'alana muslimin',
-    translationEn: 'Praise be to Allah Who has fed us and given us drink and made us Muslims.',
-    translationTr: 'Bizi yediren, içiren ve Müslüman kılan Allah\'a hamd olsun.',
-    audioUrl: DUA_AUDIO_URLS['after-food'],
-    repeat: 1,
-  },
-  {
-    id: 'enter-mosque',
-    category: 'prayer',
-    titleKey: 'duas.enterMosque',
-    arabic: 'اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ',
-    transliteration: 'Allahummaftah li abwaba rahmatik',
-    translationEn: 'O Allah, open for me the doors of Your mercy.',
-    translationTr: 'Allah\'ım, bana rahmet kapılarını aç.',
-    audioUrl: DUA_AUDIO_URLS['enter-mosque'],
-    repeat: 1,
-  },
-  {
-    id: 'travel',
-    category: 'travel',
-    titleKey: 'duas.travel',
-    arabic: 'سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ',
-    transliteration: 'Subhanal-ladhi sakhkhara lana hadha wa ma kunna lahu muqrinin',
-    translationEn: 'Glory to Him Who has subjected this to us, and we could never have it by our efforts.',
-    translationTr: 'Bunu bizim hizmetimize veren Allah\'ı tesbih ederiz; yoksa buna güç yetiremezdik.',
-    audioUrl: DUA_AUDIO_URLS['travel'],
-    repeat: 1,
-  },
-  {
-    id: 'istighfar',
-    category: 'general',
-    titleKey: 'duas.istighfar',
-    arabic: 'أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ',
-    transliteration: 'Astaghfirullahal-azim',
-    translationEn: 'I seek forgiveness from Allah, the Magnificent.',
-    translationTr: 'Azim olan Allah\'tan bağışlanma dilerim.',
-    audioUrl: DUA_AUDIO_URLS['istighfar'],
-    repeat: 3,
-  },
-  {
-    id: 'sleep',
-    category: 'evening',
-    titleKey: 'duas.sleep',
-    arabic: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
-    transliteration: 'Bismika Allahumma amutu wa ahya',
-    translationEn: 'In Your name O Allah, I die and I live.',
-    translationTr: 'Allah\'ım, senin adınla ölür ve dirilirim.',
-    audioUrl: DUA_AUDIO_URLS['sleep'],
-    repeat: 1,
-  },
+export const DUAS = library as Dua[];
+
+/** Display order of categories, each with an icon for chips and list rows */
+export const DUA_CATEGORIES: { id: DuaCategory; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'morning_evening', icon: 'sunny-outline' },
+  { id: 'distress', icon: 'heart-half-outline' },
+  { id: 'health', icon: 'medkit-outline' },
+  { id: 'forgiveness', icon: 'refresh-circle-outline' },
+  { id: 'protection', icon: 'shield-checkmark-outline' },
+  { id: 'family', icon: 'people-outline' },
+  { id: 'provision', icon: 'briefcase-outline' },
+  { id: 'knowledge', icon: 'school-outline' },
+  { id: 'travel', icon: 'airplane-outline' },
+  { id: 'sleep', icon: 'moon-outline' },
+  { id: 'food', icon: 'restaurant-outline' },
+  { id: 'home', icon: 'home-outline' },
+  { id: 'purification', icon: 'water-outline' },
+  { id: 'mosque', icon: 'business-outline' },
+  { id: 'nature', icon: 'rainy-outline' },
+  { id: 'loss', icon: 'flower-outline' },
+  { id: 'daily', icon: 'sparkles-outline' },
+  { id: 'dhikr', icon: 'ellipse-outline' },
+  { id: 'quranic', icon: 'book-outline' },
 ];
 
-export function getDuaAudioUrl(duaId: string): string | undefined {
-  return DUA_AUDIO_URLS[duaId];
+export function getDuaCategoryIcon(category: DuaCategory): keyof typeof Ionicons.glyphMap {
+  return DUA_CATEGORIES.find((c) => c.id === category)?.icon ?? 'heart-outline';
 }
 
-export const DUA_CATEGORIES = ['morning', 'evening', 'prayer', 'travel', 'food', 'general'] as const;
+/** Lower-case, strip Turkish diacritics and punctuation so "sınav" matches "SINAV" and "sinav". */
+export function normalizeSearch(text: string): string {
+  return text
+    .toLocaleLowerCase('tr')
+    .replace(/ı/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ğ/g, 'g')
+    .replace(/ç/g, 'c')
+    .replace(/ö/g, 'o')
+    .replace(/ü/g, 'u')
+    .replace(/[âà]/g, 'a')
+    .replace(/[îì]/g, 'i')
+    .replace(/[ûù]/g, 'u')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Sound-alike key for Arabic transliterations, so Turkish and English spellings meet:
+ * "euzu bike" / "a'udhu bika" → "auzu bika", "Allahümme" / "Allahumma" → "alahuma", "rabbena" / "rabbana" → "rabana".
+ */
+export function translitKey(text: string): string {
+  return normalizeSearch(text.replace(/['’ʿʾ`´]/g, '').replace(/-/g, ' '))
+    .replace(/(dh|zh|dz)/g, 'z')
+    .replace(/th/g, 's')
+    .replace(/sh/g, 's')
+    .replace(/kh/g, 'h')
+    .replace(/gh/g, 'g')
+    .replace(/q/g, 'k')
+    .replace(/w/g, 'v')
+    .replace(/ee/g, 'i')
+    .replace(/(oo|ou)/g, 'u')
+    .replace(/e/g, 'a')
+    .replace(/o/g, 'u')
+    .replace(/([a-z])\1+/g, '$1')
+    // Case endings come and go ("bismillah" / "bismillahi", "hamdih" / "hamdihi")
+    .replace(/\b([a-z]{4,})[aiu]\b/g, '$1');
+}
+
+const TRANSLIT_KEYS = new Map<string, string>();
+/** Cached sound-alike key of a dua's transliteration, without spaces ("bi-hamdih" and "bihamdihi" meet) */
+export function duaTranslitKey(d: Dua): string {
+  let key = TRANSLIT_KEYS.get(d.id);
+  if (key === undefined) {
+    key = translitKey(d.transliteration).replace(/ /g, '');
+    TRANSLIT_KEYS.set(d.id, key);
+  }
+  return key;
+}
+
+/** Whether a typed word (any spelling) appears in the dua's transliteration */
+export function translitHit(d: Dua, word: string): boolean {
+  const key = translitKey(word).replace(/ /g, '');
+  return key.length >= 4 && duaTranslitKey(d).includes(key);
+}
+
+/**
+ * Finds duas for a need ("sınav", "borç", "hasta", "anxiety"). Tags weigh most, then the title,
+ * then the meaning; every word of the query must match somewhere. Results are best match first.
+ */
+export function searchDuas(query: string, lang: AppLanguage, categoryLabel: (c: DuaCategory) => string): Dua[] {
+  const words = normalizeSearch(query).split(' ').filter(Boolean);
+  if (words.length === 0) return DUAS;
+
+  const scored = DUAS.map((d) => {
+    const tags = normalizeSearch([...d.tags.tr, ...d.tags.en].join(' '));
+    const title = normalizeSearch(`${d.title.tr} ${d.title.en} ${categoryLabel(d.category)}`);
+    const body = normalizeSearch(`${d.translation[lang]} ${d.transliteration}`);
+    let score = 0;
+    for (const w of words) {
+      // Typed transliteration ("rabbena atina") matches whatever spelling the dua uses
+      const sound = translitHit(d, w);
+      const s = (tags.includes(w) ? 5 : 0) + (title.includes(w) ? 3 : 0) + (body.includes(w) ? 1 : sound ? 2 : 0);
+      if (s === 0) return { d, score: 0 };
+      score += s;
+    }
+    return { d, score };
+  });
+
+  return scored
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => x.d);
+}
+
+/** Purpose shortcuts shown above the list; each runs a search */
+export const DUA_PURPOSES: { tr: string; en: string; query: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { tr: 'Sıkıntı ve kaygı', en: 'Anxiety', query: 'kaygı', icon: 'heart-half-outline' },
+  { tr: 'Şifa', en: 'Healing', query: 'şifa', icon: 'medkit-outline' },
+  { tr: 'Sınav', en: 'Exams', query: 'sınav', icon: 'school-outline' },
+  { tr: 'Borç ve rızık', en: 'Debt & income', query: 'rızık', icon: 'wallet-outline' },
+  { tr: 'Tövbe', en: 'Repentance', query: 'tövbe', icon: 'refresh-circle-outline' },
+  { tr: 'Anne baba', en: 'Parents', query: 'anne baba', icon: 'people-outline' },
+  { tr: 'Yolculuk', en: 'Travel', query: 'yolculuk', icon: 'airplane-outline' },
+  { tr: 'Korunma', en: 'Protection', query: 'korunma', icon: 'shield-checkmark-outline' },
+];

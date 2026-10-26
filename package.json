@@ -9,8 +9,11 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "lint": "expo lint",
+    "test": "jest",
+    "i18n:check": "node scripts/check-i18n.js",
     "assets:generate": "node scripts/generate-assets.js",
-    "dua-audio:sync": "node scripts/match-dua-audio.js",
+    "duas:verify": "node scripts/verify-duas.js",
+    "assistant:catalog": "node scripts/build-assistant-catalog.js",
     "eas:init": "npx eas-cli init",
     "build:preview": "npx eas-cli build --platform all --profile preview",
     "build:preview:android": "npx eas-cli build --platform android --profile preview",
@@ -51,9 +54,20 @@
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@expo/ngrok": "^4.1.3",
+    "@react-native/jest-preset": "^0.88.0",
+    "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
     "babel-preset-expo": "~58.0.0",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.12",
     "typescript": "~6.0.3"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/supabase/"
+    ]
   },
   "private": true
 }

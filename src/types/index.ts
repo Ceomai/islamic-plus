@@ -20,6 +20,8 @@ export type SectPreference = 'sunni' | 'shia' | 'neutral';
 
 export type AppLanguage = 'en' | 'tr';
 
+export type QuranView = 'translation' | 'arabic' | 'parallel' | 'study' | 'mushaf';
+
 export type ThemeId = 'emerald' | 'midnight' | 'desert' | 'ocean' | 'rose';
 
 export interface FamilyMember {
@@ -54,7 +56,9 @@ export interface ActivityStats {
   quranSessions: number;
   prayerStreakDays: number;
   lastActiveDate: string;
-  weeklyActivity: number[]; // last 7 days score 0-100
+  weeklyActivity: number[]; // last 7 days score 0-100, oldest first (derived from dailyPoints)
+  /** Activity points per local day (YYYY-MM-DD), last 30 days */
+  dailyPoints?: Record<string, number>;
 }
 
 export interface CloudSyncMeta {
@@ -63,11 +67,25 @@ export interface CloudSyncMeta {
   syncEnabled: boolean;
 }
 
+/** A screen the assistant can open (screen name from RootStackParamList) */
+export interface AssistantTarget {
+  screen: string;
+  params?: Record<string, unknown>;
+}
+
+export interface AssistantAction {
+  label: string;
+  icon?: string;
+  target: AssistantTarget;
+}
+
 export interface AIChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  /** Buttons under an assistant reply that open a screen */
+  actions?: AssistantAction[];
 }
 
 export interface AuthSession {
@@ -120,6 +138,10 @@ export interface UserSettings {
   widgetPrefs: WidgetPreferences;
   customReminders: CustomReminder[];
   offlineAudioEnabled: boolean;
+  /** How the Quran reader lays out ayahs */
+  quranView: QuranView;
+  /** Multiplier for Quran text size (0.85–1.6) */
+  quranFontScale: number;
   homeLauncher: HomeLauncherLayout;
   darkMode: boolean;
 }
@@ -212,12 +234,19 @@ export interface TasbihSession {
   count: number;
   target: number;
   completedAt: string;
+  /** Which dhikr was recited (see src/data/dhikr.ts); missing on sessions saved by older builds */
+  dhikrId?: string;
 }
 
 export interface TasbihData {
+  /** Count of the round in progress */
   count: number;
+  /** Lifetime count across all rounds */
   total: number;
+  /** Completed (or reset) rounds, newest first */
   sessions: TasbihSession[];
+  /** Counts per local day (YYYY-MM-DD) and hour of day (24 slots), last 90 days */
+  log?: Record<string, number[]>;
 }
 
 export interface EducationProgressEntry {
@@ -258,6 +287,8 @@ export interface NearbyPlace {
   distanceKm: number;
   address?: string;
   type: 'mosque' | 'prayer_room' | 'halal_restaurant';
+  /** Where the data came from, for attribution */
+  source?: 'google' | 'osm';
 }
 
 export interface EducationTopic {

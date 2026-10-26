@@ -31,6 +31,7 @@ import { QuranScreen } from '../screens/QuranScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { StatisticsScreen as StatisticsScreenBase } from '../screens/StatisticsScreen';
 import { TasbihScreen } from '../screens/TasbihScreen';
+import { TasbihStatsScreen } from '../screens/TasbihStatsScreen';
 import { ThemesScreen as ThemesScreenBase } from '../screens/ThemesScreen';
 import { WidgetsScreen as WidgetsScreenBase } from '../screens/WidgetsScreen';
 import type { RootStackParamList } from './types';
@@ -95,6 +96,7 @@ function HomeStack() {
       <Stack.Screen name="Qibla" component={QiblaScreen} options={{ title: t('nav.qibla') }} />
       <Stack.Screen name="Places" component={PlacesScreen} options={{ title: t('nav.nearby') }} />
       <Stack.Screen name="Tasbih" component={TasbihScreen} options={{ title: t('nav.tasbih') }} />
+      <Stack.Screen name="TasbihStats" component={TasbihStatsScreen} options={{ title: t('tasbih.statsTitle') }} />
       <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: t('nav.calendar') }} />
       <Stack.Screen name="Habits" component={HabitsScreen} options={{ title: t('nav.habits') }} />
       <Stack.Screen name="Duties" component={DutiesScreen} options={{ title: t('nav.duties') }} />
@@ -128,6 +130,7 @@ function MoreStack() {
       <Stack.Screen name="AdvancedReminders" component={AdvancedRemindersScreen} options={{ title: t('nav.advancedReminders') }} />
       <Stack.Screen name="AIAssistant" component={AIAssistantScreen} options={{ title: t('nav.ai') }} />
       <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ title: t('nav.stats') }} />
+      <Stack.Screen name="TasbihStats" component={TasbihStatsScreen} options={{ title: t('tasbih.statsTitle') }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: t('nav.notifications') }} />
     </Stack.Navigator>
   );

@@ -1,149 +1,147 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { Card } from '../components/Card';
-import { getDayNames } from '../i18n';
+import { Switch, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { getDayNames } from '../i18n';
 import type { RootStackParamList } from '../navigation/types';
-import type { PrayerName } from '../types';
+import type { PrayerName, PrayerNotificationSettings } from '../types';
+import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NotificationSettings'>;
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-const SOUNDS = ['default', 'adhan_short', 'adhan_full', 'silent'] as const;
+/** Only sounds that actually ship with the app; adhan recordings are not bundled yet */
+const SOUNDS: PrayerNotificationSettings['sound'][] = ['default', 'silent'];
+const ADVANCE_OPTIONS = [0, 5, 10, 15, 30];
 
 export function NotificationSettingsScreen({ navigation }: Props) {
   const { settings, updateSettings, location, refreshLocation } = useApp();
-  const { colors } = useTheme();
+  const { colors, space } = useTheme();
   const { t, prayer } = useTranslation();
   const dayNames = getDayNames(settings.appLanguage);
+  const track = { true: colors.primary, false: colors.borderStrong };
 
-  const toggleGlobal = (v: boolean) => updateSettings({ globalNotificationsEnabled: v });
-  const togglePrayer = (prayerName: PrayerName, enabled: boolean) => {
+  const patchPrayer = (p: PrayerName, patch: Partial<PrayerNotificationSettings>) =>
     updateSettings({
-      prayerNotifications: {
-        ...settings.prayerNotifications,
-        [prayerName]: { ...settings.prayerNotifications[prayerName], enabled },
-      },
+      prayerNotifications: { ...settings.prayerNotifications, [p]: { ...settings.prayerNotifications[p], ...patch } },
     });
-  };
 
-  const cycleSound = (prayerName: PrayerName) => {
-    const current = settings.prayerNotifications[prayerName].sound;
-    const idx = SOUNDS.indexOf(current);
-    const next = SOUNDS[(idx + 1) % SOUNDS.length];
-    updateSettings({
-      prayerNotifications: {
-        ...settings.prayerNotifications,
-        [prayerName]: { ...settings.prayerNotifications[prayerName], sound: next },
-      },
-    });
-  };
-
-  const toggleDayOff = (prayerName: PrayerName, day: number) => {
-    const rules = [...settings.disabledPrayerRules];
-    const existing = rules.find((r) => r.prayer === prayerName);
+  const toggleDayOff = (p: PrayerName, day: number) => {
+    const rules = settings.disabledPrayerRules.map((r) => ({ ...r, daysOfWeek: [...r.daysOfWeek] }));
+    const existing = rules.find((r) => r.prayer === p);
     if (existing) {
-      const has = existing.daysOfWeek.includes(day);
-      existing.daysOfWeek = has
+      existing.daysOfWeek = existing.daysOfWeek.includes(day)
         ? existing.daysOfWeek.filter((d) => d !== day)
         : [...existing.daysOfWeek, day];
-      if (existing.daysOfWeek.length === 0 && existing.specificDates.length === 0) {
-        updateSettings({ disabledPrayerRules: rules.filter((r) => r.prayer !== prayerName) });
-        return;
-      }
-    } else {
-      rules.push({ prayer: prayerName, daysOfWeek: [day], specificDates: [] });
+      const cleaned = rules.filter((r) => r.daysOfWeek.length > 0 || r.specificDates.length > 0);
+      void updateSettings({ disabledPrayerRules: cleaned });
+      return;
     }
-    updateSettings({ disabledPrayerRules: rules });
+    void updateSettings({ disabledPrayerRules: [...rules, { prayer: p, daysOfWeek: [day], specificDates: [] }] });
   };
 
-  const isDayDisabled = (prayerName: PrayerName, day: number) =>
-    settings.disabledPrayerRules.some((r) => r.prayer === prayerName && r.daysOfWeek.includes(day));
+  const isDayOff = (p: PrayerName, day: number) =>
+    settings.disabledPrayerRules.some((r) => r.prayer === p && r.daysOfWeek.includes(day));
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Card>
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: colors.text }]}>{t('notifications.all')}</Text>
-          <Switch
-            value={settings.globalNotificationsEnabled}
-            onValueChange={toggleGlobal}
-            trackColor={{ true: colors.primary }}
-          />
-        </View>
-        <View style={styles.row}>
-          <Text style={[styles.label, { color: colors.text }]}>{t('notifications.locationReminder')}</Text>
-          <Switch
-            value={settings.locationReminderEnabled}
-            onValueChange={(v) => updateSettings({ locationReminderEnabled: v })}
-            trackColor={{ true: colors.primary }}
-          />
-        </View>
-      </Card>
+    <Screen>
+      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+        <ListRow
+          icon="notifications-outline"
+          title={t('notifications.all')}
+          subtitle={t('notifications.allHint')}
+          trailing={
+            <Switch
+              value={settings.globalNotificationsEnabled}
+              onValueChange={(v) => updateSettings({ globalNotificationsEnabled: v })}
+              trackColor={track}
+            />
+          }
+        />
+      </Surface>
 
       {!location && (
-        <Text onPress={refreshLocation} style={{ color: colors.primary, marginBottom: 16 }}>
-          {t('notifications.enableLocation')}
-        </Text>
+        <Surface variant="soft" style={{ marginTop: space[3] }}>
+          <AppText variant="callout" color={colors.onPrimarySoft} style={{ marginBottom: space[3] }}>
+            {t('notifications.enableLocation')}
+          </AppText>
+          <Button label={t('qibla.useLocation')} icon="locate" onPress={refreshLocation} variant="secondary" />
+        </Surface>
       )}
 
-      <Pressable
-        onPress={() => navigation.navigate('AdvancedReminders')}
-        style={[styles.advancedLink, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
-      >
-        <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('nav.advancedReminders')} →</Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>{t('home.remindersSub')}</Text>
-      </Pressable>
+      <Surface padding={0} style={{ paddingHorizontal: space[4], marginTop: space[3] }}>
+        <ListRow
+          icon="alarm-outline"
+          title={t('nav.advancedReminders')}
+          subtitle={t('home.remindersSub')}
+          onPress={() => navigation.navigate('AdvancedReminders')}
+        />
+      </Surface>
 
-      {PRAYERS.map((p) => (
-        <Card key={p}>
-          <View style={styles.row}>
-            <Text style={[styles.prayerName, { color: colors.text }]}>{prayer(p)}</Text>
-            <Switch
-              value={settings.prayerNotifications[p]?.enabled ?? true}
-              onValueChange={(v) => togglePrayer(p, v)}
-              trackColor={{ true: colors.primary }}
-            />
-          </View>
-          <Text onPress={() => cycleSound(p)} style={{ color: colors.textSecondary, marginTop: 8 }}>
-            {t('notifications.sound')}: {settings.prayerNotifications[p]?.sound ?? 'adhan_short'} ({t('notifications.tapChange')})
-          </Text>
-          <Text style={[styles.disableLabel, { color: colors.textSecondary }]}>{t('notifications.disableDays')}</Text>
-          <View style={styles.days}>
-            {dayNames.map((d, i) => (
-              <Text
-                key={d}
-                onPress={() => toggleDayOff(p, i)}
-                style={[
-                  styles.dayChip,
-                  {
-                    backgroundColor: isDayDisabled(p, i) ? colors.error : colors.surface,
-                    color: isDayDisabled(p, i) ? '#fff' : colors.text,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                {d}
-              </Text>
-            ))}
-          </View>
-        </Card>
-      ))}
-    </ScrollView>
+      {settings.globalNotificationsEnabled &&
+        PRAYERS.map((p) => {
+          const cfg = settings.prayerNotifications[p];
+          const enabled = cfg?.enabled ?? true;
+          return (
+            <View key={p}>
+              <SectionHeader title={prayer(p)} />
+              <Surface>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <AppText variant="bodyStrong">{t('notifications.enabled')}</AppText>
+                  <Switch value={enabled} onValueChange={(v) => patchPrayer(p, { enabled: v })} trackColor={track} />
+                </View>
+
+                {enabled && (
+                  <>
+                    <AppText variant="caption" tone="secondary" style={{ marginTop: space[4], marginBottom: space[2] }}>
+                      {t('notifications.sound')}
+                    </AppText>
+                    <View style={{ flexDirection: 'row', gap: space[2] }}>
+                      {SOUNDS.map((s) => (
+                        <Chip
+                          key={s}
+                          label={t(`notifications.sounds.${s}`)}
+                          // Older settings may still hold an adhan value; it plays as the default sound
+                          selected={(cfg?.sound === 'silent' ? 'silent' : 'default') === s}
+                          onPress={() => patchPrayer(p, { sound: s })}
+                        />
+                      ))}
+                    </View>
+
+                    <AppText variant="caption" tone="secondary" style={{ marginTop: space[4], marginBottom: space[2] }}>
+                      {t('notifications.advance')}
+                    </AppText>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+                      {ADVANCE_OPTIONS.map((m) => (
+                        <Chip
+                          key={m}
+                          label={m === 0 ? t('notifications.onTime') : t('notifications.minutesBefore', { n: String(m) })}
+                          selected={(cfg?.advanceMinutes ?? 0) === m}
+                          onPress={() => patchPrayer(p, { advanceMinutes: m })}
+                        />
+                      ))}
+                    </View>
+
+                    <AppText variant="caption" tone="secondary" style={{ marginTop: space[4], marginBottom: space[2] }}>
+                      {t('notifications.disableDays')}
+                    </AppText>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+                      {dayNames.map((d, i) => (
+                        <Chip key={d} label={d} selected={isDayOff(p, i)} onPress={() => toggleDayOff(p, i)} />
+                      ))}
+                    </View>
+                  </>
+                )}
+              </Surface>
+            </View>
+          );
+        })}
+
+      <AppText variant="caption" tone="muted" style={{ marginTop: space[4] }}>
+        {t('notifications.footnote')}
+      </AppText>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  label: { fontSize: 16 },
-  prayerName: { fontSize: 18, fontWeight: '600' },
-  disableLabel: { marginTop: 12, fontSize: 13 },
-  days: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  dayChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, fontSize: 12 },
-  advancedLink: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
-});

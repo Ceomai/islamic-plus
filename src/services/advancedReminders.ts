@@ -1,7 +1,21 @@
 import * as Notifications from 'expo-notifications';
-import type { CustomReminder } from '../types';
+import { Platform } from 'react-native';
+import { translate } from '../i18n';
+import type { AppLanguage, CustomReminder } from '../types';
 
-export async function scheduleCustomReminders(reminders: CustomReminder[]): Promise<void> {
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** "8:5", "08.30", "830" → "08:05" / "08:30"; null when it can't be a time of day. */
+export function normalizeReminderTime(input: string): string | null {
+  const digits = input.trim().replace(/[.,\s]/g, ':');
+  const m = digits.match(/^(\d{1,2}):?(\d{2})$/);
+  if (!m) return null;
+  const value = `${m[1].padStart(2, '0')}:${m[2]}`;
+  return TIME_RE.test(value) ? value : null;
+}
+
+export async function scheduleCustomReminders(reminders: CustomReminder[], lang: AppLanguage = 'en'): Promise<void> {
+  if (Platform.OS === 'web') return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const n of scheduled) {
     if (n.identifier.startsWith('custom-')) {
@@ -10,14 +24,15 @@ export async function scheduleCustomReminders(reminders: CustomReminder[]): Prom
   }
 
   for (const r of reminders) {
-    if (!r.enabled) continue;
+    // Skip anything saved before times were validated instead of scheduling at NaN:NaN
+    if (!r.enabled || !TIME_RE.test(r.time)) continue;
     const [hour, minute] = r.time.split(':').map(Number);
     for (const day of r.daysOfWeek) {
       await Notifications.scheduleNotificationAsync({
         identifier: `custom-${r.id}-${day}`,
         content: {
           title: r.title,
-          body: reminderBody(r.type),
+          body: translate(lang, `reminders.body.${r.type}`),
           sound: r.sound === 'silent' ? undefined : 'default',
         },
         trigger: {
@@ -28,18 +43,5 @@ export async function scheduleCustomReminders(reminders: CustomReminder[]): Prom
         },
       });
     }
-  }
-}
-
-function reminderBody(type: CustomReminder['type']): string {
-  switch (type) {
-    case 'dhikr':
-      return 'Time for dhikr — open Tasbih in Islamic app.';
-    case 'dua':
-      return 'Time for dua — read and listen in Duas section.';
-    case 'quran':
-      return 'Time for Quran — continue your reading.';
-    default:
-      return 'Your spiritual reminder is due.';
   }
 }

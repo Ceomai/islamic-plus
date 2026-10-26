@@ -22,12 +22,18 @@ export async function stopAudio() {
   currentPlayer = null;
 }
 
-async function playUri(uri: string): Promise<boolean> {
+async function playUri(uri: string, onFinish?: () => void): Promise<boolean> {
   try {
     await initAudio();
     await stopAudio();
     const player = createAudioPlayer({ uri });
     currentPlayer = player;
+    if (onFinish) {
+      player.addListener('playbackStatusUpdate', (status) => {
+        // Ignore events from a player that has since been replaced
+        if (status.didJustFinish && currentPlayer === player) onFinish();
+      });
+    }
     player.play();
     return true;
   } catch {
@@ -35,8 +41,9 @@ async function playUri(uri: string): Promise<boolean> {
   }
 }
 
-export async function playRemoteAudio(url: string): Promise<boolean> {
-  return playUri(url);
+/** `onFinish` fires once the clip plays to the end (not when stopped or replaced). */
+export async function playRemoteAudio(url: string, onFinish?: () => void): Promise<boolean> {
+  return playUri(url, onFinish);
 }
 
 export async function getOfflineAudioPath(duaId: string): Promise<string | null> {
@@ -56,17 +63,17 @@ export async function downloadAudioForOffline(duaId: string, url: string): Promi
   return download.uri;
 }
 
-export async function playDuaAudio(duaId: string, remoteUrl?: string): Promise<boolean> {
+export async function playDuaAudio(duaId: string, remoteUrl?: string, onFinish?: () => void): Promise<boolean> {
   const local = await getOfflineAudioPath(duaId);
   if (local) {
     try {
       const info = await FileSystem.getInfoAsync(local);
-      if (info.exists) return await playUri(local);
+      if (info.exists) return await playUri(local, onFinish);
     } catch {
       /* try remote */
     }
   }
-  if (remoteUrl) return playRemoteAudio(remoteUrl);
+  if (remoteUrl) return playRemoteAudio(remoteUrl, onFinish);
   return false;
 }
 

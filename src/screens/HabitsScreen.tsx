@@ -1,80 +1,161 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Card } from '../components/Card';
+import { Alert, Pressable, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import type { SpiritualHabit } from '../types';
+import { AppText, Button, Chip, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { lastDayKeys, localDateKey } from '../utils/date';
+
+const CATEGORIES: SpiritualHabit['category'][] = ['prayer', 'quran', 'dhikr', 'charity', 'fasting', 'other'];
+const TARGETS = [1, 3, 5, 7];
+const CATEGORY_ICONS: Record<SpiritualHabit['category'], React.ComponentProps<typeof Ionicons>['name']> = {
+  prayer: 'moon-outline',
+  quran: 'book-outline',
+  dhikr: 'ellipse-outline',
+  charity: 'gift-outline',
+  fasting: 'restaurant-outline',
+  other: 'star-outline',
+};
 
 export function HabitsScreen() {
-  const { habits, addHabit, toggleHabitToday } = useApp();
-  const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { habits, addHabit, toggleHabitToday, removeHabit, settings } = useApp();
+  const { colors, radius, space } = useTheme();
+  const { t, lang } = useTranslation();
   const [title, setTitle] = useState('');
-  const today = new Date().toISOString().split('T')[0];
+  const [category, setCategory] = useState<SpiritualHabit['category']>('dhikr');
+  const [target, setTarget] = useState(7);
+  const today = localDateKey();
+  const week = lastDayKeys(7);
+  const dayInitials = week.map((k) =>
+    new Date(`${k}T12:00:00`).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'narrow' })
+  );
 
   const handleAdd = () => {
     if (!title.trim()) return;
-    addHabit({ title: title.trim(), targetPerWeek: 7, category: 'other' });
+    void addHabit({ title: title.trim(), targetPerWeek: target, category });
     setTitle('');
   };
 
+  const confirmRemove = (h: SpiritualHabit) =>
+    Alert.alert(t('habits.deleteTitle'), t('habits.deleteBody', { name: h.title }), [
+      { text: t('account.cancel'), style: 'cancel' },
+      { text: t('habits.delete'), style: 'destructive', onPress: () => void removeHabit(h.id) },
+    ]);
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('habits.intro')}</Text>
-      <View style={[styles.addRow, { borderColor: colors.border }]}>
-        <TextInput
+    <Screen>
+      <AppText variant="callout" tone="secondary" style={{ marginBottom: space[4] }}>
+        {t('habits.intro')}
+      </AppText>
+
+      <Surface>
+        <TextField
+          label={t('habits.newLabel')}
           placeholder={t('habits.placeholder')}
-          placeholderTextColor={colors.textSecondary}
           value={title}
           onChangeText={setTitle}
-          style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+          onSubmitEditing={handleAdd}
+          returnKeyType="done"
         />
-        <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={handleAdd}>
-          <Text style={{ color: '#fff', fontWeight: '600' }}>{t('habits.add')}</Text>
-        </Pressable>
-      </View>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+          {t('habits.categoryLabel')}
+        </AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginBottom: space[4] }}>
+          {CATEGORIES.map((c) => (
+            <Chip key={c} label={t(`habits.cat.${c}`)} icon={CATEGORY_ICONS[c]} selected={category === c} onPress={() => setCategory(c)} />
+          ))}
+        </View>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+          {t('habits.targetLabel')}
+        </AppText>
+        <View style={{ flexDirection: 'row', gap: space[2], marginBottom: space[4] }}>
+          {TARGETS.map((n) => (
+            <Chip key={n} label={t('habits.perWeek', { n: String(n) })} selected={target === n} onPress={() => setTarget(n)} />
+          ))}
+        </View>
+        <Button label={t('habits.add')} icon="add" onPress={handleAdd} disabled={!title.trim()} fullWidth />
+      </Surface>
+
+      <SectionHeader title={t('habits.listTitle')} />
       {habits.length === 0 ? (
-        <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 40 }}>{t('habits.empty')}</Text>
+        <Surface variant="muted">
+          <AppText variant="callout" tone="secondary" align="center">
+            {t('habits.empty')}
+          </AppText>
+        </Surface>
       ) : (
         habits.map((h) => {
           const doneToday = h.completedDates.includes(today);
-          const weekStart = new Date();
-          weekStart.setDate(weekStart.getDate() - 7);
-          const weekCount = h.completedDates.filter((d) => new Date(d) >= weekStart).length;
+          const weekDone = week.filter((k) => h.completedDates.includes(k)).length;
+          const progress = Math.min(1, weekDone / h.targetPerWeek);
           return (
-            <Card key={h.id}>
-              <Pressable onPress={() => toggleHabitToday(h.id)} style={styles.habitRow}>
-                <View
-                  style={[
-                    styles.check,
-                    { backgroundColor: doneToday ? colors.success : 'transparent', borderColor: colors.primary },
-                  ]}
+            <Surface key={h.id} style={{ marginBottom: space[3] }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+                <Pressable
+                  onPress={() => toggleHabitToday(h.id)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: doneToday }}
+                  accessibilityLabel={h.title}
+                  hitSlop={8}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    borderWidth: 2,
+                    borderColor: colors.primary,
+                    backgroundColor: doneToday ? colors.primary : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
-                  {doneToday && <Text style={{ color: '#fff' }}>✓</Text>}
-                </View>
+                  {doneToday ? <Ionicons name="checkmark" size={18} color={colors.onPrimary} /> : null}
+                </Pressable>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.habitTitle, { color: colors.text }]}>{h.title}</Text>
-                  <Text style={{ color: colors.textSecondary }}>
-                    {weekCount}/{h.targetPerWeek} {t('habits.thisWeek')}
-                  </Text>
+                  <AppText variant="bodyStrong">{h.title}</AppText>
+                  <AppText variant="caption" tone="secondary">
+                    {t(`habits.cat.${h.category}`)} · {weekDone}/{h.targetPerWeek} {t('habits.thisWeek')}
+                  </AppText>
                 </View>
-              </Pressable>
-            </Card>
+                <Pressable onPress={() => confirmRemove(h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('habits.delete')}>
+                  <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                </Pressable>
+              </View>
+
+              <View style={{ height: 6, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted, marginTop: space[3], overflow: 'hidden' }}>
+                <View style={{ width: `${progress * 100}%`, height: '100%', backgroundColor: progress >= 1 ? colors.success : colors.primary }} />
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: space[3] }}>
+                {week.map((k, i) => {
+                  const done = h.completedDates.includes(k);
+                  return (
+                    <View key={k} style={{ alignItems: 'center', gap: 4 }}>
+                      <AppText variant="caption" tone={k === today ? 'brand' : 'muted'}>
+                        {dayInitials[i]}
+                      </AppText>
+                      <View
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: 5,
+                          backgroundColor: done ? colors.primary : colors.surfaceMuted,
+                        }}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+            </Surface>
           );
         })
       )}
-    </ScrollView>
+      {settings.familyModeEnabled ? (
+        <AppText variant="caption" tone="muted" style={{ marginTop: space[2] }}>
+          {t('habits.familyNote')}
+        </AppText>
+      ) : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  intro: { marginBottom: 16, lineHeight: 22 },
-  addRow: { flexDirection: 'row', marginBottom: 20, gap: 8 },
-  input: { flex: 1, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
-  addBtn: { paddingHorizontal: 20, justifyContent: 'center', borderRadius: 10 },
-  habitRow: { flexDirection: 'row', alignItems: 'center' },
-  check: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  habitTitle: { fontSize: 16, fontWeight: '600' },
-});

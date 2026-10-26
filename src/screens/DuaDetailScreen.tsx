@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
-import { DUAS, getDuaAudioUrl } from '../data/duas';
+import { DUAS } from '../data/duas';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
@@ -21,11 +21,12 @@ export function DuaDetailScreen({ route, navigation }: Props) {
   const [downloaded, setDownloaded] = useState(false);
   const [busy, setBusy] = useState<'play' | 'download' | null>(null);
   const [audioError, setAudioError] = useState(false);
+  const [counted, setCounted] = useState(0);
   const markedRef = useRef(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: dua ? t(dua.titleKey) : t('nav.duas') });
-  }, [dua, navigation, t]);
+    navigation.setOptions({ title: dua ? dua.title[lang] : t('nav.duas') });
+  }, [dua, navigation, t, lang]);
 
   // Count one read per visit, not per re-render
   useEffect(() => {
@@ -52,8 +53,11 @@ export function DuaDetailScreen({ route, navigation }: Props) {
     );
   }
 
-  const translation = lang === 'tr' ? dua.translationTr : dua.translationEn;
-  const audioUrl = dua.audioUrl ?? getDuaAudioUrl(dua.id);
+  const translation = dua.translation[lang];
+  const audioUrl = dua.audioUrl;
+  const repeat = dua.repeat ?? 1;
+  const sourceLabel =
+    dua.source.type === 'quran' ? `${t('duas.sourceQuran')} ${dua.source.ref}` : t('duas.sourceHisn');
 
   const togglePlay = async () => {
     setAudioError(false);
@@ -64,7 +68,7 @@ export function DuaDetailScreen({ route, navigation }: Props) {
     }
     setBusy('play');
     try {
-      const ok = await playDuaAudio(dua.id, audioUrl);
+      const ok = await playDuaAudio(dua.id, audioUrl, () => setPlaying(false));
       setPlaying(ok);
       if (!ok) setAudioError(true);
     } finally {
@@ -108,21 +112,41 @@ export function DuaDetailScreen({ route, navigation }: Props) {
         {translation}
       </AppText>
 
-      {dua.repeat && dua.repeat > 1 ? (
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            backgroundColor: colors.accentSoft,
-            borderRadius: radius.pill,
-            paddingHorizontal: space[3],
-            paddingVertical: space[1],
+      <AppText variant="caption" tone="muted" style={{ marginTop: space[4] }}>
+        {t('duas.source')}: {sourceLabel}
+      </AppText>
+
+      {/* Tap counter for duas that are recited several times */}
+      {repeat > 1 ? (
+        <Pressable
+          onPress={() => setCounted((c) => (c >= repeat ? 1 : c + 1))}
+          onLongPress={() => setCounted(0)}
+          accessibilityRole="button"
+          accessibilityLabel={`${counted} / ${repeat}`}
+          accessibilityHint={t('duas.counterHint')}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: counted >= repeat ? colors.successSoft : colors.accentSoft,
+            borderRadius: radius.lg,
+            padding: space[4],
             marginTop: space[4],
-          }}
+            opacity: pressed ? 0.8 : 1,
+          })}
         >
-          <AppText variant="caption" color={colors.onAccentSoft} style={{ fontWeight: '600' }}>
-            {t('duas.repeat')}: {dua.repeat}×
+          <View>
+            <AppText variant="caption" color={counted >= repeat ? colors.success : colors.onAccentSoft} style={{ fontWeight: '600' }}>
+              {counted >= repeat ? t('duas.counterDone') : t('duas.repeat')}
+            </AppText>
+            <AppText variant="title" color={counted >= repeat ? colors.success : colors.onAccentSoft}>
+              {counted} / {repeat}
+            </AppText>
+          </View>
+          <AppText variant="caption" color={counted >= repeat ? colors.success : colors.onAccentSoft}>
+            {t('duas.counterHint')}
           </AppText>
-        </View>
+        </Pressable>
       ) : null}
 
       {audioUrl ? (

@@ -26,6 +26,7 @@ Supabase Dashboard → **SQL Editor** → New query → run **in order**:
 4. [migrations/004_user_app_data.sql](./migrations/004_user_app_data.sql)
 5. [migrations/005_security_hardening.sql](./migrations/005_security_hardening.sql) — **zorunlu**: RPC yetkilerini kısıtlar, `admin_*` view'larını API'den gizler (bundan sonra yalnızca Dashboard / SQL Editor'den görülür)
 6. [migrations/006_account_deletion.sql](./migrations/006_account_deletion.sql) — uygulama içi hesap silme (`delete_my_account`)
+7. [migrations/007_assistant_and_places.sql](./migrations/007_assistant_and_places.sql) — YZ asistanı günlük kotası ve yakındaki yerler önbelleği (Edge Function'lar için, bkz. bölüm 8)
 
 ### Şifre sıfırlama ve şifre politikası
 
@@ -90,3 +91,33 @@ Dashboard → **Authentication** → **Providers** → enable **Email**.
 ## 7. Without Supabase
 
 If `.env` is missing, the app falls back to **local-only** auth (AsyncStorage) for development. Analytics are not sent to the cloud in that mode.
+
+## 8. Edge Functions (YZ asistanı ve yakındaki yerler)
+
+İkisi de isteğe bağlıdır; kapalıyken uygulama cihaz üzerindeki asistanı ve doğrudan OpenStreetMap'i kullanır.
+
+**Gerekenler:** [Supabase CLI](https://supabase.com/docs/guides/cli), `supabase login`, `supabase link --project-ref <ref>` ve 007 migration'ının çalıştırılmış olması.
+
+### YZ asistanı (`functions/assistant`)
+
+Claude (`claude-opus-5-5`) ile her dilde yanıt verir; dua, Öğren konusu ve sure bulup uygulama sayfalarını açan butonlar döndürür. Yalnızca giriş yapmış kullanıcılar kullanabilir.
+
+```bash
+npm run assistant:catalog          # uygulama içeriğinden catalog.json üretir (dualar/konular değişince tekrar)
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase secrets set ASSISTANT_DAILY_LIMIT=60   # isteğe bağlı, kullanıcı başına günlük istek
+supabase functions deploy assistant
+```
+
+Sonra `.env` içine `EXPO_PUBLIC_ASSISTANT_REMOTE=1` ekleyip Metro'yu yeniden başlatın. Fonksiyon hata verirse veya kota dolarsa uygulama otomatik olarak cihazdaki asistana döner.
+
+Maliyet: istek başına birkaç bin giriş token'ı (sistem metni ve araçlar önbelleğe alınır) ve kısa bir yanıt. Kullanım kayıtları Dashboard → Edge Functions → assistant → Logs altında token sayılarıyla görünür.
+
+### Yakındaki yerler (`functions/places`)
+
+```bash
+supabase secrets set GOOGLE_PLACES_API_KEY=...   # isteğe bağlı; yoksa yalnızca OpenStreetMap
+supabase functions deploy places
+```
+
+**Yalnızca Google anahtarıyla anlamlıdır.** OpenStreetMap servisleri (Overpass 406, Nominatim 403) Supabase Edge Function'larından gelen istekleri engelliyor (2026-10-26'da doğrulandı), bu yüzden ücretsiz yol uygulamanın telefondan yaptığı doğrudan istektir: önce Overpass, 12 sn içinde yanıt yoksa Nominatim. Google anahtarı eklerseniz `.env` içine `EXPO_PUBLIC_PLACES_PROXY=1` yazın; giriş yapmış kullanıcılar Google Places (New) sonuçlarını alır (Google Cloud'da "Places API (New)" açık olmalı), diğer herkes doğrudan OSM yoluna düşer. Google sonuçları kullanım şartları gereği saklanmaz.

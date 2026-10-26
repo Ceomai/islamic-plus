@@ -1,131 +1,128 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Card } from '../components/Card';
-import { getDayNames } from '../i18n';
+import { Pressable, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { getDayNames } from '../i18n';
+import { normalizeReminderTime } from '../services/advancedReminders';
 import type { CustomReminder } from '../types';
+import { AppText, Button, Chip, IconBadge, Screen, SectionHeader, Surface, TextField } from '../ui';
 
-const TYPES: CustomReminder['type'][] = ['dhikr', 'dua', 'quran', 'custom'];
+const TYPES: { id: CustomReminder['type']; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { id: 'dhikr', icon: 'ellipse-outline' },
+  { id: 'dua', icon: 'hand-left-outline' },
+  { id: 'quran', icon: 'book-outline' },
+  { id: 'custom', icon: 'star-outline' },
+];
+const QUICK_TIMES = ['05:30', '08:00', '13:00', '17:00', '21:30'];
 
 export function AdvancedRemindersScreen() {
   const { settings, addCustomReminder, removeCustomReminder } = useApp();
-  const { colors } = useTheme();
+  const { colors, space } = useTheme();
   const { t } = useTranslation();
   const dayNames = getDayNames(settings.appLanguage);
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('08:00');
+  const [timeError, setTimeError] = useState<string | null>(null);
   const [type, setType] = useState<CustomReminder['type']>('dhikr');
-  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [days, setDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
 
-  const toggleDay = (d: number) => {
-    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
-  };
+  const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
 
   const handleAdd = () => {
+    const normalized = normalizeReminderTime(time);
+    if (!normalized) {
+      setTimeError(t('reminders.timeError'));
+      return;
+    }
     if (!title.trim() || days.length === 0) return;
-    void addCustomReminder({
-      title: title.trim(),
-      time,
-      daysOfWeek: days,
-      type,
-      enabled: true,
-      sound: 'default',
-    });
+    void addCustomReminder({ title: title.trim(), time: normalized, daysOfWeek: days, type, enabled: true, sound: 'default' });
     setTitle('');
   };
 
+  const daysLabel = (r: CustomReminder) =>
+    r.daysOfWeek.length === 7 ? t('reminders.everyDay') : r.daysOfWeek.map((d) => dayNames[d]).join(', ');
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('reminders.intro')}</Text>
+    <Screen>
+      <AppText variant="callout" tone="secondary" style={{ marginBottom: space[4] }}>
+        {t('reminders.intro')}
+      </AppText>
 
-      <Text style={[styles.label, { color: colors.text }]}>{t('reminders.typeLabel')}</Text>
-      <View style={styles.typeRow}>
-        {TYPES.map((tp) => (
-          <Pressable
-            key={tp}
-            onPress={() => setType(tp)}
-            style={[styles.chip, { backgroundColor: type === tp ? colors.primary : colors.surface, borderColor: colors.border }]}
-          >
-            <Text style={{ color: type === tp ? '#fff' : colors.text, fontSize: 12 }}>{t(`reminders.types.${tp}`)}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <Surface>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+          {t('reminders.typeLabel')}
+        </AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginBottom: space[4] }}>
+          {TYPES.map((tp) => (
+            <Chip key={tp.id} label={t(`reminders.types.${tp.id}`)} icon={tp.icon} selected={type === tp.id} onPress={() => setType(tp.id)} />
+          ))}
+        </View>
 
-      <TextInput
-        value={title}
-        onChangeText={setTitle}
-        placeholder={t('reminders.titlePlaceholder')}
-        placeholderTextColor={colors.textSecondary}
-        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-      />
-      <TextInput
-        value={time}
-        onChangeText={setTime}
-        placeholder="HH:mm"
-        placeholderTextColor={colors.textSecondary}
-        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
-      />
+        <TextField label={t('reminders.titleLabel')} placeholder={t('reminders.titlePlaceholder')} value={title} onChangeText={setTitle} />
+        <TextField
+          label={t('reminders.timeLabel')}
+          placeholder="08:00"
+          value={time}
+          onChangeText={(v) => {
+            setTime(v);
+            setTimeError(null);
+          }}
+          keyboardType="numbers-and-punctuation"
+          maxLength={5}
+          error={timeError}
+          hint={t('reminders.timeHint')}
+        />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginBottom: space[4] }}>
+          {QUICK_TIMES.map((q) => (
+            <Chip
+              key={q}
+              label={q}
+              selected={normalizeReminderTime(time) === q}
+              onPress={() => {
+                setTime(q);
+                setTimeError(null);
+              }}
+            />
+          ))}
+        </View>
 
-      <Text style={[styles.label, { color: colors.text }]}>{t('notifications.disableDays')}</Text>
-      <View style={styles.days}>
-        {dayNames.map((d, i) => (
-          <Pressable
-            key={d}
-            onPress={() => toggleDay(i)}
-            style={[
-              styles.dayChip,
-              {
-                backgroundColor: days.includes(i) ? colors.primary : colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Text style={{ color: days.includes(i) ? '#fff' : colors.text, fontSize: 12 }}>{d}</Text>
-          </Pressable>
-        ))}
-      </View>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+          {t('reminders.daysLabel')}
+        </AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginBottom: space[4] }}>
+          {dayNames.map((d, i) => (
+            <Chip key={d} label={d} selected={days.includes(i)} onPress={() => toggleDay(i)} />
+          ))}
+        </View>
 
-      <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={handleAdd}>
-        <Text style={{ color: '#fff', fontWeight: '700' }}>{t('reminders.add')}</Text>
-      </Pressable>
+        <Button label={t('reminders.add')} icon="add" onPress={handleAdd} disabled={!title.trim() || days.length === 0} fullWidth />
+      </Surface>
 
-      <Text style={[styles.section, { color: colors.text }]}>{t('reminders.scheduled')}</Text>
+      <SectionHeader title={t('reminders.scheduled')} />
       {settings.customReminders.length === 0 ? (
-        <Text style={{ color: colors.textSecondary }}>{t('reminders.empty')}</Text>
+        <Surface variant="muted">
+          <AppText variant="callout" tone="secondary" align="center">
+            {t('reminders.empty')}
+          </AppText>
+        </Surface>
       ) : (
         settings.customReminders.map((r) => (
-          <Card key={r.id}>
-            <View style={styles.reminderRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontWeight: '600' }}>{r.title}</Text>
-                <Text style={{ color: colors.textSecondary }}>
-                  {r.time} · {t(`reminders.types.${r.type}`)}
-                </Text>
-              </View>
-              <Pressable onPress={() => removeCustomReminder(r.id)}>
-                <Text style={{ color: colors.error }}>{t('reminders.delete')}</Text>
-              </Pressable>
+          <Surface key={r.id} style={{ marginBottom: space[3], flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+            <IconBadge name={TYPES.find((x) => x.id === r.type)?.icon ?? 'alarm-outline'} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="bodyStrong">{r.title}</AppText>
+              <AppText variant="caption" tone="secondary">
+                {r.time} · {t(`reminders.types.${r.type}`)} · {daysLabel(r)}
+              </AppText>
             </View>
-          </Card>
+            <Pressable onPress={() => removeCustomReminder(r.id)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('reminders.delete')}>
+              <Ionicons name="trash-outline" size={18} color={colors.error} />
+            </Pressable>
+          </Surface>
         ))
       )}
-    </ScrollView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  intro: { lineHeight: 22, marginBottom: 16 },
-  label: { fontWeight: '600', marginBottom: 8 },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, borderWidth: 1 },
-  input: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12, fontSize: 16 },
-  days: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 },
-  dayChip: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
-  addBtn: { padding: 14, borderRadius: 12, alignItems: 'center', marginBottom: 24 },
-  section: { fontSize: 17, fontWeight: '600', marginBottom: 10 },
-  reminderRow: { flexDirection: 'row', alignItems: 'center' },
-});
