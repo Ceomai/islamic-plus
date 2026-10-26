@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
-import { installGlobalErrorHandler } from './src/services/errorLog';
+import { flushPendingErrors, installGlobalErrorHandler } from './src/services/errorLog';
 import { defineWidgetTask } from './src/services/widgetBackground';
 
 function Root() {
@@ -57,6 +57,7 @@ function SessionScopedApp() {
 }
 
 installGlobalErrorHandler();
+void flushPendingErrors().catch(() => undefined);
 // Background tasks must be defined when the JS bundle loads, before any screen renders
 defineWidgetTask();
 

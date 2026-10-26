@@ -18,4 +18,4 @@ Thank you!
 
 ---
 
-**Olumlu cevap gelmezse:** Sesler kaldırılabilir (dualar sessiz kalır, metinler değişmez) ya da kendi kaydımızla değiştirilebilir. Kaldırmak küçük bir kod değişikliği (`duaLibrary.json` içindeki `audioUrl` alanları).
+**Olumlu cevap gelmezse:** Sesler kaldırılabilir (dualar sessiz kalır, metinler değişmez) ya da kendi kaydımızla değiştirilebilir. Kaldırmak tek satır: `src/data/duas.ts` içinde `ADHKAR_AUDIO_ENABLED = false` (Kur’an duaları sesli kalır).

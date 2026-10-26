@@ -11,6 +11,8 @@
     "lint": "expo lint",
     "test": "jest",
     "i18n:check": "node scripts/check-i18n.js",
+    "check": "tsc --noEmit && node scripts/check-i18n.js && jest --ci",
+    "content:review": "node scripts/export-content-review.js",
     "assets:generate": "node scripts/generate-assets.js",
     "duas:verify": "node scripts/verify-duas.js",
     "assistant:catalog": "node scripts/build-assistant-catalog.js",

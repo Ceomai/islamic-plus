@@ -10,6 +10,9 @@ import { getSupabase } from '../config/supabase';
  */
 const KEY = '@islamic/error-log';
 const MAX_ENTRIES = 30;
+/** Errors that could not be sent (offline, server down); retried on the next app start */
+const PENDING_KEY = '@islamic/error-pending';
+const MAX_PENDING = 10;
 /** Per app session: at most this many uploads, and each distinct message only once */
 const MAX_UPLOADS = 20;
 const uploaded = new Set<string>();
@@ -17,12 +20,29 @@ const uploaded = new Set<string>();
 export const appVersion = () => Constants.expoConfig?.version ?? '?';
 export const platformLabel = () => `${Platform.OS} ${String(Platform.Version)}`;
 
-async function uploadError(entry: ErrorEntry): Promise<void> {
-  if (uploaded.size >= MAX_UPLOADS || uploaded.has(entry.message)) return;
-  uploaded.add(entry.message);
+async function readPending(): Promise<ErrorEntry[]> {
+  try {
+    const raw = await AsyncStorage.getItem(PENDING_KEY);
+    return raw ? (JSON.parse(raw) as ErrorEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function addPending(entry: ErrorEntry): Promise<void> {
+  try {
+    const pending = await readPending();
+    await AsyncStorage.setItem(PENDING_KEY, JSON.stringify([entry, ...pending].slice(0, MAX_PENDING)));
+  } catch {
+    // Best effort only
+  }
+}
+
+/** Returns false when the row did not reach the server */
+async function insertError(entry: ErrorEntry): Promise<boolean> {
   const supabase = getSupabase();
-  if (!supabase) return;
-  await supabase.from('app_errors').insert({
+  if (!supabase) return true; // not configured: nothing to retry
+  const { error } = await supabase.from('app_errors').insert({
     source: entry.source,
     message: entry.message,
     stack: entry.stack?.slice(0, 4000) ?? null,
@@ -31,6 +51,31 @@ async function uploadError(entry: ErrorEntry): Promise<void> {
     platform: platformLabel(),
     occurred_at: entry.at,
   });
+  return !error;
+}
+
+async function uploadError(entry: ErrorEntry): Promise<void> {
+  if (uploaded.size >= MAX_UPLOADS || uploaded.has(entry.message)) return;
+  uploaded.add(entry.message);
+  const ok = await insertError(entry).catch(() => false);
+  if (!ok) await addPending(entry);
+}
+
+/** Sends errors queued while offline. Called once at app start. */
+export async function flushPendingErrors(): Promise<void> {
+  const pending = await readPending();
+  if (!pending.length) return;
+  const failed: ErrorEntry[] = [];
+  for (const entry of pending) {
+    const ok = await insertError(entry).catch(() => false);
+    if (!ok) failed.push(entry);
+  }
+  try {
+    if (failed.length) await AsyncStorage.setItem(PENDING_KEY, JSON.stringify(failed));
+    else await AsyncStorage.removeItem(PENDING_KEY);
+  } catch {
+    // Best effort only
+  }
 }
 
 export interface ErrorEntry {
