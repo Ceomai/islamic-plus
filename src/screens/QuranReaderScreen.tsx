@@ -345,6 +345,12 @@ export function QuranReaderScreen({ route }: Props) {
             listRef.current?.scrollToOffset({ offset: index * averageItemLength, animated: false })
           }
           ListHeaderComponent={header}
+          // Tanzil's terms ask for the source to be named wherever its text is shown
+          ListFooterComponent={
+            <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[4], marginBottom: space[6] }}>
+              {t('quran.source', { translation: translationName })}
+            </AppText>
+          }
         />
       )}
     </View>

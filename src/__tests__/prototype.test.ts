@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { HADITH_LIBRARY, hadithEdition, sectionOfHadith } from '../services/hadithApi';
+import { HADITH_LIBRARY, hadithEdition, hadithSectionName, sectionOfHadith } from '../services/hadithApi';
 import { EMPTY_KAZA, applyKazaChange, estimateKaza, kazaRemaining } from '../services/kaza';
 import { MAX_CUSTOM_SLOTS, NOTIFICATION_BUDGET, prayerDaysAhead, reminderSlots, remindersWithinBudget } from '../services/notificationBudget';
 import { widgetPropsAt, widgetTimeline } from '../services/homeWidget';
@@ -174,6 +174,14 @@ describe('hadith library', () => {
     expect(hadithEdition(bukhari, 'ara')).toBe('ara-bukhari');
     const qudsi = HADITH_LIBRARY.find((c) => c.id === 'qudsi')!;
     expect(hadithEdition(qudsi, 'tr')).toBe('eng-qudsi');
+  });
+
+  it('has a Turkish title for every chapter', () => {
+    const missing = HADITH_LIBRARY.flatMap((c) => c.sections).filter((s) => hadithSectionName(s, 'tr') === s.name.trim() && !/^[A-Z][a-z]+$/.test(s.name.trim()));
+    expect(missing.map((s) => s.name)).toEqual([]);
+    const bukhari = HADITH_LIBRARY.find((c) => c.id === 'bukhari')!;
+    expect(hadithSectionName(bukhari.sections[3], 'tr')).toBe('Abdest');
+    expect(hadithSectionName(bukhari.sections[3], 'en')).toBe("Ablutions (Wudu')");
   });
 
   it('finds the chapter of a hadith number for "continue reading"', () => {

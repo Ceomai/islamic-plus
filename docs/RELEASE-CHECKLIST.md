@@ -6,8 +6,8 @@
 
 | # | İş | Sahip | Durum |
 |---|---|---|---|
-| 1 | Paket kimliğini seç (`com.islamic.app` çok genel; yayından sonra değişmez) | S → C | ⏳ |
-| 2 | Supabase'de `007` ve `008` migration'larını çalıştır (`008`: geri bildirim + hata tabloları) | S | `007` ✅, `008` ⏳ |
+| 1 | Paket kimliği: `com.islamicplus.app` (iOS ve Android) | S → C | ✅ |
+| 2 | Supabase'de `007` ve `008` migration'larını çalıştır (`008`: geri bildirim + hata tabloları) | S | `007` ✅, `008` ✅ |
 | 3 | Gizlilik politikasına iletişim e-postası ekle | S → C | ⏳ |
 | 4 | EAS geliştirme/test derlemesi: Android APK (ücretsiz). iOS için TestFlight: Apple Developer hesabı (yıllık 99 $) | S + C | ⏳ |
 | 5 | Gerçek cihazda: bildirim zamanlaması, ezan sesi, widget, izin pencereleri, kıble | S | ⏳ (Expo Go'da kısmen) |

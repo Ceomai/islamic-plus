@@ -4,10 +4,10 @@ Uygulamadaki her içeriğin nereden geldiği ve kullanım durumu. Yayından önc
 
 | İçerik | Kaynak | Lisans / durum | Not |
 |---|---|---|---|
-| Kur'an Arapça metni | [api.alquran.cloud](https://alquran.cloud) (Tanzil metni) | Tanzil: değiştirmeden ve kaynak belirterek kullanılabilir | Uygulamada kaynak satırı gösterilmeli ⚠️ |
+| Kur'an Arapça metni | [api.alquran.cloud](https://alquran.cloud) (Tanzil metni) | Tanzil: değiştirmeden ve kaynak belirterek kullanılabilir | Kaynak satırı Kur’an okuyucunun sonunda gösteriliyor ✅ |
 | Kur'an mealleri (Diyanet, Elmalılı, Diyanet Vakfı, Ateş, Sahih Intl., Asad, Pickthall, Ahmed Ali) | alquran.cloud üzerinden | ⚠️ Her mealin telifi çevirmen/yayıncıya ait; alquran.cloud yalnızca aracı. Ticari yayın için izin durumu kontrol edilmeli | Özellikle Diyanet ve Asad |
 | Kur'an sesi (Mişari Raşid el-Afasi) | cdn.islamic.network | Genelde ücretsiz uygulamalarda kullanılıyor; yazılı lisans yok ⚠️ | |
-| Hadis metinleri (Kütüb-i Sitte, Muvatta, Nevevî 40, Kudsî 40) | [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) | ✅ Unlicense (kamu malı) | Bölüm adları kaynakta yalnızca İngilizce |
+| Hadis metinleri (Kütüb-i Sitte, Muvatta, Nevevî 40, Kudsî 40) | [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) | ✅ Unlicense (kamu malı) | Bölüm adları kaynakta İngilizce; Türkçe karşılıkları `src/data/hadithSectionsTr.json` (382 bölüm) |
 | Dua Arapça metinleri (69 dua) | Hisnü'l-Müslim ve Kur'an ayetleri | ✅ Klasik metinler kamu malı | Her biri kaynakla karşılaştırıldı (`npm run duas:verify`) |
 | Dua Türkçe/İngilizce meal ve okunuşları | Uygulama için yazıldı | ✅ Bize ait | İlahiyatçı kontrolü önerilir |
 | Dua sesleri (54 dua) | [Alsarmad/Adhkar-json](https://github.com/Alsarmad/Adhkar-json) (jsDelivr) | ⚠️ Depoda lisans yok | İzin alınmalı ya da sesler değiştirilmeli |

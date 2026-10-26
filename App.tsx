@@ -9,6 +9,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { installGlobalErrorHandler } from './src/services/errorLog';
+import { defineWidgetTask } from './src/services/widgetBackground';
 
 function Root() {
   const { darkMode, loading, settings } = useApp();
@@ -56,6 +57,8 @@ function SessionScopedApp() {
 }
 
 installGlobalErrorHandler();
+// Background tasks must be defined when the JS bundle loads, before any screen renders
+defineWidgetTask();
 
 export default function App() {
   return (

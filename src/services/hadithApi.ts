@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HADITH_INDEX from '../data/hadithIndex.json';
+import SECTION_NAMES_TR from '../data/hadithSectionsTr.json';
 import type { AppLanguage } from '../types';
 
 /**
@@ -44,6 +45,11 @@ const TR_NAMES: Record<string, string> = {
   ibnmajah: 'Sünen-i İbn Mâce',
   malik: 'Muvatta (İmam Mâlik)',
 };
+
+/** Chapter titles exist only in English at the source; Turkish titles are ours (src/data/hadithSectionsTr.json) */
+export function hadithSectionName(s: HadithSection, lang: AppLanguage): string {
+  return lang === 'tr' ? (SECTION_NAMES_TR as Record<string, string>)[s.name] ?? s.name.trim() : s.name.trim();
+}
 
 export function hadithCollectionName(c: HadithCollectionInfo, lang: AppLanguage): string {
   return lang === 'tr' ? TR_NAMES[c.id] ?? c.name : c.name;

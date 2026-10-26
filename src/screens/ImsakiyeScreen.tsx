@@ -112,9 +112,15 @@ export function ImsakiyeScreen() {
                 <AppText variant="caption" style={{ flex: 1, fontWeight: '700' }} tone={isToday ? 'brand' : 'default'}>
                   {d.day}
                 </AppText>
-                <AppText variant="caption" tone="secondary" style={{ flex: 1.4, textAlign: 'center' }}>
-                  {d.date.toLocaleDateString(locale, { day: 'numeric', month: 'short', weekday: 'short' })}
-                </AppText>
+                {/* Weekday on its own line keeps every row the same height on narrow phones */}
+                <View style={{ flex: 1.4, alignItems: 'center' }}>
+                  <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                    {d.date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
+                  </AppText>
+                  <AppText variant="caption" tone="muted" numberOfLines={1} style={{ fontSize: 11 }}>
+                    {d.date.toLocaleDateString(locale, { weekday: 'short' })}
+                  </AppText>
+                </View>
                 {[d.imsak, d.sunrise, d.iftar, d.isha].map((time, j) => (
                   <AppText key={j} variant="caption" style={{ flex: 1, textAlign: 'center', fontWeight: j === 0 || j === 2 ? '700' : '400' }}>
                     {clock(time)}

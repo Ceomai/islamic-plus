@@ -55,7 +55,7 @@ Islamic+ beta (Android)
 ### Ön koşullar
 
 - Apple Developer Program (~99 USD/yıl)
-- [App Store Connect](https://appstoreconnect.apple.com) → yeni uygulama → Bundle ID: `com.islamic.app`
+- [App Store Connect](https://appstoreconnect.apple.com) → yeni uygulama → Bundle ID: `com.islamicplus.app`
 - Gizlilik politikası URL: GitHub’daki `docs/PRIVACY.md` ham linki veya Pages
 
 ### Derleme ve yükleme

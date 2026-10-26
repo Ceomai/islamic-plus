@@ -12,7 +12,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.islamic.app",
+      "bundleIdentifier": "com.islamicplus.app",
       "buildNumber": "1",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Islamic+ uses your location while you use the app to calculate prayer times, find the Qibla and show nearby mosques."
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0D3B2E"
       },
-      "package": "com.islamic.app",
+      "package": "com.islamicplus.app",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
@@ -105,7 +105,8 @@
             }
           ]
         }
-      ]
+      ],
+      "expo-background-task"
     ],
     "extra": {
       "privacyPolicyUrl": "https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md",

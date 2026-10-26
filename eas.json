@@ -9,7 +9,8 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
-      }
+      },
+      "environment": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -22,7 +23,8 @@
       },
       "env": {
         "APP_VARIANT": "preview"
-      }
+      },
+      "environment": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -31,7 +33,8 @@
       },
       "ios": {
         "simulator": false
-      }
+      },
+      "environment": "production"
     }
   },
   "submit": {
