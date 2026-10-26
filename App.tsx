@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -39,8 +40,10 @@ function SessionScopedApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <SessionScopedApp />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <SessionScopedApp />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

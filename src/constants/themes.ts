@@ -1,90 +1,69 @@
 export type ThemeId = 'emerald' | 'midnight' | 'desert' | 'ocean' | 'rose';
 
+/**
+ * Brand colors for one mode. `primary` always carries white text (`onPrimary`),
+ * so legacy screens that put '#fff' on primary stay readable in both modes.
+ */
+export interface BrandPalette {
+  primary: string;
+  primaryPressed: string;
+  /** Tinted background for selected/active states */
+  primarySoft: string;
+  /** Text or icon drawn on primarySoft */
+  onPrimarySoft: string;
+  /** Large brand blocks (hero cards) — deeper than primary in dark mode */
+  hero: string;
+  accent: string;
+  accentSoft: string;
+  onAccentSoft: string;
+}
+
 export interface AppTheme {
   id: ThemeId;
   nameKey: string;
-  primary: string;
-  primaryLight: string;
-  primaryDark: string;
-  accent: string;
-  accentLight: string;
-  background: string;
-  backgroundDark: string;
-  surface: string;
-  surfaceDark: string;
-  gradient: [string, string, string];
+  light: BrandPalette;
+  dark: BrandPalette;
 }
+
+const goldLight = { accent: '#B8913A', accentSoft: '#F5ECD6', onAccentSoft: '#6E5216' };
+const goldDark = { accent: '#E0C077', accentSoft: '#3A3120', onAccentSoft: '#EBD59E' };
 
 export const APP_THEMES: Record<ThemeId, AppTheme> = {
   emerald: {
     id: 'emerald',
     nameKey: 'themes.emerald',
-    primary: '#0D3B2E',
-    primaryLight: '#1A5C47',
-    primaryDark: '#082820',
-    accent: '#C9A227',
-    accentLight: '#E8C547',
-    background: '#F5F7F4',
-    backgroundDark: '#0A1612',
-    surface: '#FFFFFF',
-    surfaceDark: '#142820',
-    gradient: ['#0D3B2E', '#1A5C47', '#2E7D5A'],
+    light: { primary: '#0F5C4A', primaryPressed: '#0B4839', primarySoft: '#E3EFEA', onPrimarySoft: '#0F5C4A', hero: '#0F5C4A', ...goldLight },
+    dark: { primary: '#2E8F72', primaryPressed: '#267A61', primarySoft: '#163A30', onPrimarySoft: '#8FD6BF', hero: '#123A30', ...goldDark },
   },
   midnight: {
     id: 'midnight',
     nameKey: 'themes.midnight',
-    primary: '#1B2838',
-    primaryLight: '#2C3E50',
-    primaryDark: '#0F1419',
-    accent: '#5DADE2',
-    accentLight: '#85C1E9',
-    background: '#ECEFF1',
-    backgroundDark: '#0B0F14',
-    surface: '#FFFFFF',
-    surfaceDark: '#1A2332',
-    gradient: ['#0B0F14', '#1B2838', '#2C3E50'],
+    light: { primary: '#24406B', primaryPressed: '#1B3254', primarySoft: '#E5EBF4', onPrimarySoft: '#24406B', hero: '#24406B', ...goldLight },
+    dark: { primary: '#4A73B0', primaryPressed: '#3F6399', primarySoft: '#1B2A40', onPrimarySoft: '#B4CCEB', hero: '#18263D', ...goldDark },
   },
   desert: {
     id: 'desert',
     nameKey: 'themes.desert',
-    primary: '#6B3E26',
-    primaryLight: '#8B5A3C',
-    primaryDark: '#4A2A18',
-    accent: '#D4A574',
-    accentLight: '#E8C9A0',
-    background: '#FAF6F0',
-    backgroundDark: '#1A1208',
-    surface: '#FFFFFF',
-    surfaceDark: '#2A1F14',
-    gradient: ['#4A2A18', '#6B3E26', '#D4A574'],
+    light: { primary: '#8A4B2A', primaryPressed: '#723D21', primarySoft: '#F4E7DE', onPrimarySoft: '#7A3F21', hero: '#8A4B2A', ...goldLight },
+    dark: { primary: '#B26B43', primaryPressed: '#9A5B37', primarySoft: '#3A251A', onPrimarySoft: '#EBC2A8', hero: '#3A2316', ...goldDark },
   },
   ocean: {
     id: 'ocean',
     nameKey: 'themes.ocean',
-    primary: '#0E4D6B',
-    primaryLight: '#1A6B8F',
-    primaryDark: '#083344',
-    accent: '#48C9B0',
-    accentLight: '#76D7C4',
-    background: '#F0F8FA',
-    backgroundDark: '#051820',
-    surface: '#FFFFFF',
-    surfaceDark: '#0F2A38',
-    gradient: ['#051820', '#0E4D6B', '#48C9B0'],
+    light: {
+      primary: '#0E5A73', primaryPressed: '#0A485C', primarySoft: '#E0EFF3', onPrimarySoft: '#0E5A73', hero: '#0E5A73',
+      accent: '#2E9E8A', accentSoft: '#DDF2EE', onAccentSoft: '#1C6B5D',
+    },
+    dark: {
+      primary: '#2A87A3', primaryPressed: '#23748C', primarySoft: '#133442', onPrimarySoft: '#9DD5E4', hero: '#0F3240',
+      accent: '#5FCBB6', accentSoft: '#15362F', onAccentSoft: '#A6E5D8',
+    },
   },
   rose: {
     id: 'rose',
     nameKey: 'themes.rose',
-    primary: '#6B2D5B',
-    primaryLight: '#8E4578',
-    primaryDark: '#4A1F40',
-    accent: '#E8B4BC',
-    accentLight: '#F5D0D6',
-    background: '#FDF5F8',
-    backgroundDark: '#1A0A14',
-    surface: '#FFFFFF',
-    surfaceDark: '#2A1424',
-    gradient: ['#4A1F40', '#6B2D5B', '#E8B4BC'],
+    light: { primary: '#7A3463', primaryPressed: '#652A52', primarySoft: '#F4E4EE', onPrimarySoft: '#6B2D57', hero: '#7A3463', ...goldLight },
+    dark: { primary: '#A9558A', primaryPressed: '#924876', primarySoft: '#3A1C30', onPrimarySoft: '#EDBCDB', hero: '#361A2D', ...goldDark },
   },
 };
 

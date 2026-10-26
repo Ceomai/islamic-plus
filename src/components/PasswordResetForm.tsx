@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-} from 'react-native';
-import { GradientHero } from './GradientHero';
 import { useAuth } from '../context/AuthContext';
 import { useAuthErrorMessage } from '../hooks/useAuthErrorMessage';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { AppText, Button, Surface, TextField } from '../ui';
+import { AuthLayout } from './AuthLayout';
 
 interface Props {
   initialEmail: string;
@@ -23,7 +14,7 @@ interface Props {
 /** Two-step recovery: e-mail a one-time code, then enter the code with a new password. */
 export function PasswordResetForm({ initialEmail, onBack }: Props) {
   const { sendPasswordResetCode, resetPassword } = useAuth();
-  const { colors } = useTheme();
+  const { colors, space } = useTheme();
   const { t } = useTranslation();
   const errorMessage = useAuthErrorMessage();
   const [step, setStep] = useState<'request' | 'confirm'>('request');
@@ -61,102 +52,84 @@ export function PasswordResetForm({ initialEmail, onBack }: Props) {
     }
   };
 
-  const inputStyle = [styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }];
-
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <AuthLayout
+      title={t('auth.resetTitle')}
+      subtitle={step === 'request' ? t('auth.resetRequestHint') : t('auth.resetConfirmHint')}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <GradientHero>
-          <Text style={styles.heroTitle}>{t('auth.resetTitle')}</Text>
-          <Text style={styles.heroSub}>
-            {step === 'request' ? t('auth.resetRequestHint') : t('auth.resetConfirmHint')}
-          </Text>
-        </GradientHero>
+      <TextField
+        label={t('auth.email')}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        value={email}
+        onChangeText={setEmail}
+        editable={!loading && step === 'request'}
+      />
 
-        <TextInput
-          style={inputStyle}
-          placeholder={t('auth.email')}
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          value={email}
-          onChangeText={setEmail}
-          editable={!loading && step === 'request'}
-        />
+      {step === 'confirm' && (
+        <>
+          <TextField
+            label={t('auth.resetCode')}
+            keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            autoComplete="one-time-code"
+            maxLength={10}
+            value={code}
+            onChangeText={setCode}
+            editable={!loading}
+          />
+          <TextField
+            label={t('auth.newPassword')}
+            secureTextEntry
+            textContentType="newPassword"
+            autoComplete="new-password"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            editable={!loading}
+            hint={t('auth.passwordHint')}
+          />
+        </>
+      )}
 
-        {step === 'confirm' && (
-          <>
-            <TextInput
-              style={inputStyle}
-              placeholder={t('auth.resetCode')}
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="number-pad"
-              textContentType="oneTimeCode"
-              maxLength={10}
-              value={code}
-              onChangeText={setCode}
-              editable={!loading}
-            />
-            <TextInput
-              style={inputStyle}
-              placeholder={t('auth.newPassword')}
-              placeholderTextColor={colors.textSecondary}
-              secureTextEntry
-              textContentType="newPassword"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              editable={!loading}
-            />
-            <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>{t('auth.passwordHint')}</Text>
-          </>
-        )}
-
-        {message ? (
-          <Text style={[styles.message, { color: message.info ? colors.primary : colors.error }]}>{message.text}</Text>
-        ) : null}
-
-        <Pressable
-          style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
-          onPress={step === 'request' ? sendCode : confirm}
-          disabled={loading}
+      {message ? (
+        <Surface
+          variant={message.info ? 'soft' : 'default'}
+          padding={space[3]}
+          style={{ marginBottom: space[4], borderColor: message.info ? undefined : colors.error }}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryBtnText}>
-              {step === 'request' ? t('auth.resetSendCode') : t('auth.resetConfirm')}
-            </Text>
-          )}
-        </Pressable>
+          <AppText variant="callout" tone={message.info ? 'brand' : 'danger'}>
+            {message.text}
+          </AppText>
+        </Surface>
+      ) : null}
 
-        {step === 'confirm' && (
-          <Pressable onPress={sendCode} disabled={loading} style={styles.linkBtn}>
-            <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('auth.resetResend')}</Text>
-          </Pressable>
-        )}
-
-        <Pressable onPress={onBack} disabled={loading} style={styles.linkBtn}>
-          <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('auth.backToSignIn')}</Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <Button
+        label={step === 'request' ? t('auth.resetSendCode') : t('auth.resetConfirm')}
+        onPress={step === 'request' ? sendCode : confirm}
+        loading={loading}
+        size="lg"
+        fullWidth
+      />
+      {step === 'confirm' && (
+        <Button
+          label={t('auth.resetResend')}
+          onPress={sendCode}
+          variant="ghost"
+          disabled={loading}
+          fullWidth
+          style={{ marginTop: space[2] }}
+        />
+      )}
+      <Button
+        label={t('auth.backToSignIn')}
+        onPress={onBack}
+        variant="ghost"
+        disabled={loading}
+        fullWidth
+        style={{ marginTop: space[2] }}
+      />
+    </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { padding: 20, paddingBottom: 40 },
-  heroTitle: { color: '#fff', fontSize: 24, fontWeight: '800', textAlign: 'center' },
-  heroSub: { color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 8, lineHeight: 20 },
-  input: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, fontSize: 16 },
-  fieldHint: { fontSize: 12, marginBottom: 12, lineHeight: 17 },
-  message: { marginBottom: 12, textAlign: 'center', lineHeight: 20 },
-  primaryBtn: { padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 4, minHeight: 52, justifyContent: 'center' },
-  primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  linkBtn: { alignItems: 'center', padding: 14 },
-});

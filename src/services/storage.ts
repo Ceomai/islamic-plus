@@ -17,10 +17,11 @@ const KEYS = {
   prayerCompletions: '@islamic/prayerCompletions',
   educationProgress: '@islamic/educationProgress',
   zakatHistory: '@islamic/zakatHistory',
+  deviceLanguage: '@islamic/deviceLanguage',
 };
 
 /** Device-wide keys — everything else belongs to the signed-in account. */
-const DEVICE_KEYS = new Set<string>([KEYS.authSession, KEYS.offlineAudio, '@islamic/auth/users']);
+const DEVICE_KEYS = new Set<string>([KEYS.authSession, KEYS.offlineAudio, KEYS.deviceLanguage, '@islamic/auth/users']);
 const LEGACY_MIGRATED_KEY = '@islamic/legacyMigratedTo';
 
 let storageUser: string | null = null;

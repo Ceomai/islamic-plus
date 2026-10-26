@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator, type NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
@@ -47,11 +47,32 @@ const WidgetsScreen = withGuestGate('widgets', WidgetsScreenBase);
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
+/** Flat header on the page background, shared by every stack. */
+function useStackScreenOptions(): NativeStackNavigationOptions {
+  const { colors, type } = useTheme();
+  return {
+    headerShown: true,
+    headerTintColor: colors.primary,
+    headerStyle: { backgroundColor: colors.background },
+    headerShadowVisible: false,
+    headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: '600', color: colors.text },
+    headerBackButtonDisplayMode: 'minimal',
+    contentStyle: { backgroundColor: colors.background },
+  };
+}
+
+const TAB_ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+  HomeTab: ['home', 'home-outline'],
+  WorshipTab: ['compass', 'compass-outline'],
+  LearnTab: ['book', 'book-outline'],
+  MoreTab: ['person-circle', 'person-circle-outline'],
+};
+
 function LearnStack() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const screenOpts = useStackScreenOptions();
   return (
-    <Stack.Navigator screenOptions={{ headerShown: true, headerTintColor: colors.primary }}>
+    <Stack.Navigator screenOptions={screenOpts}>
       <Stack.Screen name="Education" component={EducationScreen} options={{ title: t('nav.education') }} />
       <Stack.Screen name="EducationDetail" component={EducationDetailScreen} options={{ title: t('nav.topic') }} />
       <Stack.Screen name="Duas" component={DuasScreen} options={{ title: t('nav.duas') }} />
@@ -63,8 +84,7 @@ function LearnStack() {
 
 function HomeStack() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
-  const screenOpts = { headerShown: true as const, headerTintColor: colors.primary };
+  const screenOpts = useStackScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOpts}>
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
@@ -96,8 +116,7 @@ function HomeStack() {
 
 function MoreStack() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
-  const screenOpts = { headerShown: true as const, headerTintColor: colors.primary };
+  const screenOpts = useStackScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOpts}>
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
@@ -117,11 +136,20 @@ function MoreStack() {
 export function AppNavigator() {
   const { darkMode } = useApp();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, type } = useTheme();
   const { onNavigationStateChange } = useNavigationAnalytics();
-  const navTheme = darkMode
-    ? { ...DarkTheme, colors: { ...DarkTheme.colors, primary: colors.accent, background: colors.background, card: colors.surface } }
-    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, primary: colors.primary, background: colors.background, card: colors.surface } };
+  const base = darkMode ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.border,
+    },
+  };
 
   return (
     <NavigationContainer theme={navTheme} onStateChange={onNavigationStateChange}>
@@ -129,16 +157,12 @@ export function AppNavigator() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: '#888',
+          tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.surface },
-          tabBarIcon: ({ color, size }) => {
-            const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
-              HomeTab: 'home',
-              WorshipTab: 'moon',
-              LearnTab: 'book',
-              MoreTab: 'sparkles',
-            };
-            return <Ionicons name={icons[route.name] ?? 'ellipse'} size={size} color={color} />;
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+          tabBarIcon: ({ color, size, focused }) => {
+            const [active, inactive] = TAB_ICONS[route.name] ?? ['ellipse', 'ellipse-outline'];
+            return <Ionicons name={focused ? active : inactive} size={size} color={color} />;
           },
         })}
       >
@@ -146,7 +170,13 @@ export function AppNavigator() {
         <Tab.Screen
           name="WorshipTab"
           component={QiblaScreen}
-          options={{ title: t('tabs.worship'), headerShown: true, headerTintColor: colors.primary }}
+          options={{
+            title: t('tabs.worship'),
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.background },
+            headerShadowVisible: false,
+            headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: '600', color: colors.text },
+          }}
         />
         <Tab.Screen name="LearnTab" component={LearnStack} options={{ title: t('tabs.learn') }} />
         <Tab.Screen name="MoreTab" component={MoreStack} options={{ title: t('tabs.more') }} />

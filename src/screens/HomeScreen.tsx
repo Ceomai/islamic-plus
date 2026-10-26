@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card } from '../components/Card';
-import { GradientHero } from '../components/GradientHero';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeAppIcon } from '../components/HomeAppIcon';
 import { HomeWidgetModule } from '../components/HomeWidgetModule';
 import { getHomeFeature } from '../constants/homeFeatures';
@@ -11,20 +10,47 @@ import { useApp } from '../context/AppContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import { gregorianToHijri } from '../services/hijriCalendar';
-import { getNextPrayer, getPrayerTimes } from '../services/prayerTimes';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
+import { gregorianToHijri } from '../services/hijriCalendar';
+import { formatClock, getNextPrayer, getPrayerDates } from '../services/prayerTimes';
+import type { HomeFeatureId, PrayerName } from '../types';
+import { AppText, ListRow, SectionHeader, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-export function HomeScreen({ navigation }: Props) {
-  const { location, refreshLocation, loading, settings, stats, quranProgress, hadithProgress, todayPrayers, togglePrayerComplete, refreshTodayPrayers } = useApp();
-  const { canAccess } = useFeatureAccess();
-  const { colors } = useTheme();
-  const { t, prayer } = useTranslation();
+const DAILY_PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const COUNTDOWN_TICK_MS = 30_000;
 
-  const openFeature = (id: import('../types').HomeFeatureId) => {
+export function HomeScreen({ navigation }: Props) {
+  const {
+    location,
+    refreshLocation,
+    loading,
+    settings,
+    stats,
+    quranProgress,
+    hadithProgress,
+    todayPrayers,
+    togglePrayerComplete,
+    refreshTodayPrayers,
+  } = useApp();
+  const { canAccess } = useFeatureAccess();
+  const { colors, space } = useTheme();
+  const { t, prayer, lang } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    refreshLocation();
+    void refreshTodayPrayers();
+  }, []);
+
+  // Keep the countdown (and the day's schedule after midnight) current
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), COUNTDOWN_TICK_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  const openFeature = (id: HomeFeatureId) => {
     if (!canAccess(id)) {
       Alert.alert(t('home.guestLocked'), t('auth.guestBanner'));
       return;
@@ -35,37 +61,20 @@ export function HomeScreen({ navigation }: Props) {
     navigation.navigate(def.route, def.routeParams);
   };
 
-  useEffect(() => {
-    refreshLocation();
-    void refreshTodayPrayers();
-  }, []);
+  const today = new Date(now).toDateString();
+  const hijri = useMemo(() => gregorianToHijri(new Date(now), lang), [today, lang]);
 
-  const hijri = useMemo(() => gregorianToHijri(new Date()), []);
-  const schedule = useMemo(() => {
+  const prayerDates = useMemo(() => {
     if (!location) return null;
-    return getPrayerTimes(
-      location.latitude,
-      location.longitude,
-      new Date(),
-      settings.calculationMethod,
-      settings.madhab
-    );
-  }, [location, settings]);
+    return getPrayerDates(location.latitude, location.longitude, new Date(now), settings.calculationMethod, settings.madhab);
+  }, [location, settings.calculationMethod, settings.madhab, today]);
 
   const nextPrayer = useMemo(() => {
     if (!location) return null;
-    return getNextPrayer(
-      location.latitude,
-      location.longitude,
-      settings.calculationMethod,
-      settings.madhab
-    );
-  }, [location, settings]);
+    return getNextPrayer(location.latitude, location.longitude, settings.calculationMethod, settings.madhab);
+  }, [location, settings.calculationMethod, settings.madhab, now]);
 
-  const completedPrayers = useMemo(
-    () => new Set(todayPrayers.map((p) => p.prayer)),
-    [todayPrayers]
-  );
+  const completedPrayers = useMemo(() => new Set(todayPrayers.map((p) => p.prayer)), [todayPrayers]);
 
   if (loading) {
     return (
@@ -75,133 +84,193 @@ export function HomeScreen({ navigation }: Props) {
     );
   }
 
-  const launcherIds = settings.homeLauncher.order;
+  const remainingLabel = (() => {
+    if (!nextPrayer) return '';
+    const minutes = Math.max(0, Math.round((nextPrayer.time.getTime() - now) / 60000));
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return h > 0
+      ? t('home.remaining', { h: String(h), m: String(m) })
+      : t('home.remainingMin', { m: String(m) });
+  })();
+
+  const order = settings.homeLauncher.order;
+  const modules = order.filter((id) => getHomeFeature(id)?.isModule);
+  const apps = order.filter((id) => {
+    const def = getHomeFeature(id);
+    return def && !def.isModule;
+  });
+
+  const renderPrayerModule = () => (
+    <View key="module_prayer_times">
+      {nextPrayer && (
+        <Surface variant="hero" padding={space[5]} style={{ marginBottom: space[3] }}>
+          <AppText variant="overline" color={colors.onHeroMuted}>
+            {t('home.nextPrayer')}
+          </AppText>
+          <View style={styles.heroRow}>
+            <AppText variant="display" color={colors.onHero}>
+              {prayer(nextPrayer.name)}
+            </AppText>
+            <AppText variant="title" color={colors.onHero}>
+              {formatClock(nextPrayer.time, lang)}
+            </AppText>
+          </View>
+          <View style={styles.heroFooter}>
+            <AppText variant="callout" color={colors.accent} style={{ fontWeight: '600' }}>
+              {remainingLabel}
+            </AppText>
+            {stats.prayerStreakDays > 0 && (
+              <View style={[styles.streak, { borderRadius: 999, paddingHorizontal: space[3] }]}>
+                <Ionicons name="flame" size={14} color={colors.accent} />
+                <AppText variant="caption" color={colors.onHero} style={{ marginLeft: space[1] }}>
+                  {t('home.streakDays', { n: String(stats.prayerStreakDays) })}
+                </AppText>
+              </View>
+            )}
+          </View>
+        </Surface>
+      )}
+
+      {prayerDates && (
+        <>
+          <View style={[styles.strip, { gap: space[2] }]}>
+            {DAILY_PRAYERS.map((p) => {
+              const done = completedPrayers.has(p);
+              const isNext = nextPrayer?.name === p;
+              return (
+                <Pressable
+                  key={p}
+                  onPress={() => togglePrayerComplete(p)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: done }}
+                  accessibilityLabel={`${prayer(p)} ${formatClock(prayerDates[p], lang)}`}
+                  style={({ pressed }) => [
+                    styles.slot,
+                    {
+                      borderRadius: 14,
+                      paddingVertical: space[3],
+                      backgroundColor: done ? colors.primarySoft : pressed ? colors.surfaceMuted : colors.surface,
+                      borderColor: isNext ? colors.primary : done ? colors.primarySoft : colors.border,
+                      borderWidth: isNext ? 1.5 : 1,
+                    },
+                  ]}
+                >
+                  <AppText variant="caption" tone={done ? 'brand' : 'secondary'} numberOfLines={1}>
+                    {prayer(p)}
+                  </AppText>
+                  <AppText variant="bodyStrong" color={done ? colors.onPrimarySoft : colors.text} style={{ marginTop: 2 }}>
+                    {formatClock(prayerDates[p], lang).replace(/ (AM|PM)$/, '')}
+                  </AppText>
+                  <Ionicons
+                    name={done ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={16}
+                    color={done ? colors.primary : colors.textMuted}
+                    style={{ marginTop: space[1] }}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+          <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[2], marginBottom: space[3] }}>
+            {t('home.markPrayersHint')}
+          </AppText>
+        </>
+      )}
+    </View>
+  );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GradientHero>
-          <Text style={styles.bismillah}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-          <Text style={styles.appName}>{t('app.name')}</Text>
-          <Text style={styles.hijri}>{hijri.formatted}</Text>
-          {location ? (
-            <Text style={styles.location}>
-              <Ionicons name="location" size={14} /> {location.city ?? t('home.yourLocation')}
-              {location.country ? `, ${location.country}` : ''}
-            </Text>
-          ) : (
-            <Pressable onPress={refreshLocation}>
-              <Text style={styles.locationTap}>{t('home.tapLocation')}</Text>
-            </Pressable>
-          )}
-        </GradientHero>
-
-        {(quranProgress.lastRead || hadithProgress.lastRead) && (
-          <Card>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('home.continueReading')}</Text>
-            {quranProgress.lastRead && (
-              <Pressable onPress={() => openFeature('quran')} style={styles.continueRow}>
-                <Ionicons name="book" size={20} color={colors.primary} />
-                <Text style={{ color: colors.text, flex: 1, marginLeft: 10 }}>
-                  {t('reading.continueQuran')}: {quranProgress.lastRead.surahName} · {t('reading.ayah')}{' '}
-                  {quranProgress.lastRead.ayahNumber}
-                </Text>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[8] }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.header, { marginBottom: space[5] }]}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="callout" tone="secondary">
+              {t('home.greeting')}
+            </AppText>
+            {location ? (
+              <AppText variant="title" numberOfLines={1}>
+                {location.city ?? t('home.yourLocation')}
+              </AppText>
+            ) : (
+              <Pressable onPress={refreshLocation} accessibilityRole="button">
+                <AppText variant="title" tone="brand">
+                  {t('home.tapLocation')}
+                </AppText>
               </Pressable>
             )}
-            {hadithProgress.lastRead && (
-              <Pressable onPress={() => openFeature('hadith')} style={styles.continueRow}>
-                <Ionicons name="document-text" size={20} color={colors.primary} />
-                <Text style={{ color: colors.text, flex: 1, marginLeft: 10 }}>
-                  {t('reading.continueHadith')}: {hadithProgress.lastRead.collectionName}
-                </Text>
-              </Pressable>
-            )}
-          </Card>
-        )}
-
-        <View style={styles.launcherHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t('home.myApps')}</Text>
-          <Pressable onPress={() => navigation.navigate('HomeLauncherEdit')}>
-            <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('home.editApps')}</Text>
+            <AppText variant="caption" tone="secondary">
+              {hijri.formatted}
+            </AppText>
+          </View>
+          <Pressable
+            onPress={() => navigation.navigate('Settings')}
+            accessibilityRole="button"
+            accessibilityLabel={t('home.openSettings')}
+            style={({ pressed }) => [
+              styles.iconButton,
+              { backgroundColor: pressed ? colors.surfaceMuted : colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Ionicons name="settings-outline" size={20} color={colors.text} />
           </Pressable>
         </View>
 
-        <View style={styles.launcherGrid}>
-          {launcherIds.map((id) => {
-            const def = getHomeFeature(id);
-            if (!def) return null;
+        {modules.map((id) =>
+          id === 'module_prayer_times' ? (
+            renderPrayerModule()
+          ) : (
+            <HomeWidgetModule key={id} onOpenDua={(duaId) => navigation.navigate('DuaDetail', { duaId })} />
+          )
+        )}
 
-            if (id === 'module_prayer_times') {
-              return (
-                <View key={id} style={styles.moduleFull}>
-                  {nextPrayer && (
-                    <Card style={styles.nextCard}>
-                      <Text style={[styles.nextLabel, { color: colors.textSecondary }]}>{t('home.nextPrayer')}</Text>
-                      <Text style={[styles.nextName, { color: colors.primary }]}>{prayer(nextPrayer.name)}</Text>
-                      <Text style={[styles.nextTime, { color: colors.text }]}>
-                        {t('home.in')} {nextPrayer.remaining}
-                      </Text>
-                      {stats.prayerStreakDays > 0 && (
-                        <View style={[styles.streakBadge, { backgroundColor: colors.accent + '30' }]}>
-                          <Ionicons name="flame" size={14} color={colors.accent} />
-                          <Text style={{ color: colors.primary, fontWeight: '600', marginLeft: 4 }}>
-                            {stats.prayerStreakDays} {t('stats.streak').toLowerCase()}
-                          </Text>
-                        </View>
-                      )}
-                    </Card>
-                  )}
-                  {schedule && (
-                    <Card>
-                      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('home.todayTimes')}</Text>
-                      {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map((p) => {
-                        const done = completedPrayers.has(p);
-                        return (
-                          <Pressable
-                            key={p}
-                            onPress={() => togglePrayerComplete(p)}
-                            style={[styles.prayerRow, { borderBottomColor: colors.border }]}
-                          >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                              <Ionicons
-                                name={done ? 'checkmark-circle' : 'ellipse-outline'}
-                                size={18}
-                                color={done ? colors.primary : colors.textSecondary}
-                              />
-                              <Text style={{ color: colors.text }}>{prayer(p)}</Text>
-                            </View>
-                            <Text style={{ color: colors.primary, fontWeight: '600' }}>{schedule.times[p]}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </Card>
-                  )}
-                </View>
-              );
-            }
+        {(quranProgress.lastRead || hadithProgress.lastRead) && (
+          <>
+            <SectionHeader title={t('home.continueReading')} />
+            <Surface padding={space[1]} style={{ paddingHorizontal: space[4] }}>
+              {quranProgress.lastRead && (
+                <ListRow
+                  icon="book-outline"
+                  title={quranProgress.lastRead.surahName}
+                  subtitle={`${t('reading.ayah')} ${quranProgress.lastRead.ayahNumber}`}
+                  onPress={() => openFeature('quran')}
+                  divider={!!hadithProgress.lastRead}
+                />
+              )}
+              {hadithProgress.lastRead && (
+                <ListRow
+                  icon="document-text-outline"
+                  title={hadithProgress.lastRead.collectionName}
+                  subtitle={t('reading.continueHadith')}
+                  onPress={() => openFeature('hadith')}
+                />
+              )}
+            </Surface>
+          </>
+        )}
 
-            if (id === 'module_widget') {
-              return (
-                <View key={id} style={styles.moduleFull}>
-                  <HomeWidgetModule />
-                </View>
-              );
-            }
-
-            const locked = !canAccess(id);
+        <SectionHeader
+          title={t('home.myApps')}
+          actionLabel={t('home.editApps')}
+          onAction={() => navigation.navigate('HomeLauncherEdit')}
+        />
+        <View style={[styles.grid, { marginHorizontal: -4 }]}>
+          {apps.map((id) => {
+            const def = getHomeFeature(id)!;
             return (
               <HomeAppIcon
                 key={id}
                 icon={def.icon}
                 label={t(def.titleKey)}
-                color={def.color}
-                locked={locked}
+                locked={!canAccess(id)}
                 onPress={() => openFeature(id)}
               />
             );
           })}
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -209,22 +278,21 @@ export function HomeScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingBottom: 32 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  bismillah: { color: 'rgba(255,255,255,0.85)', fontSize: 16, textAlign: 'center' },
-  appName: { color: '#fff', fontSize: 34, fontWeight: '800', textAlign: 'center', marginTop: 8, letterSpacing: 0.5 },
-  hijri: { color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 8, fontSize: 15 },
-  location: { color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginTop: 12 },
-  locationTap: { color: '#E8C547', textAlign: 'center', marginTop: 12 },
-  nextCard: { alignItems: 'center' },
-  nextLabel: { fontSize: 14 },
-  nextName: { fontSize: 28, fontWeight: '700', marginTop: 4 },
-  nextTime: { fontSize: 18, marginTop: 4 },
-  streakBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  continueRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  launcherHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 8 },
-  launcherGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  moduleFull: { width: '100%' },
-  prayerRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  header: { flexDirection: 'row', alignItems: 'flex-start' },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  heroRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 4 },
+  heroFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  streak: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, backgroundColor: 'rgba(255,255,255,0.14)' },
+  strip: { flexDirection: 'row' },
+  slot: { flex: 1, alignItems: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
 });

@@ -1,16 +1,18 @@
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useApp } from '../context/AppContext';
-import { incrementTasbih, loadTasbihData, resetTasbihSession, setTasbihTarget } from '../services/tasbihStorage';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { incrementTasbih, loadTasbihData, resetTasbihSession, setTasbihTarget } from '../services/tasbihStorage';
+import { AppText, Button, Chip, Screen, Surface } from '../ui';
 
 const TARGETS = [33, 99, 100];
+const COUNTER_SIZE = 240;
 
 export function TasbihScreen() {
   const { trackActivity } = useApp();
-  const { colors } = useTheme();
+  const { colors, radius, space, type } = useTheme();
   const { t } = useTranslation();
   const [count, setCount] = useState(0);
   const [target, setTarget] = useState(33);
@@ -24,13 +26,13 @@ export function TasbihScreen() {
   }, []);
 
   const increment = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const data = await incrementTasbih();
     setCount(data.count);
     setTotalLifetime(data.total);
     void trackActivity('tasbih');
-    if (data.count >= target) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (data.count === target) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
@@ -48,56 +50,73 @@ export function TasbihScreen() {
   };
 
   const progress = Math.min(count / target, 1);
+  const reached = count >= target;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.targets}>
+    <Screen contentStyle={{ alignItems: 'center' }}>
+      <Surface style={{ alignSelf: 'stretch', alignItems: 'center', marginBottom: space[6] }}>
+        <AppText style={[type.arabic, { textAlign: 'center' }]} tone="brand">
+          سُبْحَانَ اللَّهِ · الْحَمْدُ لِلَّهِ · اللَّهُ أَكْبَرُ
+        </AppText>
+      </Surface>
+
+      <View style={{ flexDirection: 'row', gap: space[2], marginBottom: space[8] }}>
         {TARGETS.map((tgt) => (
-          <Pressable
-            key={tgt}
-            onPress={() => changeTarget(tgt)}
-            style={[
-              styles.targetBtn,
-              { backgroundColor: target === tgt ? colors.primary : colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <Text style={{ color: target === tgt ? '#fff' : colors.text }}>{tgt}</Text>
-          </Pressable>
+          <Chip key={tgt} label={String(tgt)} selected={target === tgt} onPress={() => changeTarget(tgt)} />
         ))}
       </View>
+
       <Pressable
         onPress={increment}
-        style={[styles.circle, { backgroundColor: colors.primary, borderColor: colors.accent }]}
+        accessibilityRole="button"
+        accessibilityLabel={`${count} / ${target}`}
+        accessibilityHint={t('tasbih.tapHint')}
+        style={({ pressed }) => ({
+          width: COUNTER_SIZE,
+          height: COUNTER_SIZE,
+          borderRadius: COUNTER_SIZE / 2,
+          borderWidth: 10,
+          borderColor: reached ? colors.accent : colors.primarySoft,
+          backgroundColor: pressed ? colors.primaryPressed : colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+        })}
       >
-        <Text style={styles.count}>{count}</Text>
-        <Text style={styles.sub}>{t('tasbih.of')} {target}</Text>
+        <AppText style={{ fontSize: 64, lineHeight: 72, fontWeight: '700' }} color={colors.onPrimary}>
+          {count}
+        </AppText>
+        <AppText variant="callout" color="rgba(255,255,255,0.75)">
+          {t('tasbih.of')} {target}
+        </AppText>
       </Pressable>
-      <View style={[styles.bar, { backgroundColor: colors.border }]}>
-        <View style={[styles.fill, { width: `${progress * 100}%`, backgroundColor: colors.accent }]} />
+
+      <AppText variant="caption" tone="muted" style={{ marginTop: space[3] }}>
+        {reached ? t('tasbih.completed') : t('tasbih.tapHint')}
+      </AppText>
+
+      <View
+        style={{
+          alignSelf: 'stretch',
+          height: 6,
+          borderRadius: radius.pill,
+          backgroundColor: colors.surfaceMuted,
+          marginTop: space[6],
+          overflow: 'hidden',
+        }}
+      >
+        <View style={{ width: `${progress * 100}%`, height: '100%', backgroundColor: reached ? colors.accent : colors.primary }} />
       </View>
-      <Pressable onPress={reset} style={styles.reset}>
-        <Text style={{ color: colors.textSecondary }}>{t('tasbih.reset')}</Text>
-      </Pressable>
-      <Text style={[styles.lifetime, { color: colors.textSecondary }]}>
-        {t('tasbih.lifetime')}: {totalLifetime.toLocaleString()}
-      </Text>
-      <Text style={[styles.dhikr, { color: colors.primary }]}>
-        سُبْحَانَ اللَّهِ · الْحَمْدُ لِلَّهِ · اللَّهُ أَكْبَرُ
-      </Text>
-    </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', marginTop: space[6] }}>
+        <View>
+          <AppText variant="caption" tone="secondary">
+            {t('tasbih.lifetime')}
+          </AppText>
+          <AppText variant="heading">{totalLifetime.toLocaleString()}</AppText>
+        </View>
+        <Button label={t('tasbih.reset')} onPress={reset} variant="secondary" icon="refresh" />
+      </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  targets: { flexDirection: 'row', gap: 12, marginBottom: 40 },
-  targetBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
-  circle: { width: 220, height: 220, borderRadius: 110, alignItems: 'center', justifyContent: 'center', borderWidth: 4 },
-  count: { color: '#fff', fontSize: 56, fontWeight: '700' },
-  sub: { color: 'rgba(255,255,255,0.8)', fontSize: 16 },
-  bar: { width: '80%', height: 6, borderRadius: 3, marginTop: 32, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 3 },
-  reset: { marginTop: 24, padding: 12 },
-  lifetime: { marginTop: 8 },
-  dhikr: { marginTop: 32, fontSize: 18, textAlign: 'center' },
-});
