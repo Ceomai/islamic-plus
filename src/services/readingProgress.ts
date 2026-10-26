@@ -55,11 +55,18 @@ export async function updateQuranLastRead(
   surahNumber: number,
   edition: string,
   surahName: string,
-  ayahNumber: number
+  ayahNumber: number,
+  /** Ayahs in the surah; reaching the last one counts the surah toward the khatm */
+  surahLength?: number
 ): Promise<QuranProgress> {
   const current = await loadQuranProgress(memberId);
+  const done = new Set(current.completedSurahs ?? []);
+  const wasComplete = done.size >= 114;
+  if (surahLength && ayahNumber >= surahLength) done.add(surahNumber);
   const next: QuranProgress = {
     ...current,
+    completedSurahs: [...done].sort((a, b) => a - b),
+    khatmCount: (current.khatmCount ?? 0) + (!wasComplete && done.size >= 114 ? 1 : 0),
     lastRead: {
       surahNumber,
       edition,
@@ -68,6 +75,14 @@ export async function updateQuranLastRead(
       updatedAt: new Date().toISOString(),
     },
   };
+  await saveQuranProgress(memberId, next);
+  return next;
+}
+
+/** Clears the surah checklist for the next khatm; finished khatms stay counted */
+export async function startNewKhatm(memberId: string | null): Promise<QuranProgress> {
+  const current = await loadQuranProgress(memberId);
+  const next: QuranProgress = { ...current, completedSurahs: [], updatedAt: new Date().toISOString() };
   await saveQuranProgress(memberId, next);
   return next;
 }

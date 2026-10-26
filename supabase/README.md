@@ -27,6 +27,7 @@ Supabase Dashboard → **SQL Editor** → New query → run **in order**:
 5. [migrations/005_security_hardening.sql](./migrations/005_security_hardening.sql) — **zorunlu**: RPC yetkilerini kısıtlar, `admin_*` view'larını API'den gizler (bundan sonra yalnızca Dashboard / SQL Editor'den görülür)
 6. [migrations/006_account_deletion.sql](./migrations/006_account_deletion.sql) — uygulama içi hesap silme (`delete_my_account`)
 7. [migrations/007_assistant_and_places.sql](./migrations/007_assistant_and_places.sql) — YZ asistanı günlük kotası ve yakındaki yerler önbelleği (Edge Function'lar için, bkz. bölüm 8)
+8. [migrations/008_feedback_and_errors.sql](./migrations/008_feedback_and_errors.sql) — uygulama içi geri bildirim (`app_feedback`) ve hata raporları (`app_errors`). Uygulama yalnızca yazabilir; okumak için Dashboard › Table Editor
 
 ### Şifre sıfırlama ve şifre politikası
 

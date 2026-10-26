@@ -144,6 +144,8 @@ export interface UserSettings {
   quranFontScale: number;
   homeLauncher: HomeLauncherLayout;
   darkMode: boolean;
+  /** First-run introduction finished (language, prayer settings, permissions) */
+  onboardingDone: boolean;
 }
 
 export type HomeFeatureId =
@@ -155,6 +157,8 @@ export type HomeFeatureId =
   | 'qibla'
   | 'tasbih'
   | 'calendar'
+  | 'imsakiye'
+  | 'kaza'
   | 'education'
   | 'habits'
   | 'duties'
@@ -195,6 +199,10 @@ export interface QuranBookmark {
 export interface QuranProgress {
   lastRead: QuranLastRead | null;
   bookmarks: QuranBookmark[];
+  /** Surahs read to their last ayah in the current khatm */
+  completedSurahs?: number[];
+  /** Completed khatms */
+  khatmCount?: number;
   /** Local/cloud merge timestamp */
   updatedAt?: string;
 }
@@ -247,6 +255,8 @@ export interface TasbihData {
   sessions: TasbihSession[];
   /** Counts per local day (YYYY-MM-DD) and hour of day (24 slots), last 90 days */
   log?: Record<string, number[]>;
+  /** Daily dhikr target; 0 or missing = off */
+  dailyGoal?: number;
 }
 
 export interface EducationProgressEntry {

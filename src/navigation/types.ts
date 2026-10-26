@@ -10,6 +10,9 @@ export type RootStackParamList = {
   Tasbih: undefined;
   TasbihStats: undefined;
   Calendar: undefined;
+  Imsakiye: undefined;
+  Kaza: undefined;
+  Feedback: undefined;
   Education: undefined;
   EducationDetail: { topicId: string };
   Habits: undefined;

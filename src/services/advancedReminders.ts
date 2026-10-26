@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { translate } from '../i18n';
 import type { AppLanguage, CustomReminder } from '../types';
+import { remindersWithinBudget } from './notificationBudget';
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -23,18 +24,27 @@ export async function scheduleCustomReminders(reminders: CustomReminder[], lang:
     }
   }
 
-  for (const r of reminders) {
-    // Skip anything saved before times were validated instead of scheduling at NaN:NaN
-    if (!r.enabled || !TIME_RE.test(r.time)) continue;
+  // remindersWithinBudget also skips disabled ones and times saved before validation existed
+  for (const r of remindersWithinBudget(reminders)) {
     const [hour, minute] = r.time.split(':').map(Number);
+    const content = {
+      title: r.title,
+      body: translate(lang, `reminders.body.${r.type}`),
+      sound: r.sound === 'silent' ? undefined : 'default',
+    };
+    // Every day: one daily trigger instead of seven weekly ones
+    if (r.daysOfWeek.length >= 7) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: `custom-${r.id}-daily`,
+        content,
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
+      });
+      continue;
+    }
     for (const day of r.daysOfWeek) {
       await Notifications.scheduleNotificationAsync({
         identifier: `custom-${r.id}-${day}`,
-        content: {
-          title: r.title,
-          body: translate(lang, `reminders.body.${r.type}`),
-          sound: r.sound === 'silent' ? undefined : 'default',
-        },
+        content,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
           weekday: day + 1, // 1 = Sunday (matches getDay() 0 = Sunday)

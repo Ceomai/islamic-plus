@@ -11,6 +11,8 @@ import type {
 } from '../types';
 import type { StoredLocation } from './location';
 import { getJson, setJson, storageKeys } from './storage';
+// Type only: importing kaza.ts here would close the cloudSync ↔ userDataCloud import cycle
+import type { KazaData } from './kaza';
 
 export interface SyncPayload {
   version: 2;
@@ -27,6 +29,8 @@ export interface SyncPayload {
   educationProgress: EducationProgressEntry[];
   zakatHistory: ZakatCalculationRecord[];
   locationPref: LocationPref | null;
+  /** Missed prayers still owed; optional so older payloads stay valid */
+  kaza?: KazaData;
 }
 
 export async function buildSyncPayload(
@@ -37,12 +41,13 @@ export async function buildSyncPayload(
   darkMode: boolean,
   location: StoredLocation | null
 ): Promise<SyncPayload> {
-  const [tasbih, duaProgress, prayerCompletions, educationProgress, zakatHistory] = await Promise.all([
+  const [tasbih, duaProgress, prayerCompletions, educationProgress, zakatHistory, kaza] = await Promise.all([
     getJson<TasbihData>(storageKeys.tasbih, { count: 0, total: 0, sessions: [] }),
     getJson<Record<string, number>>(storageKeys.duaProgress, {}),
     getJson<PrayerCompletion[]>(storageKeys.prayerCompletions, []),
     getJson<EducationProgressEntry[]>(storageKeys.educationProgress, []),
     getJson<ZakatCalculationRecord[]>(storageKeys.zakatHistory, []),
+    getJson<KazaData | undefined>(storageKeys.kaza, undefined),
   ]);
 
   const locationPref: LocationPref | null = location
@@ -70,6 +75,7 @@ export async function buildSyncPayload(
     educationProgress,
     zakatHistory,
     locationPref,
+    kaza,
   };
 }
 
@@ -84,6 +90,7 @@ export async function importSyncPayloadToStorage(payload: SyncPayload): Promise<
     setJson(storageKeys.prayerCompletions, payload.prayerCompletions),
     setJson(storageKeys.educationProgress, payload.educationProgress),
     setJson(storageKeys.zakatHistory, payload.zakatHistory),
+    ...(payload.kaza ? [setJson(storageKeys.kaza, payload.kaza)] : []),
   ]);
 
   if (payload.locationPref) {
@@ -160,6 +167,7 @@ export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): Sync
     educationProgress: mergeEducationProgress(remote.educationProgress, local.educationProgress),
     zakatHistory: mergeZakatHistory(remote.zakatHistory, local.zakatHistory),
     locationPref: pickNewerLocation(remote.locationPref, local.locationPref),
+    kaza: mergeKaza(remote.kaza, local.kaza),
   };
 }
 
@@ -205,7 +213,15 @@ function mergeTasbih(a: TasbihData, b: TasbihData): TasbihData {
     total: Math.max(a.total, b.total),
     sessions: [...sessionMap.values()].sort((x, y) => y.completedAt.localeCompare(x.completedAt)).slice(0, 200),
     log: mergeTasbihLogs(a.log, b.log),
+    dailyGoal: b.dailyGoal ?? a.dailyGoal,
   };
+}
+
+/** Newer record wins: kaza counts go up and down, so a maximum would undo made-up prayers */
+function mergeKaza(a: KazaData | undefined, b: KazaData | undefined): KazaData | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return a.updatedAt >= b.updatedAt ? a : b;
 }
 
 function mergeTasbihLogs(

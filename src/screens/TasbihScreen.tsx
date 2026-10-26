@@ -9,13 +9,21 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { trackFeatureAction } from '../services/cloudAnalytics';
-import { completeTasbihRound, incrementTasbih, loadTasbihData, resetTasbihSession } from '../services/tasbihStorage';
+import {
+  completeTasbihRound,
+  incrementTasbih,
+  loadTasbihData,
+  resetTasbihSession,
+  setTasbihGoal,
+  summarizeTasbih,
+} from '../services/tasbihStorage';
 import { AppText, Button, Chip, Screen, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tasbih'>;
 type Mode = 'tesbihat' | 33 | 99 | 100;
 
 const MODES: Mode[] = ['tesbihat', 33, 99, 100];
+const GOALS = [0, 100, 300, 500, 1000];
 const COUNTER_SIZE = 220;
 
 export function TasbihScreen({ navigation }: Props) {
@@ -28,6 +36,9 @@ export function TasbihScreen({ navigation }: Props) {
   const [count, setCount] = useState(0);
   const [rounds, setRounds] = useState(0);
   const [justFinished, setJustFinished] = useState(false);
+  const [today, setToday] = useState(0);
+  const [goal, setGoal] = useState(0);
+  const [editGoal, setEditGoal] = useState(false);
 
   const tesbihat = mode === 'tesbihat';
   const target = tesbihat ? TESBIHAT_COUNT : mode;
@@ -35,7 +46,11 @@ export function TasbihScreen({ navigation }: Props) {
   const dhikr = getDhikr(currentId) ?? DHIKR[0];
 
   useEffect(() => {
-    void loadTasbihData().then((d) => setCount(d.count));
+    void loadTasbihData().then((d) => {
+      setCount(d.count);
+      setToday(summarizeTasbih(d, 1).today);
+      setGoal(d.dailyGoal ?? 0);
+    });
   }, []);
 
   const increment = async () => {
@@ -43,6 +58,12 @@ export function TasbihScreen({ navigation }: Props) {
     setJustFinished(false);
     const data = await incrementTasbih();
     void trackActivity('tasbih', false);
+    const todayNow = today + 1;
+    setToday(todayNow);
+    if (goal > 0 && todayNow === goal) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void trackFeatureAction('tasbih', 'goal_reached', { goal });
+    }
 
     if (data.count < target) {
       setCount(data.count);
@@ -195,7 +216,39 @@ export function TasbihScreen({ navigation }: Props) {
         {tesbihat ? t('tasbih.setsDone', { n: String(rounds) }) : t('tasbih.roundsDone', { n: String(rounds) })}
       </AppText>
 
-      <View style={{ flexDirection: 'row', gap: space[3], alignSelf: 'stretch', marginTop: space[6] }}>
+      {/* Daily goal */}
+      <Surface variant="muted" padding={space[3]} style={{ alignSelf: 'stretch', marginTop: space[5] }}>
+        <Pressable onPress={() => setEditGoal((v) => !v)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+          <Ionicons name={goal > 0 && today >= goal ? 'trophy' : 'flag-outline'} size={16} color={colors.primary} />
+          <AppText variant="callout" style={{ flex: 1 }}>
+            {goal > 0 ? (today >= goal ? t('tasbih.goalReached', { n: String(today) }) : t('tasbih.goalProgress', { n: String(today), goal: String(goal) })) : t('tasbih.goalOff')}
+          </AppText>
+          <Ionicons name={editGoal ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
+        </Pressable>
+        {goal > 0 && (
+          <View style={{ height: 4, borderRadius: radius.pill, backgroundColor: colors.surface, marginTop: space[2], overflow: 'hidden' }}>
+            <View style={{ width: `${Math.min(today / goal, 1) * 100}%`, height: '100%', backgroundColor: colors.primary }} />
+          </View>
+        )}
+        {editGoal && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[3] }}>
+            {GOALS.map((g) => (
+              <Chip
+                key={g}
+                label={g === 0 ? t('tasbih.goalNone') : String(g)}
+                selected={goal === g}
+                onPress={() => {
+                  setGoal(g);
+                  setEditGoal(false);
+                  void setTasbihGoal(g);
+                }}
+              />
+            ))}
+          </View>
+        )}
+      </Surface>
+
+      <View style={{ flexDirection: 'row', gap: space[3], alignSelf: 'stretch', marginTop: space[4] }}>
         <Button label={t('tasbih.reset')} icon="refresh" onPress={reset} variant="secondary" style={{ flex: 1 }} />
         <Button label={t('tasbih.stats')} icon="bar-chart-outline" onPress={() => navigation.navigate('TasbihStats')} variant="secondary" style={{ flex: 1 }} />
       </View>

@@ -26,6 +26,8 @@ export interface AssistantReply {
   actions: AssistantAction[];
   /** Navigate without waiting for a tap */
   autoNavigate?: AssistantTarget;
+  /** false when nothing matched and the reply is the generic "try asking…" answer */
+  matched?: boolean;
 }
 
 // ─── Text normalisation ──────────────────────────────────────────────────────
@@ -267,6 +269,32 @@ const FEATURES: Feature[] = [
       ar: ['احصائيات التسبيح', 'احصائيات الذكر'],
       de: ['tasbih statistik', 'dhikr statistik'],
       fr: ['statistiques tasbih', 'statistiques dhikr'],
+    },
+  },
+  {
+    id: 'imsakiye',
+    target: { screen: 'Imsakiye' },
+    icon: 'moon-outline',
+    name: { tr: 'İmsakiye', en: 'Ramadan timetable', ar: 'إمساكية رمضان', de: 'Ramadan-Kalender', fr: 'Calendrier du Ramadan' },
+    keywords: {
+      tr: ['imsakiye', 'ramazan takvimi', 'iftar vakitleri', 'iftara ne kadar', 'iftara kac', 'sahura ne kadar', 'sahur vakitleri'],
+      en: ['imsakiye', 'ramadan timetable', 'ramadan calendar', 'iftar times', 'time until iftar', 'suhoor times'],
+      ar: ['امساكيه', 'جدول رمضان', 'مواعيد الافطار'],
+      de: ['ramadan kalender', 'iftar zeiten', 'ramadan zeiten'],
+      fr: ['calendrier du ramadan', 'horaires iftar', 'horaires du ramadan'],
+    },
+  },
+  {
+    id: 'kaza',
+    target: { screen: 'Kaza' },
+    icon: 'checkmark-done-circle-outline',
+    name: { tr: 'Kaza namazı takibi', en: 'Missed prayers (qada)', ar: 'قضاء الصلوات', de: 'Nachholgebete', fr: 'Prières à rattraper' },
+    keywords: {
+      tr: ['kaza namaz', 'kaza takibi', 'kaza borcu', 'kazalarim', 'kilamadigim namaz'],
+      en: ['qada', 'missed prayers', 'make up prayers', 'make-up prayers'],
+      ar: ['قضاء الصلاه', 'الصلوات الفائته', 'قضاء'],
+      de: ['nachholgebet', 'verpasste gebete'],
+      fr: ['prieres manquees', 'rattrapage', 'prieres a rattraper'],
     },
   },
   {
@@ -838,5 +866,5 @@ export function askAssistant(raw: string, ctx: AssistantContext): AssistantReply
   const legacy = legacyAnswer(q, lang);
   if (legacy) return reply(legacy);
 
-  return reply(T.fallback[lang]);
+  return { ...reply(T.fallback[lang]), matched: false };
 }

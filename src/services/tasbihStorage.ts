@@ -9,7 +9,7 @@ const LOG_DAYS = 90;
 
 export async function loadTasbihData(): Promise<TasbihData> {
   const raw = await getJson<Partial<TasbihData>>(storageKeys.tasbih, EMPTY);
-  return { count: raw.count ?? 0, total: raw.total ?? 0, sessions: raw.sessions ?? [], log: raw.log ?? {} };
+  return { count: raw.count ?? 0, total: raw.total ?? 0, sessions: raw.sessions ?? [], log: raw.log ?? {}, dailyGoal: raw.dailyGoal ?? 0 };
 }
 
 export async function saveTasbihData(data: TasbihData): Promise<void> {
@@ -20,6 +20,13 @@ export async function saveTasbihData(data: TasbihData): Promise<void> {
 function pruneLog(log: Record<string, number[]>): Record<string, number[]> {
   const keep = new Set(lastDayKeys(LOG_DAYS));
   return Object.fromEntries(Object.entries(log).filter(([k]) => keep.has(k)));
+}
+
+export async function setTasbihGoal(goal: number): Promise<TasbihData> {
+  const data = await loadTasbihData();
+  const next = { ...data, dailyGoal: Math.max(0, Math.round(goal)) };
+  await saveTasbihData(next);
+  return next;
 }
 
 /** One tap: advances the current round and records the hour it happened in. */

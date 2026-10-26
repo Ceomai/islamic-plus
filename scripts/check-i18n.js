@@ -13,10 +13,12 @@ const DYNAMIC = [
   ...['morning_evening', 'sleep', 'home', 'purification', 'mosque', 'food', 'travel', 'distress', 'health', 'forgiveness', 'family', 'provision', 'knowledge', 'protection', 'nature', 'loss', 'daily', 'dhikr', 'quranic'].map((c) => `duas.cat.${c}`),
   ...['parallel', 'translation', 'arabic', 'study', 'mushaf'].map((v) => `quran.view.${v}`),
   ...['prayer', 'quran', 'dhikr', 'charity', 'fasting', 'other'].map((c) => `habits.cat.${c}`),
-  ...['default', 'silent'].map((s) => `notifications.sounds.${s}`),
+  ...['default', 'adhan_short', 'silent'].map((s) => `notifications.sounds.${s}`),
+  ...['bug', 'idea', 'content', 'other'].flatMap((c) => [`feedback.cat.${c}`, `feedback.placeholder.${c}`]),
   ...['dhikr', 'dua', 'quran', 'custom'].flatMap((x) => [`reminders.body.${x}`, `reminders.types.${x}`]),
   ...['parent', 'child', 'spouse', 'other'].map((x) => `family.role.${x}`),
   ...['mosque', 'prayer_room', 'halal_restaurant'].map((x) => `places.${x}`),
+  ...['day', 'date', 'imsak', 'sunrise', 'iftar', 'isha'].map((c) => `ramadan.col.${c}`),
 ];
 
 function walk(dir) {
