@@ -1,24 +1,14 @@
+import { neutralLight, type as typeScale } from '../theme/tokens';
+
+/**
+ * Legacy constants kept for screens not yet moved to the design system.
+ * New code should use useTheme() (colors, space, radius, type) and src/ui components.
+ */
 export const colors = {
-  primary: '#0D3B2E',
-  primaryLight: '#1A5C47',
-  primaryDark: '#082820',
-  accent: '#C9A227',
-  accentLight: '#E8C547',
-  background: '#F5F7F4',
-  backgroundDark: '#0A1612',
-  surface: '#FFFFFF',
-  surfaceDark: '#142820',
-  text: '#1A2E28',
-  textSecondary: '#5A6F68',
+  ...neutralLight,
+  primary: '#0F5C4A',
+  accent: '#B8913A',
   textOnPrimary: '#FFFFFF',
-  textDark: '#E8F0EC',
-  textSecondaryDark: '#9BB5AC',
-  border: '#D4E0DB',
-  borderDark: '#2A4038',
-  success: '#2E7D5A',
-  warning: '#B8860B',
-  error: '#C0392B',
-  cardShadow: 'rgba(13, 59, 46, 0.12)',
 };
 
 export const spacing = {
@@ -30,10 +20,10 @@ export const spacing = {
 };
 
 export const typography = {
-  title: { fontSize: 28, fontWeight: '700' as const },
-  heading: { fontSize: 20, fontWeight: '600' as const },
-  body: { fontSize: 16, fontWeight: '400' as const },
-  caption: { fontSize: 13, fontWeight: '400' as const },
+  title: typeScale.title,
+  heading: typeScale.heading,
+  body: typeScale.body,
+  caption: typeScale.caption,
   label: { fontSize: 14, fontWeight: '500' as const },
 };
 

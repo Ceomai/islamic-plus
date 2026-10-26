@@ -1,203 +1,207 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Switch, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { APP_LANGUAGES, CALCULATION_METHODS, MADHABS, QURAN_EDITIONS } from '../constants/defaults';
-import { Card } from '../components/Card';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import type { AppLanguage, CalculationMethodId, Madhab, SectPreference } from '../types';
+import type { CalculationMethodId, Madhab, SectPreference } from '../types';
+import { AppText, Button, Chip, IconBadge, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
-const PREMIUM_LINKS: { route: keyof RootStackParamList; icon: keyof typeof Ionicons.glyphMap; labelKey: string }[] = [
-  { route: 'Themes', icon: 'color-palette', labelKey: 'settings.themesLink' },
-  { route: 'CloudSync', icon: 'cloud-upload', labelKey: 'settings.cloudLink' },
-  { route: 'FamilyMode', icon: 'people', labelKey: 'settings.familyLink' },
-  { route: 'Widgets', icon: 'apps', labelKey: 'settings.widgetsLink' },
-  { route: 'AdvancedReminders', icon: 'alarm', labelKey: 'settings.advancedRemindersLink' },
-  { route: 'AIAssistant', icon: 'sparkles', labelKey: 'settings.aiLink' },
-  { route: 'Statistics', icon: 'analytics', labelKey: 'settings.statsLink' },
+const FEATURE_LINKS: { route: keyof RootStackParamList; icon: keyof typeof Ionicons.glyphMap; labelKey: string }[] = [
+  { route: 'FamilyMode', icon: 'people-outline', labelKey: 'settings.familyLink' },
+  { route: 'AdvancedReminders', icon: 'alarm-outline', labelKey: 'settings.advancedRemindersLink' },
+  { route: 'Statistics', icon: 'analytics-outline', labelKey: 'settings.statsLink' },
+  { route: 'AIAssistant', icon: 'sparkles-outline', labelKey: 'settings.aiLink' },
+  { route: 'Widgets', icon: 'apps-outline', labelKey: 'settings.widgetsLink' },
+  { route: 'CloudSync', icon: 'cloud-upload-outline', labelKey: 'settings.cloudLink' },
 ];
+
+const SECTS: SectPreference[] = ['neutral', 'sunni', 'shia'];
 
 export function SettingsScreen({ navigation }: Props) {
   const { settings, updateSettings, darkMode, toggleDarkMode } = useApp();
   const { logout, isGuest, session, backend } = useAuth();
-  const { colors } = useTheme();
+  const { colors, space } = useTheme();
   const { t } = useTranslation();
 
-  const sectLabel = (s: SectPreference) => {
-    if (s === 'sunni') return t('settings.sectSunni');
-    if (s === 'shia') return t('settings.sectShia');
-    return t('settings.sectNeutral');
-  };
+  const sectLabel = (s: SectPreference) =>
+    s === 'sunni' ? t('settings.sectSunni') : s === 'shia' ? t('settings.sectShia') : t('settings.sectNeutral');
+
+  const switchTrack = { true: colors.primary, false: colors.borderStrong };
+  const check = <Ionicons name="checkmark" size={20} color={colors.primary} />;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.appTitle, { color: colors.primary }]}>{t('app.name')}</Text>
-      <Text style={[styles.version, { color: colors.textSecondary }]}>{t('app.tagline')}</Text>
-
-      <Text style={[styles.section, { color: colors.text, marginTop: 0 }]}>{t('auth.accountSection')}</Text>
-      <Card>
-        <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
-          {isGuest ? t('auth.guestMode') : t('auth.signedInAs', { name: session?.pseudonym ?? '—' })}
-        </Text>
-        {!isGuest && backend === 'supabase' && (
-          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>{t('auth.cloudAccount')}</Text>
-        )}
-        {isGuest && (
-          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8, lineHeight: 18 }}>
-            {t('auth.guestBanner')}
-          </Text>
-        )}
-        <Pressable
-          onPress={logout}
-          style={[styles.accountBtn, { borderColor: isGuest ? colors.primary : colors.error }]}
-        >
-          <Ionicons
-            name={isGuest ? 'log-in-outline' : 'log-out-outline'}
-            size={20}
-            color={isGuest ? colors.primary : colors.error}
-            style={{ marginRight: 8 }}
-          />
-          <Text style={{ color: isGuest ? colors.primary : colors.error, fontWeight: '700' }}>
-            {isGuest ? t('auth.signInOrRegister') : t('auth.logout')}
-          </Text>
-        </Pressable>
-        {!isGuest && (
-          <Pressable onPress={() => navigation.navigate('DeleteAccount')} style={styles.deleteLink}>
-            <Text style={{ color: colors.error, fontSize: 13 }}>{t('account.deleteTitle')}</Text>
-          </Pressable>
-        )}
-      </Card>
-
-      <Pressable
-        onPress={() => navigation.navigate('HomeLauncherEdit')}
-        style={[styles.option, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 16 }]}
-      >
-        <Ionicons name="grid" size={22} color={colors.primary} style={{ marginRight: 12 }} />
-        <Text style={{ color: colors.text, flex: 1 }}>{t('home.editLauncher')}</Text>
-        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-      </Pressable>
-
-      <Card>
-        <View style={styles.row}>
-          <Text style={{ color: colors.text }}>{t('settings.darkMode')}</Text>
-          <Switch value={darkMode} onValueChange={toggleDarkMode} trackColor={{ true: colors.primary }} />
-        </View>
-        <View style={[styles.row, { marginTop: 12 }]}>
-          <Text style={{ color: colors.text }}>{t('settings.offlineAudio')}</Text>
-          <Switch
-            value={settings.offlineAudioEnabled}
-            onValueChange={(v) => updateSettings({ offlineAudioEnabled: v })}
-            trackColor={{ true: colors.primary }}
-          />
-        </View>
-      </Card>
-
-      <Text style={[styles.section, { color: colors.text }]}>{t('settings.premiumSection')}</Text>
-      {PREMIUM_LINKS.map((link) => (
-        <Pressable
-          key={link.route}
-          onPress={() => navigation.navigate(link.route as 'Themes')}
-          style={[styles.option, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        >
-          <Ionicons name={link.icon} size={22} color={colors.primary} style={{ marginRight: 12 }} />
-          <Text style={{ color: colors.text, flex: 1 }}>{t(link.labelKey)}</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-        </Pressable>
-      ))}
-
-      <Text style={[styles.section, { color: colors.text }]}>{t('settings.appLanguage')}</Text>
-      <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('settings.appLanguageHint')}</Text>
-      {APP_LANGUAGES.map((lang) => (
-        <Pressable
-          key={lang.code}
-          onPress={() => updateSettings({ appLanguage: lang.code })}
-          style={[styles.option, { backgroundColor: settings.appLanguage === lang.code ? colors.primary + '20' : colors.surface, borderColor: colors.border }]}
-        >
-          <Text style={{ color: colors.text }}>{lang.label}</Text>
-          {settings.appLanguage === lang.code && <Text style={{ color: colors.primary }}>✓</Text>}
-        </Pressable>
-      ))}
-
-      <Text style={[styles.section, { color: colors.text }]}>{t('settings.quranLanguage')}</Text>
-      <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('settings.quranLanguageHint')}</Text>
-      {QURAN_EDITIONS.map((edition) => (
-        <Pressable
-          key={edition.id}
-          onPress={() => updateSettings({ quranEditionId: edition.id })}
-          style={[styles.option, { backgroundColor: settings.quranEditionId === edition.id ? colors.primary + '20' : colors.surface, borderColor: colors.border }]}
-        >
+    <Screen>
+      {/* Account */}
+      <Surface>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+          <IconBadge name={isGuest ? 'person-outline' : 'person'} size="lg" tone={isGuest ? 'neutral' : 'brand'} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.text }}>{edition.name}</Text>
-            {edition.translator ? (
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{edition.translator}</Text>
-            ) : null}
+            <AppText variant="heading" numberOfLines={1}>
+              {isGuest ? t('auth.guestMode') : session?.pseudonym ?? '—'}
+            </AppText>
+            <AppText variant="caption" tone="secondary">
+              {isGuest ? t('auth.guestBanner') : backend === 'supabase' ? t('auth.cloudAccount') : t('auth.localBackend')}
+            </AppText>
           </View>
-          {settings.quranEditionId === edition.id && <Text style={{ color: colors.primary }}>✓</Text>}
-        </Pressable>
-      ))}
+        </View>
+        <Button
+          label={isGuest ? t('auth.signInOrRegister') : t('auth.logout')}
+          icon={isGuest ? 'log-in-outline' : 'log-out-outline'}
+          variant={isGuest ? 'primary' : 'secondary'}
+          onPress={logout}
+          fullWidth
+          style={{ marginTop: space[4] }}
+        />
+      </Surface>
 
-      <Text style={[styles.section, { color: colors.text }]}>{t('settings.madhab')}</Text>
-      {MADHABS.map((m) => (
-        <Pressable
-          key={m.id}
-          onPress={() => updateSettings({ madhab: m.id as Madhab })}
-          style={[styles.option, { backgroundColor: settings.madhab === m.id ? colors.primary + '20' : colors.surface, borderColor: colors.border }]}
-        >
-          <Text style={{ color: colors.text }}>{t(`madhab.${m.id}`)}</Text>
-          {settings.madhab === m.id && <Text style={{ color: colors.primary }}>✓</Text>}
-        </Pressable>
-      ))}
+      {/* Appearance */}
+      <SectionHeader title={t('settings.appearance')} />
+      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+        <ListRow
+          icon="moon-outline"
+          title={t('settings.darkMode')}
+          divider
+          trailing={<Switch value={darkMode} onValueChange={toggleDarkMode} trackColor={switchTrack} />}
+        />
+        <ListRow
+          icon="color-palette-outline"
+          title={t('settings.themesLink')}
+          divider
+          onPress={() => navigation.navigate('Themes')}
+        />
+        <ListRow icon="grid-outline" title={t('home.editLauncher')} onPress={() => navigation.navigate('HomeLauncherEdit')} />
+      </Surface>
 
-      <Text style={[styles.section, { color: colors.text }]}>{t('settings.calculation')}</Text>
-      {CALCULATION_METHODS.map((m) => (
-        <Pressable
-          key={m.id}
-          onPress={() => updateSettings({ calculationMethod: m.id as CalculationMethodId })}
-          style={[styles.option, { backgroundColor: settings.calculationMethod === m.id ? colors.primary + '20' : colors.surface, borderColor: colors.border }]}
-        >
-          <Text style={{ color: colors.text, flex: 1 }}>{t(`calcMethod.${m.id}`)}</Text>
-          {settings.calculationMethod === m.id && <Text style={{ color: colors.primary }}>✓</Text>}
-        </Pressable>
-      ))}
+      {/* Language */}
+      <SectionHeader title={t('settings.appLanguage')} />
+      <View style={{ flexDirection: 'row', gap: space[2] }}>
+        {APP_LANGUAGES.map((lang) => (
+          <Chip
+            key={lang.code}
+            label={lang.label}
+            selected={settings.appLanguage === lang.code}
+            onPress={() => updateSettings({ appLanguage: lang.code })}
+          />
+        ))}
+      </View>
 
-      <Text style={[styles.section, { color: colors.text }]}>{t('settings.contentPref')}</Text>
-      {(['neutral', 'sunni', 'shia'] as SectPreference[]).map((s) => (
-        <Pressable
-          key={s}
-          onPress={() => updateSettings({ sectPreference: s })}
-          style={[styles.option, { backgroundColor: settings.sectPreference === s ? colors.primary + '20' : colors.surface, borderColor: colors.border }]}
-        >
-          <Text style={{ color: colors.text }}>{sectLabel(s)}</Text>
-          {settings.sectPreference === s && <Text style={{ color: colors.primary }}>✓</Text>}
-        </Pressable>
-      ))}
-    </ScrollView>
+      {/* Prayer times */}
+      <SectionHeader title={t('settings.prayerSection')} />
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+        {t('settings.madhab')}
+      </AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginBottom: space[4] }}>
+        {MADHABS.map((m) => (
+          <Chip
+            key={m.id}
+            label={t(`madhab.${m.id}`)}
+            selected={settings.madhab === m.id}
+            onPress={() => updateSettings({ madhab: m.id as Madhab })}
+          />
+        ))}
+      </View>
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+        {t('settings.calculation')}
+      </AppText>
+      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+        {CALCULATION_METHODS.map((m, i) => (
+          <ListRow
+            key={m.id}
+            title={t(`calcMethod.${m.id}`)}
+            onPress={() => updateSettings({ calculationMethod: m.id as CalculationMethodId })}
+            showChevron={false}
+            trailing={settings.calculationMethod === m.id ? check : <View />}
+            divider={i < CALCULATION_METHODS.length - 1}
+          />
+        ))}
+      </Surface>
+      <Surface padding={0} style={{ paddingHorizontal: space[4], marginTop: space[3] }}>
+        <ListRow
+          icon="notifications-outline"
+          title={t('nav.notifications')}
+          onPress={() => navigation.navigate('NotificationSettings')}
+        />
+      </Surface>
+
+      {/* Quran and content */}
+      <SectionHeader title={t('settings.contentSection')} />
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+        {t('settings.quranLanguage')}
+      </AppText>
+      <Surface padding={0} style={{ paddingHorizontal: space[4], marginBottom: space[4] }}>
+        {QURAN_EDITIONS.map((edition, i) => (
+          <ListRow
+            key={edition.id}
+            title={edition.name}
+            subtitle={edition.translator}
+            onPress={() => updateSettings({ quranEditionId: edition.id })}
+            showChevron={false}
+            trailing={settings.quranEditionId === edition.id ? check : <View />}
+            divider={i < QURAN_EDITIONS.length - 1}
+          />
+        ))}
+      </Surface>
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+        {t('settings.contentPref')}
+      </AppText>
+      <View style={{ flexDirection: 'row', gap: space[2], marginBottom: space[2] }}>
+        {SECTS.map((s) => (
+          <Chip key={s} label={sectLabel(s)} selected={settings.sectPreference === s} onPress={() => updateSettings({ sectPreference: s })} />
+        ))}
+      </View>
+      <Surface padding={0} style={{ paddingHorizontal: space[4], marginTop: space[2] }}>
+        <ListRow
+          icon="download-outline"
+          title={t('settings.offlineAudio')}
+          trailing={
+            <Switch
+              value={settings.offlineAudioEnabled}
+              onValueChange={(v) => updateSettings({ offlineAudioEnabled: v })}
+              trackColor={switchTrack}
+            />
+          }
+        />
+      </Surface>
+
+      {/* More features */}
+      <SectionHeader title={t('settings.premiumSection')} />
+      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+        {FEATURE_LINKS.map((link, i) => (
+          <ListRow
+            key={link.route}
+            icon={link.icon}
+            title={t(link.labelKey)}
+            onPress={() => navigation.navigate(link.route as 'Themes')}
+            divider={i < FEATURE_LINKS.length - 1}
+          />
+        ))}
+      </Surface>
+
+      {!isGuest && (
+        <>
+          <SectionHeader title={t('auth.accountSection')} />
+          <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+            <ListRow
+              icon="trash-outline"
+              title={t('account.deleteTitle')}
+              destructive
+              onPress={() => navigation.navigate('DeleteAccount')}
+            />
+          </Surface>
+        </>
+      )}
+
+      <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[8] }}>
+        {t('app.name')} · {t('settings.version', { v: Constants.expoConfig?.version ?? '1.0.0' })}
+      </AppText>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  appTitle: { fontSize: 28, fontWeight: '700', textAlign: 'center' },
-  version: { textAlign: 'center', marginBottom: 24 },
-  section: { fontSize: 16, fontWeight: '600', marginTop: 20, marginBottom: 6 },
-  hint: { fontSize: 13, marginBottom: 10, lineHeight: 18 },
-  option: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  deleteLink: { alignItems: 'center', paddingTop: 12 },
-  accountBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginTop: 4,
-  },
-});

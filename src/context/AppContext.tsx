@@ -24,6 +24,7 @@ import {
 import type {
   ActivityStats,
   AIChatMessage,
+  AppLanguage,
   CustomReminder,
   FamilyMember,
   HadithProgress,
@@ -123,15 +124,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       await setupNotificationChannels();
       void initAudio();
-      const [rawSettings, savedHabits, cachedLoc, savedFamily, savedStats, savedChat] = await Promise.all([
-        getJson(storageKeys.settings, DEFAULT_SETTINGS),
+      const [storedSettings, deviceLanguage, savedHabits, cachedLoc, savedFamily, savedStats, savedChat] = await Promise.all([
+        getJson<UserSettings | null>(storageKeys.settings, null),
+        getJson<AppLanguage | null>(storageKeys.deviceLanguage, null),
         getJson<SpiritualHabit[]>(storageKeys.habits, []),
         getCachedLocation(),
         getJson<FamilyMember[]>(storageKeys.family, []),
         loadStats(),
         getJson<AIChatMessage[]>(storageKeys.aiChat, []),
       ]);
+      // New accounts and the sign-in screen start in the language last chosen on this device
+      const baseSettings = storedSettings ?? {
+        ...DEFAULT_SETTINGS,
+        appLanguage: deviceLanguage ?? DEFAULT_SETTINGS.appLanguage,
+        quranEditionId: deviceLanguage === 'tr' ? 'tr.yazir' : DEFAULT_SETTINGS.quranEditionId,
+      };
+      const rawSettings = !session && deviceLanguage ? { ...baseSettings, appLanguage: deviceLanguage } : baseSettings;
       const savedSettings = migrateSettings(rawSettings);
+      if (storedSettings && session) void setJson(storageKeys.deviceLanguage, savedSettings.appLanguage);
       setSettings(savedSettings);
       setDarkMode(savedSettings.darkMode ?? false);
       void setJson(storageKeys.settings, savedSettings);
@@ -241,6 +251,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSettings((prev) => {
       const next = { ...prev, ...patch };
       void setJson(storageKeys.settings, next);
+      if (patch.appLanguage) void setJson(storageKeys.deviceLanguage, patch.appLanguage);
       if (location && next.globalNotificationsEnabled) {
         void schedulePrayerNotifications(location.latitude, location.longitude, next);
       }

@@ -52,6 +52,36 @@ export function getPrayerTimes(
   };
 }
 
+/** Same calculation as getPrayerTimes, but as Date objects so screens can format and compare them. */
+export function getPrayerDates(
+  latitude: number,
+  longitude: number,
+  date: Date,
+  calculationMethod: CalculationMethodId,
+  madhab: Madhab
+): Record<PrayerName, Date> {
+  const params = methodMap[calculationMethod]();
+  params.madhab = madhab === 'hanafi' ? AdhanMadhab.Hanafi : AdhanMadhab.Shafi;
+  const times = new AdhanPrayerTimes(new Coordinates(latitude, longitude), date, params);
+  return {
+    fajr: times.fajr,
+    sunrise: times.sunrise,
+    dhuhr: times.dhuhr,
+    asr: times.asr,
+    maghrib: times.maghrib,
+    isha: times.isha,
+  };
+}
+
+/** 24-hour clock for Turkish, 12-hour for English. */
+export function formatClock(date: Date, lang: 'en' | 'tr'): string {
+  const h = date.getHours();
+  const m = String(date.getMinutes()).padStart(2, '0');
+  if (lang === 'tr') return `${String(h).padStart(2, '0')}:${m}`;
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${m} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
 export function getNextPrayer(
   latitude: number,
   longitude: number,

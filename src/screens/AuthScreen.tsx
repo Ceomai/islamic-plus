@@ -1,193 +1,133 @@
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { GradientHero } from '../components/GradientHero';
+import { Pressable, View } from 'react-native';
+import { AuthLayout } from '../components/AuthLayout';
 import { PasswordResetForm } from '../components/PasswordResetForm';
 import { useAuth } from '../context/AuthContext';
 import { useAuthErrorMessage } from '../hooks/useAuthErrorMessage';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { AppText, Button, SegmentedControl, Surface, TextField } from '../ui';
 
 const INFO_ERRORS = new Set(['email_confirmation_sent']);
 
+type Mode = 'login' | 'register';
+
 export function AuthScreen() {
   const { register, login, guest, backend } = useAuth();
-  const { colors } = useTheme();
+  const { colors, space } = useTheme();
   const { t } = useTranslation();
-  const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login');
+  const errorMessage = useAuthErrorMessage();
+  const [mode, setMode] = useState<Mode | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const errorMessage = useAuthErrorMessage();
 
   if (mode === 'reset') {
     return <PasswordResetForm initialEmail={email} onBack={() => setMode('login')} />;
   }
 
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setErrorCode(null);
+  };
+
   const submit = async () => {
-    setError(null); setErrorCode(null);
     setErrorCode(null);
     setLoading(true);
     try {
       const fn = mode === 'login' ? login : register;
       const result = await fn(email, password);
-      if (!result.ok) {
-        const code = result.error ?? 'unknown';
-        setErrorCode(code);
-        setError(errorMessage(code));
-      }
+      if (!result.ok) setErrorCode(result.error ?? 'unknown');
     } finally {
       setLoading(false);
     }
   };
 
-  const showAsInfo = Boolean(errorCode && INFO_ERRORS.has(errorCode));
+  const isInfo = Boolean(errorCode && INFO_ERRORS.has(errorCode));
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <AuthLayout
+      title={t('auth.welcome')}
+      subtitle={t('auth.subtitle')}
+      note={backend === 'local' ? t('auth.localBackend') : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <GradientHero>
-          <Text style={styles.heroTitle}>{t('auth.welcome')}</Text>
-          <Text style={styles.heroSub}>{t('auth.subtitle')}</Text>
-          {backend === 'local' && (
-            <Text style={styles.backendNote}>{t('auth.localBackend')}</Text>
-          )}
-          {backend === 'supabase' && (
-            <Text style={styles.backendNoteOk}>{t('auth.cloudBackend')}</Text>
-          )}
-        </GradientHero>
+      <SegmentedControl
+        value={mode}
+        onChange={switchMode}
+        options={[
+          { value: 'login', label: t('auth.signIn') },
+          { value: 'register', label: t('auth.signUp') },
+        ]}
+      />
 
-        <View style={styles.tabs}>
-          <Pressable
-            onPress={() => { setMode('login'); setError(null); setErrorCode(null); }}
-            style={[styles.tab, mode === 'login' && { borderBottomColor: colors.primary }]}
-          >
-            <Text style={{ color: mode === 'login' ? colors.primary : colors.textSecondary, fontWeight: '700' }}>
-              {t('auth.signIn')}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => { setMode('register'); setError(null); setErrorCode(null); }}
-            style={[styles.tab, mode === 'register' && { borderBottomColor: colors.primary }]}
-          >
-            <Text style={{ color: mode === 'register' ? colors.primary : colors.textSecondary, fontWeight: '700' }}>
-              {t('auth.signUp')}
-            </Text>
-          </Pressable>
-        </View>
-
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
-          placeholder={t('auth.email')}
-          placeholderTextColor={colors.textSecondary}
+      <View style={{ marginTop: space[5] }}>
+        <TextField
+          label={t('auth.email')}
+          placeholder={t('auth.emailPlaceholder')}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
           textContentType="emailAddress"
+          autoComplete="email"
           value={email}
           onChangeText={setEmail}
           editable={!loading}
         />
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
-          placeholder={t('auth.password')}
-          placeholderTextColor={colors.textSecondary}
+        <TextField
+          label={t('auth.password')}
           secureTextEntry
           textContentType={mode === 'login' ? 'password' : 'newPassword'}
+          autoComplete={mode === 'login' ? 'password' : 'new-password'}
           value={password}
           onChangeText={setPassword}
           editable={!loading}
+          hint={mode === 'register' ? t('auth.passwordHint') : undefined}
+          onSubmitEditing={submit}
+          returnKeyType="go"
         />
-
-        {mode === 'register' ? (
-          <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>{t('auth.passwordHint')}</Text>
-        ) : backend === 'supabase' ? (
-          <Pressable onPress={() => { setMode('reset'); setError(null); setErrorCode(null); }} style={styles.forgotBtn}>
-            <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('auth.forgotPassword')}</Text>
+        {mode === 'login' && backend === 'supabase' && (
+          <Pressable
+            onPress={() => setMode('reset')}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={{ alignSelf: 'flex-end', marginTop: -space[1], marginBottom: space[3] }}
+          >
+            <AppText variant="callout" tone="brand" style={{ fontWeight: '600' }}>
+              {t('auth.forgotPassword')}
+            </AppText>
           </Pressable>
-        ) : null}
-
-        {error ? (
-          <Text style={[styles.error, { color: showAsInfo ? colors.primary : colors.error }]}>{error}</Text>
-        ) : null}
-
-        <Pressable
-          style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
-          onPress={submit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryBtnText}>{mode === 'login' ? t('auth.signIn') : t('auth.signUp')}</Text>
-          )}
-        </Pressable>
-
-        {mode === 'login' && (
-          <Text style={[styles.switchHint, { color: colors.textSecondary }]}>
-            {t('auth.noAccountHint')}{' '}
-            <Text
-              style={{ color: colors.primary, fontWeight: '600' }}
-              onPress={() => { setMode('register'); setError(null); setErrorCode(null); setErrorCode(null); }}
-            >
-              {t('auth.signUp')}
-            </Text>
-          </Text>
         )}
+      </View>
 
-        {mode === 'register' && (
-          <Text style={[styles.switchHint, { color: colors.textSecondary }]}>
-            {t('auth.hasAccountHint')}{' '}
-            <Text
-              style={{ color: colors.primary, fontWeight: '600' }}
-              onPress={() => { setMode('login'); setError(null); setErrorCode(null); setErrorCode(null); }}
-            >
-              {t('auth.signIn')}
-            </Text>
-          </Text>
-        )}
+      {errorCode ? (
+        <Surface variant={isInfo ? 'soft' : 'default'} padding={space[3]} style={{ marginBottom: space[4], borderColor: isInfo ? undefined : colors.error }}>
+          <AppText variant="callout" tone={isInfo ? 'brand' : 'danger'}>
+            {errorMessage(errorCode)}
+          </AppText>
+        </Surface>
+      ) : null}
 
-        <Pressable onPress={guest} style={styles.guestBtn} disabled={loading}>
-          <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('auth.guest')}</Text>
-        </Pressable>
+      <Button
+        label={mode === 'login' ? t('auth.signIn') : t('auth.signUp')}
+        onPress={submit}
+        loading={loading}
+        size="lg"
+        fullWidth
+      />
 
-        <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('auth.guestBanner')}</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: space[6] }}>
+        <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+        <AppText variant="caption" tone="muted" style={{ marginHorizontal: space[3] }}>
+          {t('auth.or')}
+        </AppText>
+        <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+      </View>
+
+      <Button label={t('auth.guest')} onPress={guest} variant="secondary" size="lg" fullWidth disabled={loading} />
+      <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[3] }}>
+        {t('auth.guestBanner')}
+      </AppText>
+    </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: { padding: 20, paddingBottom: 40 },
-  heroTitle: { color: '#fff', fontSize: 26, fontWeight: '800', textAlign: 'center' },
-  heroSub: { color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 8, lineHeight: 20 },
-  backendNote: { color: '#E8C547', fontSize: 11, textAlign: 'center', marginTop: 10 },
-  backendNoteOk: { color: '#A8E6CF', fontSize: 11, textAlign: 'center', marginTop: 10 },
-  tabs: { flexDirection: 'row', marginBottom: 20, marginTop: 8 },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  input: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, fontSize: 16 },
-  fieldHint: { fontSize: 12, marginBottom: 12, lineHeight: 17 },
-  forgotBtn: { alignSelf: 'flex-end', paddingVertical: 6, marginBottom: 8 },
-  error: { marginBottom: 12, textAlign: 'center', lineHeight: 20 },
-  primaryBtn: { padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 4, minHeight: 52, justifyContent: 'center' },
-  primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  switchHint: { textAlign: 'center', marginTop: 14, fontSize: 13, lineHeight: 20 },
-  guestBtn: { alignItems: 'center', padding: 16, marginTop: 8 },
-  hint: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 16 },
-});

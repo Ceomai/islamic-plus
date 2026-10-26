@@ -1,36 +1,65 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { AppText } from '../ui/AppText';
+import { IconBadge } from '../ui/IconBadge';
 
+/** Launcher tile: white card with a tinted icon; a lock badge marks guest-restricted features. */
 export function HomeAppIcon(props: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  /** Kept for API compatibility — tiles now follow the theme instead of per-feature colors */
   color?: string;
   locked?: boolean;
   onPress: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, radius, space } = useTheme();
   return (
-    <Pressable onPress={props.onPress} style={styles.wrap}>
-      <View style={[styles.icon, { backgroundColor: props.color ?? colors.primary }]}>
-        <Ionicons name={props.icon} size={22} color="#fff" />
-        {props.locked && (
-          <View style={styles.lock}>
-            <Ionicons name="lock-closed" size={12} color="#fff" />
-          </View>
-        )}
-      </View>
-      <Text numberOfLines={2} style={[styles.label, { color: colors.text }]}>
-        {props.label}
-      </Text>
-    </Pressable>
+    <View style={styles.cell}>
+      <Pressable
+        onPress={props.onPress}
+        accessibilityRole="button"
+        accessibilityLabel={props.label}
+        style={({ pressed }) => [
+          styles.tile,
+          {
+            backgroundColor: pressed ? colors.surfaceMuted : colors.surface,
+            borderColor: colors.border,
+            borderRadius: radius.lg,
+            paddingVertical: space[3],
+            opacity: props.locked ? 0.6 : 1,
+          },
+        ]}
+      >
+        <View>
+          <IconBadge name={props.icon} tone={props.locked ? 'neutral' : 'brand'} />
+          {props.locked && (
+            <View style={[styles.lock, { backgroundColor: colors.textSecondary, borderColor: colors.surface }]}>
+              <Ionicons name="lock-closed" size={9} color={colors.surface} />
+            </View>
+          )}
+        </View>
+        <AppText variant="caption" numberOfLines={2} align="center" style={{ marginTop: space[2] }}>
+          {props.label}
+        </AppText>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: '25%', paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center' },
-  icon: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  label: { marginTop: 8, fontSize: 12, textAlign: 'center' },
-  lock: { position: 'absolute', right: 6, bottom: 6, backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 10, padding: 2 },
+  cell: { width: '25%', padding: 4 },
+  tile: { alignItems: 'center', borderWidth: 1, minHeight: 96, paddingHorizontal: 4 },
+  lock: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

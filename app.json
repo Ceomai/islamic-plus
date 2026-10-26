@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "islamic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0D3B2E"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -65,7 +60,23 @@
       ],
       "expo-font",
       "expo-audio",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0F5C4A",
+          "dark": {
+            "image": "./assets/splash.png",
+            "backgroundColor": "#0E1412"
+          }
+        }
+      ]
     ],
     "extra": {
       "privacyPolicyUrl": "https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md",

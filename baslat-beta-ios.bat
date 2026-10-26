@@ -13,19 +13,19 @@ if "%step%"=="3" goto both
 goto build
 
 :build
-call npx eas build --platform ios --profile preview
+call npx eas-cli build --platform ios --profile preview
 if "%step%"=="3" goto submit
 goto end
 
 :submit
 echo.
 echo  App Store Connect'te uygulama olusturulmus olmali.
-call npx eas submit --platform ios --latest --profile preview
+call npx eas-cli submit --platform ios --latest --profile preview
 goto end
 
 :both
-call npx eas build --platform ios --profile preview
-call npx eas submit --platform ios --latest --profile preview
+call npx eas-cli build --platform ios --profile preview
+call npx eas-cli submit --platform ios --latest --profile preview
 
 :end
 echo.

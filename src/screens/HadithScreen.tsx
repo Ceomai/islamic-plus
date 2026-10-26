@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 import { HADITH_COLLECTIONS } from '../constants/defaults';
-import { Card } from '../components/Card';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { addHadithBookmark, updateHadithLastRead } from '../services/readingProgress';
+import { AppText, Chip, IconBadge, Screen, Surface } from '../ui';
 
 const SAMPLE_HADITH: Record<string, { text: string; narrator: string }[]> = {
   bukhari: [
@@ -28,85 +29,98 @@ const SAMPLE_HADITH: Record<string, { text: string; narrator: string }[]> = {
 
 export function HadithScreen() {
   const { settings, hadithProgress, refreshReadingProgress } = useApp();
-  const { colors } = useTheme();
+  const { colors, space } = useTheme();
   const { t } = useTranslation();
-  const filtered = HADITH_COLLECTIONS.filter(
+  const collections = HADITH_COLLECTIONS.filter(
     (c) => settings.sectPreference === 'neutral' || !c.sect || c.sect === settings.sectPreference
   );
-  const [selected, setSelected] = useState(filtered[0]?.id ?? 'bukhari');
+  const lastRead = hadithProgress.lastRead;
+  const [selected, setSelected] = useState(
+    lastRead && collections.some((c) => c.id === lastRead.collectionId) ? lastRead.collectionId : collections[0]?.id ?? 'bukhari'
+  );
   const hadiths = SAMPLE_HADITH[selected] ?? [];
-  const collectionName = filtered.find((c) => c.id === selected)?.name ?? selected;
+  const collectionName = collections.find((c) => c.id === selected)?.name ?? selected;
+  const memberId = settings.activeFamilyMemberId;
 
-  useEffect(() => {
-    void updateHadithLastRead(settings.activeFamilyMemberId, selected, collectionName, 0).then(() =>
-      refreshReadingProgress()
-    );
-  }, [selected]);
+  const bookmarked = useMemo(
+    () => new Set(hadithProgress.bookmarks.filter((b) => b.collectionId === selected).map((b) => b.itemIndex)),
+    [hadithProgress.bookmarks, selected]
+  );
+
+  // Progress is recorded only when the reader actually opens or bookmarks a hadith
+  const markRead = async (index: number) => {
+    await updateHadithLastRead(memberId, selected, collectionName, index);
+    await refreshReadingProgress();
+  };
+
+  const bookmark = async (index: number, text: string) => {
+    await addHadithBookmark(memberId, selected, collectionName, index, text.slice(0, 40));
+    await refreshReadingProgress();
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {hadithProgress.lastRead && (
-        <Pressable
-          style={[styles.resume, { backgroundColor: colors.primary + '18', borderColor: colors.primary }]}
-          onPress={() => setSelected(hadithProgress.lastRead!.collectionId)}
+    <Screen>
+      {lastRead && lastRead.collectionId !== selected && (
+        <Surface
+          variant="soft"
+          onPress={() => setSelected(lastRead.collectionId)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], marginBottom: space[4] }}
         >
-          <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('reading.continueHadith')}</Text>
-          <Text style={{ color: colors.textSecondary }}>{hadithProgress.lastRead.collectionName}</Text>
-        </Pressable>
+          <IconBadge name="bookmark" />
+          <View style={{ flex: 1 }}>
+            <AppText variant="caption" tone="brand" style={{ fontWeight: '600' }}>
+              {t('reading.continueHadith')}
+            </AppText>
+            <AppText variant="bodyStrong">{lastRead.collectionName}</AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.onPrimarySoft} />
+        </Surface>
       )}
-      <FlatList
+
+      <ScrollView
         horizontal
-        data={filtered}
-        keyExtractor={(i) => i.id}
-        style={styles.tabs}
-        renderItem={({ item }) => (
-          <Text
-            onPress={() => setSelected(item.id)}
-            style={[
-              styles.tab,
-              {
-                backgroundColor: selected === item.id ? colors.primary : colors.surface,
-                color: selected === item.id ? '#fff' : colors.text,
-              },
-            ]}
-          >
-            {item.name}
-          </Text>
-        )}
-      />
-      <Text style={[styles.note, { color: colors.textSecondary }]}>{t('hadith.offlineNote')}</Text>
-      {hadiths.map((h, i) => (
-        <Card key={i}>
-          <Pressable
-            onPress={async () => {
-              await updateHadithLastRead(settings.activeFamilyMemberId, selected, collectionName, i);
-              await refreshReadingProgress();
-            }}
-          >
-            <Text style={[styles.text, { color: colors.text }]}>{h.text}</Text>
-            <Text style={[styles.narrator, { color: colors.textSecondary }]}>— {h.narrator}</Text>
-          </Pressable>
-          <Pressable
-            onPress={async () => {
-              await addHadithBookmark(settings.activeFamilyMemberId, selected, collectionName, i, h.text.slice(0, 40));
-              await refreshReadingProgress();
-            }}
-            style={{ marginTop: 10 }}
-          >
-            <Text style={{ color: colors.primary }}>{t('reading.bookmark')}</Text>
-          </Pressable>
-        </Card>
-      ))}
-    </View>
+        showsHorizontalScrollIndicator={false}
+        style={{ marginHorizontal: -space[4], marginBottom: space[4] }}
+        contentContainerStyle={{ paddingHorizontal: space[4], gap: space[2] }}
+      >
+        {collections.map((c) => (
+          <Chip key={c.id} label={c.name} selected={selected === c.id} onPress={() => setSelected(c.id)} />
+        ))}
+      </ScrollView>
+
+      <Surface variant="muted" padding={space[3]} style={{ flexDirection: 'row', gap: space[2], marginBottom: space[4] }}>
+        <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+        <AppText variant="caption" tone="secondary" style={{ flex: 1 }}>
+          {t('hadith.offlineNote')}
+        </AppText>
+      </Surface>
+
+      {hadiths.map((h, i) => {
+        const marked = bookmarked.has(i);
+        const isLast = lastRead?.collectionId === selected && lastRead.itemIndex === i;
+        return (
+          <Surface key={i} onPress={() => markRead(i)} style={{ marginBottom: space[3], borderColor: isLast ? colors.primary : colors.border }}>
+            <Ionicons name="chatbox-ellipses-outline" size={18} color={colors.accent} />
+            <AppText variant="body" style={{ fontSize: 17, lineHeight: 27, marginTop: space[2] }}>
+              {h.text}
+            </AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space[3] }}>
+              <AppText variant="caption" tone="secondary" style={{ flex: 1 }}>
+                {h.narrator} · {collectionName}
+              </AppText>
+              <Pressable
+                onPress={() => bookmark(i, h.text)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('reading.bookmark')}
+                accessibilityState={{ selected: marked }}
+              >
+                <Ionicons name={marked ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.primary} />
+              </Pressable>
+            </View>
+          </Surface>
+        );
+      })}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  resume: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
-  tabs: { maxHeight: 44, marginBottom: 12 },
-  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, marginRight: 8, overflow: 'hidden' },
-  note: { fontSize: 12, marginBottom: 12 },
-  text: { fontSize: 16, lineHeight: 26, fontStyle: 'italic' },
-  narrator: { marginTop: 12, fontSize: 14 },
-});

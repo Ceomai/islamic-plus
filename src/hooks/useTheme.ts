@@ -1,35 +1,38 @@
 import { useMemo } from 'react';
 import { APP_THEMES } from '../constants/themes';
-import { colors as baseColors } from '../constants/theme';
 import { useApp } from '../context/AppContext';
+import { neutralDark, neutralLight, radius, space, type } from '../theme/tokens';
 
 export function useTheme() {
   const { darkMode, settings } = useApp();
   const preset = APP_THEMES[settings.themeId] ?? APP_THEMES.emerald;
 
-  return useMemo(
-    () => ({
+  return useMemo(() => {
+    const neutral = darkMode ? neutralDark : neutralLight;
+    const brand = darkMode ? preset.dark : preset.light;
+    return {
       dark: darkMode,
       themeId: settings.themeId,
       preset,
+      space,
+      radius,
+      type,
       colors: {
-        background: darkMode ? preset.backgroundDark : preset.background,
-        surface: darkMode ? preset.surfaceDark : preset.surface,
-        text: darkMode ? baseColors.textDark : baseColors.text,
-        textSecondary: darkMode ? baseColors.textSecondaryDark : baseColors.textSecondary,
-        primary: preset.primary,
-        primaryLight: preset.primaryLight,
-        primaryDark: preset.primaryDark,
-        accent: preset.accent,
-        accentLight: preset.accentLight,
-        border: darkMode ? baseColors.borderDark : baseColors.border,
-        textOnPrimary: baseColors.textOnPrimary,
-        success: baseColors.success,
-        warning: baseColors.warning,
-        error: baseColors.error,
-        gradient: preset.gradient,
+        ...neutral,
+        ...brand,
+        onPrimary: '#FFFFFF',
+        onHero: '#FFFFFF',
+        onHeroMuted: 'rgba(255, 255, 255, 0.72)',
+        // Legacy aliases — older screens still read these names
+        primaryLight: brand.primary,
+        primaryDark: brand.primaryPressed,
+        accentLight: brand.accentSoft,
+        textOnPrimary: '#FFFFFF',
+        gradient: [brand.hero, brand.hero, brand.hero] as [string, string, string],
       },
-    }),
-    [darkMode, settings.themeId, preset]
-  );
+    };
+  }, [darkMode, settings.themeId, preset]);
 }
+
+export type Theme = ReturnType<typeof useTheme>;
+export type ThemeColors = Theme['colors'];

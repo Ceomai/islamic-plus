@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
-import { spacing } from '../constants/theme';
+import type { ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { Surface } from '../ui/Surface';
 
+/** Legacy card wrapper — same API as before, now drawn by the design-system Surface. */
 export function Card({
   children,
   style,
@@ -10,19 +11,6 @@ export function Card({
   children: React.ReactNode;
   style?: ViewStyle;
 }) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, style]}>
-      {children}
-    </View>
-  );
+  const { space } = useTheme();
+  return <Surface style={[{ marginBottom: space[3] }, style ?? {}]}>{children}</Surface>;
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    padding: spacing.md,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  },
-});
