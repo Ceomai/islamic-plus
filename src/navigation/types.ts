@@ -1,6 +1,7 @@
 export type RootStackParamList = {
   MainTabs: undefined;
   Home: undefined;
+  HomeLauncherEdit: undefined;
   Quran: undefined;
   QuranReader: { surahNumber: number; edition: string; surahName: string };
   Hadith: undefined;
@@ -23,6 +24,5 @@ export type RootStackParamList = {
   Themes: undefined;
   CloudSync: undefined;
   AdvancedReminders: undefined;
-  HomeLauncherEdit: undefined;
-  Auth: undefined;
+  DeleteAccount: undefined;
 };

@@ -59,10 +59,7 @@ export function HomeLauncherEditScreen({ navigation }: Props) {
                 <Pressable onPress={() => move(index, 1)} style={styles.iconBtn}>
                   <Ionicons name="arrow-down" size={20} color={colors.primary} />
                 </Pressable>
-                <Pressable
-                  onPress={() => remove(id)}
-                  style={styles.iconBtn}
-                >
+                <Pressable onPress={() => remove(id)} style={styles.iconBtn}>
                   <Ionicons name="trash-outline" size={20} color={colors.error} />
                 </Pressable>
               </View>

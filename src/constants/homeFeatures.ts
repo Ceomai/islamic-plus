@@ -1,28 +1,5 @@
 import type { RootStackParamList } from '../navigation/types';
-
-export type HomeFeatureId =
-  | 'module_prayer_times'
-  | 'module_widget'
-  | 'quran'
-  | 'hadith'
-  | 'duas'
-  | 'qibla'
-  | 'tasbih'
-  | 'calendar'
-  | 'education'
-  | 'habits'
-  | 'duties'
-  | 'places_mosque'
-  | 'places_halal'
-  | 'notifications'
-  | 'advanced_reminders'
-  | 'ai_assistant'
-  | 'statistics'
-  | 'family_mode'
-  | 'themes'
-  | 'cloud_sync'
-  | 'widgets'
-  | 'settings';
+import type { HomeFeatureId } from '../types';
 
 export type HomeFeatureRoute = keyof RootStackParamList;
 
@@ -37,7 +14,6 @@ export interface HomeFeatureDef {
   color?: string;
 }
 
-/** All installable “apps” on the home launcher */
 export const HOME_FEATURE_CATALOG: HomeFeatureDef[] = [
   { id: 'module_prayer_times', icon: 'time', titleKey: 'launcher.prayerModule', isModule: true, color: '#0D3B2E' },
   { id: 'module_widget', icon: 'apps', titleKey: 'launcher.widgetModule', isModule: true, color: '#1A5C47' },

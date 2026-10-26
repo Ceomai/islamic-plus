@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card } from '../components/Card';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { saveZakatCalculation } from '../services/zakatHistory';
 import { calculateSadaqaSuggested, calculateZakat } from '../services/zakat';
 
 function NumInput({
@@ -55,6 +56,24 @@ export function DutiesScreen() {
     nisabBasis: 'gold',
   });
 
+  const saveZakat = async () => {
+    await saveZakatCalculation(
+      {
+        cash: parseFloat(cash) || 0,
+        goldGrams: parseFloat(gold) || 0,
+        silverGrams: parseFloat(silver) || 0,
+        investments: parseFloat(investments) || 0,
+        businessAssets: 0,
+        debts: parseFloat(debts) || 0,
+        goldPricePerGram: parseFloat(goldPrice) || 75,
+        silverPricePerGram: 1,
+        nisabBasis: 'gold',
+      },
+      zakat
+    );
+    Alert.alert(t('duties.saved'));
+  };
+
   const sadaqa = calculateSadaqaSuggested(parseFloat(income) || 0, parseFloat(sadaqaPct) || 0);
 
   return (
@@ -78,6 +97,9 @@ export function DutiesScreen() {
         <Text style={[styles.zakatDue, { color: colors.primary }]}>
           {t('duties.zakatDue')}: ${zakat.zakatDue.toFixed(2)}
         </Text>
+        <Pressable onPress={saveZakat} style={[styles.saveBtn, { backgroundColor: colors.primary }]}>
+          <Text style={styles.saveBtnText}>{t('duties.saveCalculation')}</Text>
+        </Pressable>
       </Card>
       <Text style={[styles.heading, { color: colors.text, marginTop: 24 }]}>{t('duties.sadaqaTitle')}</Text>
       <NumInput label={t('duties.income')} value={income} onChange={setIncome} colors={colors} />
@@ -109,4 +131,6 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 16 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
   zakatDue: { fontSize: 22, fontWeight: '700', marginTop: 12, textAlign: 'center' },
+  saveBtn: { marginTop: 16, padding: 14, borderRadius: 12, alignItems: 'center' },
+  saveBtnText: { color: '#fff', fontWeight: '700' },
 });

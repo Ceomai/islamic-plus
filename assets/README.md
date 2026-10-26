@@ -9,10 +9,10 @@ Add the following image files before building for production:
 - `sounds/adhan_short.wav` — short adhan clip for notifications
 - `sounds/adhan_full.wav` — full adhan clip (optional)
 
-For development, Expo will use defaults if these are missing. Run:
+Generate green placeholder PNGs (beta builds):
 
 ```bash
-npx expo install expo-asset
+node scripts/generate-assets.js
 ```
 
-Or generate placeholders with any 1024px Islamic geometric pattern icon.
+Replace with final branding before App Store release.

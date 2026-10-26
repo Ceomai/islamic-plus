@@ -3,62 +3,34 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 
-export function HomeAppIcon({
-  icon,
-  label,
-  color,
-  onPress,
-  onLongPress,
-  locked,
-}: {
+export function HomeAppIcon(props: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   color?: string;
-  onPress: () => void;
-  onLongPress?: () => void;
   locked?: boolean;
+  onPress: () => void;
 }) {
   const { colors } = useTheme();
-  const bg = color ?? colors.primary;
-
   return (
-    <Pressable style={styles.wrap} onPress={onPress} onLongPress={onLongPress}>
-      <View style={[styles.iconBox, { backgroundColor: bg }]}>
-        <Ionicons name={icon} size={28} color="#fff" />
-        {locked && (
-          <View style={styles.lockBadge}>
-            <Ionicons name="lock-closed" size={10} color="#fff" />
+    <Pressable onPress={props.onPress} style={styles.wrap}>
+      <View style={[styles.icon, { backgroundColor: props.color ?? colors.primary }]}>
+        <Ionicons name={props.icon} size={22} color="#fff" />
+        {props.locked && (
+          <View style={styles.lock}>
+            <Ionicons name="lock-closed" size={12} color="#fff" />
           </View>
         )}
       </View>
-      <Text style={[styles.label, { color: colors.text }]} numberOfLines={2}>
-        {label}
+      <Text numberOfLines={2} style={[styles.label, { color: colors.text }]}>
+        {props.label}
       </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: '25%', alignItems: 'center', marginBottom: 18, paddingHorizontal: 4 },
-  iconBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-  },
-  lockBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 8,
-    padding: 3,
-  },
-  label: { fontSize: 11, textAlign: 'center', marginTop: 6, fontWeight: '600', lineHeight: 14 },
+  wrap: { width: '25%', paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center' },
+  icon: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  label: { marginTop: 8, fontSize: 12, textAlign: 'center' },
+  lock: { position: 'absolute', right: 6, bottom: 6, backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 10, padding: 2 },
 });

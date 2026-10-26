@@ -11,12 +11,14 @@ import {
   View,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { askAI, getAIWelcome } from '../services/aiAssistant';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 
 export function AIAssistantScreen() {
   const { aiMessages, sendAIMessage, clearAIChat, settings } = useApp();
+  const { canAccess } = useFeatureAccess();
   const { colors } = useTheme();
   const { t, appLanguage: lang } = useTranslation();
   const [input, setInput] = useState('');
@@ -39,6 +41,14 @@ export function AIAssistantScreen() {
   };
 
   const displayMessages = aiMessages.filter((m) => m.content.length > 0);
+
+  if (!canAccess('ai_assistant')) {
+    return (
+      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text, textAlign: 'center', padding: 24 }}>{t('auth.guestBanner')}</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -87,6 +97,7 @@ export function AIAssistantScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, marginHorizontal: 16, marginTop: 8, borderRadius: 12 },
   bannerText: { flex: 1, fontSize: 12, lineHeight: 18 },
   messages: { flex: 1 },

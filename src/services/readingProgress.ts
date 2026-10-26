@@ -1,16 +1,53 @@
-import type { HadithProgress, QuranBookmark, QuranProgress } from '../types';
-import { getProfileJson, setProfileJson } from './profileData';
-import { storageKeys } from './storage';
+import type {
+  HadithBookmark,
+  HadithProgress,
+  QuranBookmark,
+  QuranProgress,
+} from '../types';
+import { getJson, setJson, storageKeys } from './storage';
+
+type ProgressChangeListener = (memberId: string | null) => void;
+const progressListeners = new Set<ProgressChangeListener>();
+
+/** Cloud sync service registers here — avoids circular imports */
+export function onReadingProgressChanged(listener: ProgressChangeListener): () => void {
+  progressListeners.add(listener);
+  return () => progressListeners.delete(listener);
+}
+
+function notifyProgressChanged(memberId: string | null): void {
+  progressListeners.forEach((listener) => listener(memberId));
+}
+
+function scopedKey(base: string, memberId: string | null): string {
+  return `${base}::${memberId ?? 'default'}`;
+}
 
 const emptyQuran: QuranProgress = { lastRead: null, bookmarks: [] };
 const emptyHadith: HadithProgress = { lastRead: null, bookmarks: [] };
 
+function stampProgress<T extends { updatedAt?: string }>(data: T): T {
+  return { ...data, updatedAt: new Date().toISOString() };
+}
+
+async function persistQuran(memberId: string | null, data: QuranProgress): Promise<void> {
+  const stamped = stampProgress(data);
+  await setJson(scopedKey(storageKeys.quranProgress, memberId), stamped);
+  notifyProgressChanged(memberId);
+}
+
+async function persistHadith(memberId: string | null, data: HadithProgress): Promise<void> {
+  const stamped = stampProgress(data);
+  await setJson(scopedKey(storageKeys.hadithProgress, memberId), stamped);
+  notifyProgressChanged(memberId);
+}
+
 export async function loadQuranProgress(memberId: string | null): Promise<QuranProgress> {
-  return getProfileJson(storageKeys.quranProgress, memberId, emptyQuran);
+  return getJson(scopedKey(storageKeys.quranProgress, memberId), emptyQuran);
 }
 
 export async function saveQuranProgress(memberId: string | null, data: QuranProgress): Promise<void> {
-  await setProfileJson(storageKeys.quranProgress, memberId, data);
+  await persistQuran(memberId, data);
 }
 
 export async function updateQuranLastRead(
@@ -47,18 +84,23 @@ export async function addQuranBookmark(
   };
   const next: QuranProgress = {
     ...current,
-    bookmarks: [entry, ...current.bookmarks.filter((b) => b.ayahNumber !== bookmark.ayahNumber || b.surahNumber !== bookmark.surahNumber)].slice(0, 50),
+    bookmarks: [
+      entry,
+      ...current.bookmarks.filter(
+        (b) => b.ayahNumber !== bookmark.ayahNumber || b.surahNumber !== bookmark.surahNumber
+      ),
+    ].slice(0, 50),
   };
-  await saveQuranProgress(memberId, next);
+  await persistQuran(memberId, next);
   return next;
 }
 
 export async function loadHadithProgress(memberId: string | null): Promise<HadithProgress> {
-  return getProfileJson(storageKeys.hadithProgress, memberId, emptyHadith);
+  return getJson(scopedKey(storageKeys.hadithProgress, memberId), emptyHadith);
 }
 
 export async function saveHadithProgress(memberId: string | null, data: HadithProgress): Promise<void> {
-  await setProfileJson(storageKeys.hadithProgress, memberId, data);
+  await persistHadith(memberId, data);
 }
 
 export async function updateHadithLastRead(
@@ -77,7 +119,7 @@ export async function updateHadithLastRead(
       updatedAt: new Date().toISOString(),
     },
   };
-  await saveHadithProgress(memberId, next);
+  await persistHadith(memberId, next);
   return next;
 }
 
@@ -89,8 +131,8 @@ export async function addHadithBookmark(
   label: string
 ): Promise<HadithProgress> {
   const current = await loadHadithProgress(memberId);
-  const entry = {
-    id: `hbm-${Date.now()}`,
+  const entry: HadithBookmark = {
+    id: `bm-${Date.now()}`,
     collectionId,
     collectionName,
     itemIndex,
@@ -99,8 +141,13 @@ export async function addHadithBookmark(
   };
   const next: HadithProgress = {
     ...current,
-    bookmarks: [entry, ...current.bookmarks.filter((b) => !(b.collectionId === collectionId && b.itemIndex === itemIndex))].slice(0, 50),
+    bookmarks: [
+      entry,
+      ...current.bookmarks.filter(
+        (b) => b.collectionId !== collectionId || b.itemIndex !== itemIndex
+      ),
+    ].slice(0, 50),
   };
-  await saveHadithProgress(memberId, next);
+  await persistHadith(memberId, next);
   return next;
 }

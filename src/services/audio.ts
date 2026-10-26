@@ -23,20 +23,20 @@ export async function stopAudio() {
 }
 
 async function playUri(uri: string): Promise<boolean> {
-  await initAudio();
-  await stopAudio();
-  const player = createAudioPlayer({ uri });
-  currentPlayer = player;
-  player.play();
-  return true;
-}
-
-export async function playRemoteAudio(url: string): Promise<boolean> {
   try {
-    return await playUri(url);
+    await initAudio();
+    await stopAudio();
+    const player = createAudioPlayer({ uri });
+    currentPlayer = player;
+    player.play();
+    return true;
   } catch {
     return false;
   }
+}
+
+export async function playRemoteAudio(url: string): Promise<boolean> {
+  return playUri(url);
 }
 
 export async function getOfflineAudioPath(duaId: string): Promise<string | null> {
@@ -63,7 +63,7 @@ export async function playDuaAudio(duaId: string, remoteUrl?: string): Promise<b
       const info = await FileSystem.getInfoAsync(local);
       if (info.exists) return await playUri(local);
     } catch {
-      /* fall through to remote */
+      /* try remote */
     }
   }
   if (remoteUrl) return playRemoteAudio(remoteUrl);

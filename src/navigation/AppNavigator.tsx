@@ -6,32 +6,43 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import { AuthScreen } from '../screens/AuthScreen';
-import { AdvancedRemindersScreen } from '../screens/AdvancedRemindersScreen';
-import { HomeLauncherEditScreen } from '../screens/HomeLauncherEditScreen';
-import { AIAssistantScreen } from '../screens/AIAssistantScreen';
+import { useNavigationAnalytics } from '../hooks/useNavigationAnalytics';
+import { withGuestGate } from '../components/GuestGate';
+import { AdvancedRemindersScreen as AdvancedRemindersScreenBase } from '../screens/AdvancedRemindersScreen';
+import { AIAssistantScreen as AIAssistantScreenBase } from '../screens/AIAssistantScreen';
 import { CalendarScreen } from '../screens/CalendarScreen';
-import { CloudSyncScreen } from '../screens/CloudSyncScreen';
+import { DeleteAccountScreen } from '../screens/DeleteAccountScreen';
+import { CloudSyncScreen as CloudSyncScreenBase } from '../screens/CloudSyncScreen';
 import { DutiesScreen } from '../screens/DutiesScreen';
 import { DuaDetailScreen } from '../screens/DuaDetailScreen';
 import { DuasScreen } from '../screens/DuasScreen';
 import { EducationDetailScreen } from '../screens/EducationDetailScreen';
 import { EducationScreen } from '../screens/EducationScreen';
-import { FamilyModeScreen } from '../screens/FamilyModeScreen';
+import { FamilyModeScreen as FamilyModeScreenBase } from '../screens/FamilyModeScreen';
 import { HabitsScreen } from '../screens/HabitsScreen';
 import { HadithScreen } from '../screens/HadithScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { HomeLauncherEditScreen } from '../screens/HomeLauncherEditScreen';
 import { NotificationSettingsScreen } from '../screens/NotificationSettingsScreen';
 import { PlacesScreen } from '../screens/PlacesScreen';
 import { QiblaScreen } from '../screens/QiblaScreen';
 import { QuranReaderScreen } from '../screens/QuranReaderScreen';
 import { QuranScreen } from '../screens/QuranScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { StatisticsScreen } from '../screens/StatisticsScreen';
+import { StatisticsScreen as StatisticsScreenBase } from '../screens/StatisticsScreen';
 import { TasbihScreen } from '../screens/TasbihScreen';
-import { ThemesScreen } from '../screens/ThemesScreen';
-import { WidgetsScreen } from '../screens/WidgetsScreen';
+import { ThemesScreen as ThemesScreenBase } from '../screens/ThemesScreen';
+import { WidgetsScreen as WidgetsScreenBase } from '../screens/WidgetsScreen';
 import type { RootStackParamList } from './types';
+
+// Guest restrictions enforced per screen, not only on the home launcher
+const AIAssistantScreen = withGuestGate('ai_assistant', AIAssistantScreenBase);
+const CloudSyncScreen = withGuestGate('cloud_sync', CloudSyncScreenBase);
+const FamilyModeScreen = withGuestGate('family_mode', FamilyModeScreenBase);
+const StatisticsScreen = withGuestGate('statistics', StatisticsScreenBase);
+const AdvancedRemindersScreen = withGuestGate('advanced_reminders', AdvancedRemindersScreenBase);
+const ThemesScreen = withGuestGate('themes', ThemesScreenBase);
+const WidgetsScreen = withGuestGate('widgets', WidgetsScreenBase);
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -57,6 +68,7 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={screenOpts}>
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="HomeLauncherEdit" component={HomeLauncherEditScreen} options={{ title: t('home.editLauncher') }} />
       <Stack.Screen name="Quran" component={QuranScreen} options={{ title: t('nav.quran') }} />
       <Stack.Screen name="QuranReader" component={QuranReaderScreen} options={{ title: t('nav.surah') }} />
       <Stack.Screen name="Hadith" component={HadithScreen} options={{ title: t('nav.hadith') }} />
@@ -77,8 +89,7 @@ function HomeStack() {
       <Stack.Screen name="Themes" component={ThemesScreen} options={{ title: t('nav.themes') }} />
       <Stack.Screen name="CloudSync" component={CloudSyncScreen} options={{ title: t('nav.cloudSync') }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
-      <Stack.Screen name="HomeLauncherEdit" component={HomeLauncherEditScreen} options={{ title: t('home.editLauncher') }} />
-      <Stack.Screen name="Auth" component={AuthScreen} options={{ title: t('auth.signIn') }} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: t('account.deleteTitle') }} />
     </Stack.Navigator>
   );
 }
@@ -90,6 +101,7 @@ function MoreStack() {
   return (
     <Stack.Navigator screenOptions={screenOpts}>
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: t('account.deleteTitle') }} />
       <Stack.Screen name="Themes" component={ThemesScreen} options={{ title: t('nav.themes') }} />
       <Stack.Screen name="CloudSync" component={CloudSyncScreen} options={{ title: t('nav.cloudSync') }} />
       <Stack.Screen name="FamilyMode" component={FamilyModeScreen} options={{ title: t('nav.family') }} />
@@ -106,12 +118,13 @@ export function AppNavigator() {
   const { darkMode } = useApp();
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const { onNavigationStateChange } = useNavigationAnalytics();
   const navTheme = darkMode
     ? { ...DarkTheme, colors: { ...DarkTheme.colors, primary: colors.accent, background: colors.background, card: colors.surface } }
     : { ...DefaultTheme, colors: { ...DefaultTheme.colors, primary: colors.primary, background: colors.background, card: colors.surface } };
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} onStateChange={onNavigationStateChange}>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,

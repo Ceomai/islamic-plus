@@ -90,8 +90,8 @@ export function getNextPrayer(
   return { name: 'fajr', time: tomorrowTimes.fajr, remaining: `${h}h ${m}m` };
 }
 
-export function prayerNameToAdhan(prayer: PrayerName): Prayer | null {
-  const map: Partial<Record<PrayerName, Prayer>> = {
+export function prayerNameToAdhan(prayer: PrayerName): (typeof Prayer)[keyof typeof Prayer] | null {
+  const map: Partial<Record<PrayerName, (typeof Prayer)[keyof typeof Prayer]>> = {
     fajr: Prayer.Fajr,
     dhuhr: Prayer.Dhuhr,
     asr: Prayer.Asr,

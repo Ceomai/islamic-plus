@@ -1,6 +1,5 @@
 import type { ActivityStats, SpiritualHabit } from '../types';
-import { getProfileJson, setProfileJson } from './profileData';
-import { storageKeys } from './storage';
+import { getJson, setJson, storageKeys } from './storage';
 
 const DEFAULT_STATS: ActivityStats = {
   tasbihTotal: 0,
@@ -12,12 +11,12 @@ const DEFAULT_STATS: ActivityStats = {
   weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
 };
 
-export async function loadStats(activeFamilyMemberId: string | null): Promise<ActivityStats> {
-  return getProfileJson(storageKeys.stats, activeFamilyMemberId, DEFAULT_STATS);
+export async function loadStats(): Promise<ActivityStats> {
+  return getJson(storageKeys.stats, DEFAULT_STATS);
 }
 
-export async function saveStats(activeFamilyMemberId: string | null, stats: ActivityStats): Promise<void> {
-  await setProfileJson(storageKeys.stats, activeFamilyMemberId, stats);
+export async function saveStats(stats: ActivityStats): Promise<void> {
+  await setJson(storageKeys.stats, stats);
 }
 
 function todayKey() {
@@ -32,11 +31,10 @@ function bumpWeekly(stats: ActivityStats, points: number): ActivityStats {
 }
 
 export async function recordActivity(
-  activeFamilyMemberId: string | null,
   type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer',
   amount = 1
 ): Promise<ActivityStats> {
-  const stats = await loadStats(activeFamilyMemberId);
+  const stats = await loadStats();
   const today = todayKey();
   let next = { ...stats, lastActiveDate: today };
 
@@ -45,7 +43,9 @@ export async function recordActivity(
   if (type === 'dua') next.duasReadCount += amount;
   if (type === 'quran') next.quranSessions += amount;
   if (type === 'prayer') {
-    if (stats.lastActiveDate !== today) {
+    if (stats.lastActiveDate === today) {
+      // same day, no streak bump
+    } else {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yKey = yesterday.toISOString().split('T')[0];
@@ -54,7 +54,7 @@ export async function recordActivity(
   }
 
   next = bumpWeekly(next, type === 'tasbih' ? 5 : 12);
-  await saveStats(activeFamilyMemberId, next);
+  await saveStats(next);
   return next;
 }
 
