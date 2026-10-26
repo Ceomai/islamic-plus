@@ -1,94 +1,101 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card } from '../components/Card';
+import { Platform, View } from 'react-native';
 import { useApp } from '../context/AppContext';
-import { payloadToJson, parseSyncJson } from '../services/cloudSync';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { payloadToJson } from '../services/cloudSync';
+import { AppText, Button, IconBadge, Screen, SectionHeader, Surface } from '../ui';
+import { localDateKey } from '../utils/date';
 
 export function CloudSyncScreen() {
-  const { settings, updateSettings, syncNow, exportSyncPayload, importSyncPayload } = useApp();
-  const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { settings, syncNow, exportSyncPayload } = useApp();
+  const { backend, isGuest } = useAuth();
+  const { colors, space } = useTheme();
+  const { t, lang } = useTranslation();
   const [syncing, setSyncing] = useState(false);
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const cloud = backend === 'supabase' && !isGuest;
+  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
   const handleSync = async () => {
     setSyncing(true);
+    setMessage(null);
     try {
       const result = await syncNow();
-      Alert.alert(t('sync.success'), t('sync.syncedAt', { time: new Date(result.mergedAt).toLocaleString() }));
+      setMessage({ text: t('sync.syncedAt', { time: new Date(result.mergedAt).toLocaleString(locale) }), ok: true });
     } catch {
-      Alert.alert(t('sync.error'), t('sync.errorMsg'));
+      setMessage({ text: t('sync.errorMsg'), ok: false });
     } finally {
       setSyncing(false);
     }
   };
 
+  /** Writes a JSON backup to a temp file and opens the share sheet (Files, Drive, mail…). */
   const handleExport = async () => {
-    const payload = await exportSyncPayload();
-    Alert.alert(t('sync.exportTitle'), t('sync.exportHint'));
-    await updateSettings({
-      cloudSync: { ...settings.cloudSync, lastSyncAt: payload.exportedAt },
-    });
-  };
-
-  const handleImportDemo = async () => {
-    const payload = await exportSyncPayload();
-    const parsed = parseSyncJson(payloadToJson(payload));
-    if (parsed) {
-      await importSyncPayload(parsed);
-      Alert.alert(t('sync.importSuccess'));
+    setMessage(null);
+    try {
+      const json = payloadToJson(await exportSyncPayload());
+      const uri = `${FileSystem.cacheDirectory}islamic-plus-backup-${localDateKey()}.json`;
+      await FileSystem.writeAsStringAsync(uri, json);
+      if (Platform.OS !== 'web' && (await Sharing.isAvailableAsync())) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/json', dialogTitle: t('sync.export') });
+      } else {
+        setMessage({ text: t('sync.exportUnavailable'), ok: false });
+      }
+    } catch {
+      setMessage({ text: t('sync.exportError'), ok: false });
     }
   };
 
   const lastSync = settings.cloudSync.lastSyncAt
-    ? new Date(settings.cloudSync.lastSyncAt).toLocaleString()
+    ? new Date(settings.cloudSync.lastSyncAt).toLocaleString(locale)
     : t('sync.never');
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('sync.intro')}</Text>
-      <Card>
-        <Text style={{ color: colors.textSecondary }}>{t('sync.lastSync')}</Text>
-        <Text style={[styles.lastSync, { color: colors.text }]}>{lastSync}</Text>
-        <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 12 }}>
-          {t('sync.deviceId')}: {settings.cloudSync.deviceId.slice(0, 16)}…
-        </Text>
-      </Card>
+    <Screen>
+      <Surface style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+        <IconBadge name={cloud ? 'cloud-done-outline' : 'cloud-offline-outline'} size="lg" tone={cloud ? 'brand' : 'neutral'} />
+        <View style={{ flex: 1 }}>
+          <AppText variant="bodyStrong">{cloud ? t('sync.autoTitle') : t('sync.localTitle')}</AppText>
+          <AppText variant="caption" tone="secondary">
+            {cloud ? t('sync.autoBody') : t('sync.localBody')}
+          </AppText>
+        </View>
+      </Surface>
 
-      <Pressable
-        style={[styles.btn, { backgroundColor: colors.primary }]}
-        onPress={handleSync}
-        disabled={syncing}
-      >
-        {syncing ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.btnText}>{t('sync.syncNow')}</Text>
-        )}
-      </Pressable>
+      {cloud && (
+        <>
+          <SectionHeader title={t('sync.lastSync')} />
+          <Surface>
+            <AppText variant="heading">{lastSync}</AppText>
+            <Button
+              label={t('sync.syncNow')}
+              icon="sync-outline"
+              onPress={handleSync}
+              loading={syncing}
+              fullWidth
+              style={{ marginTop: space[4] }}
+            />
+          </Surface>
+        </>
+      )}
 
-      <Pressable style={[styles.btnOutline, { borderColor: colors.primary }]} onPress={handleExport}>
-        <Text style={[styles.btnOutlineText, { color: colors.primary }]}>{t('sync.export')}</Text>
-      </Pressable>
+      <SectionHeader title={t('sync.backupTitle')} />
+      <Surface>
+        <AppText variant="callout" tone="secondary" style={{ marginBottom: space[4] }}>
+          {t('sync.backupBody')}
+        </AppText>
+        <Button label={t('sync.export')} icon="share-outline" onPress={handleExport} variant="secondary" fullWidth />
+      </Surface>
 
-      <Pressable style={[styles.btnOutline, { borderColor: colors.border }]} onPress={handleImportDemo}>
-        <Text style={[styles.btnOutlineText, { color: colors.text }]}>{t('sync.restore')}</Text>
-      </Pressable>
-
-      <Text style={[styles.note, { color: colors.textSecondary }]}>{t('sync.note')}</Text>
-    </ScrollView>
+      {message && (
+        <AppText variant="callout" color={message.ok ? colors.success : colors.error} style={{ marginTop: space[3] }}>
+          {message.text}
+        </AppText>
+      )}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  intro: { lineHeight: 22, marginBottom: 16 },
-  lastSync: { fontSize: 18, fontWeight: '700', marginTop: 4 },
-  btn: { padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 16 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  btnOutline: { padding: 14, borderRadius: 14, alignItems: 'center', marginTop: 12, borderWidth: 2 },
-  btnOutlineText: { fontSize: 15, fontWeight: '600' },
-  note: { fontSize: 12, lineHeight: 18, marginTop: 20 },
-});

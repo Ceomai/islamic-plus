@@ -1,79 +1,98 @@
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card } from '../components/Card';
-import { StatRing } from '../components/StatRing';
+import { View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
 import { useApp } from '../context/AppContext';
-import { statsSummary } from '../services/statistics';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { statsSummary } from '../services/statistics';
+import { AppText, ListRow, Screen, SectionHeader, Surface } from '../ui';
+import { lastDayKeys, localDateKey } from '../utils/date';
 
-export function StatisticsScreen() {
+const CHART_HEIGHT = 120;
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Statistics'>;
+
+export function StatisticsScreen({ navigation }: Props) {
   const { stats, habitScore, refreshStats } = useApp();
-  const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { colors, radius, space } = useTheme();
+  const { t, lang } = useTranslation();
 
   useEffect(() => {
     refreshStats();
   }, [refreshStats]);
 
   const summary = statsSummary(stats, habitScore);
+  const days = lastDayKeys(7);
+  const today = localDateKey();
+  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+
+  const tiles = [
+    { label: t('stats.streak'), value: String(stats.prayerStreakDays), hint: t('stats.streakHint') },
+    { label: t('stats.habits'), value: `${summary.habitScore}%`, hint: t('stats.habitsHint') },
+    { label: t('stats.weekly'), value: String(summary.weeklyAvg), hint: t('stats.weeklyHint') },
+  ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('stats.intro')}</Text>
-      <View style={styles.rings}>
-        <StatRing value={summary.habitScore} label={t('stats.habits')} max={100} />
-        <StatRing value={stats.prayerStreakDays} label={t('stats.streak')} max={30} />
-        <StatRing value={summary.weeklyAvg} label={t('stats.weekly')} max={100} />
-      </View>
-      <Card>
-        <StatRow label={t('stats.tasbih')} value={stats.tasbihTotal.toLocaleString()} colors={colors} />
-        <StatRow label={t('stats.duasRead')} value={String(stats.duasReadCount)} colors={colors} />
-        <StatRow label={t('stats.habitsDone')} value={String(stats.habitsCompletedTotal)} colors={colors} />
-        <StatRow label={t('stats.quranSessions')} value={String(stats.quranSessions)} colors={colors} />
-      </Card>
-      <Text style={[styles.section, { color: colors.text }]}>{t('stats.weeklyChart')}</Text>
-      <View style={[styles.chart, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        {stats.weeklyActivity.map((v, i) => (
-          <View key={i} style={styles.barCol}>
-            <View style={[styles.bar, { height: Math.max(4, v * 0.8), backgroundColor: colors.primary }]} />
-            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{['S', 'M', 'T', 'W', 'T', 'F', 'S'][i]}</Text>
-          </View>
+    <Screen>
+      <AppText variant="callout" tone="secondary" style={{ marginBottom: space[4] }}>
+        {t('stats.intro')}
+      </AppText>
+
+      <View style={{ flexDirection: 'row', gap: space[2] }}>
+        {tiles.map((tile) => (
+          <Surface key={tile.label} variant="soft" padding={space[3]} style={{ flex: 1 }}>
+            <AppText variant="title" color={colors.onPrimarySoft}>
+              {tile.value}
+            </AppText>
+            <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }} numberOfLines={2}>
+              {tile.label}
+            </AppText>
+          </Surface>
         ))}
       </View>
-      <Text style={[styles.engagement, { color: colors.accent }]}>
-        {t('stats.engagement')}: {summary.totalEngagement}
-      </Text>
-    </ScrollView>
+      <AppText variant="caption" tone="muted" style={{ marginTop: space[2] }}>
+        {t('stats.streakHint')}
+      </AppText>
+
+      <SectionHeader title={t('stats.weeklyChart')} />
+      <Surface>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_HEIGHT + 24 }}>
+          {stats.weeklyActivity.map((v, i) => {
+            const key = days[i];
+            const isToday = key === today;
+            return (
+              <View key={key ?? i} style={{ flex: 1, alignItems: 'center' }}>
+                <View
+                  style={{
+                    width: 18,
+                    height: Math.max(4, (v / 100) * CHART_HEIGHT),
+                    borderRadius: radius.sm,
+                    backgroundColor: isToday ? colors.primary : colors.primarySoft,
+                  }}
+                />
+                <AppText variant="caption" tone={isToday ? 'brand' : 'muted'} style={{ marginTop: space[1] }}>
+                  {key ? new Date(`${key}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' }) : ''}
+                </AppText>
+              </View>
+            );
+          })}
+        </View>
+      </Surface>
+
+      <SectionHeader title={t('stats.totals')} />
+      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+        <ListRow
+          icon="ellipse-outline"
+          title={t('stats.tasbih')}
+          value={stats.tasbihTotal.toLocaleString(locale)}
+          onPress={() => navigation.navigate('TasbihStats')}
+          divider
+        />
+        <ListRow icon="hand-left-outline" title={t('stats.duasRead')} value={String(stats.duasReadCount)} divider />
+        <ListRow icon="checkmark-done-outline" title={t('stats.habitsDone')} value={String(stats.habitsCompletedTotal)} divider />
+        <ListRow icon="book-outline" title={t('stats.quranSessions')} value={String(stats.quranSessions)} />
+      </Surface>
+    </Screen>
   );
 }
-
-function StatRow({
-  label,
-  value,
-  colors,
-}: {
-  label: string;
-  value: string;
-  colors: ReturnType<typeof useTheme>['colors'];
-}) {
-  return (
-    <View style={styles.row}>
-      <Text style={{ color: colors.textSecondary }}>{label}</Text>
-      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 18 }}>{value}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  intro: { lineHeight: 22, marginBottom: 20 },
-  rings: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24 },
-  section: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
-  chart: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 120, borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16 },
-  barCol: { alignItems: 'center', flex: 1 },
-  bar: { width: 20, borderRadius: 6, marginBottom: 6 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-  engagement: { textAlign: 'center', fontSize: 16, fontWeight: '600' },
-});

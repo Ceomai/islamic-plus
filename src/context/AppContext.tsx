@@ -1,11 +1,13 @@
+import { localDateKey } from '../utils/date';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { useAuth } from './AuthContext';
 import { scheduleCustomReminders } from '../services/advancedReminders';
 import { initAudio } from '../services/audio';
-import { buildSyncPayload, importSyncPayloadToStorage, performCloudSync, type SyncPayload } from '../services/cloudSync';
+import { buildSyncPayload, importSyncPayloadToStorage, type SyncPayload } from '../services/cloudSync';
+import { isCloudUserActive } from '../services/cloudUser';
 import { getCachedLocation, getCurrentLocation, type StoredLocation } from '../services/location';
-import { getTodayCompletions, togglePrayerCompletion } from '../services/prayerTracking';
+import { getTodayCompletions, loadPrayerCompletions, togglePrayerCompletion } from '../services/prayerTracking';
 import {
   notifyAppDataChanged,
   registerAppDataPayloadBuilder,
@@ -13,7 +15,7 @@ import {
 } from '../services/userDataCloud';
 import { schedulePrayerNotifications, setupNotificationChannels } from '../services/notifications';
 import { migrateSettings } from '../services/settingsMigration';
-import { computeHabitScore, loadStats, recordActivity } from '../services/statistics';
+import { computeHabitScore, loadStats, recordActivity, updatePrayerStreak } from '../services/statistics';
 import { logAIChatExchange, resetAIChatSessionId, trackFeatureAction } from '../services/cloudAnalytics';
 import { getJson, setJson, storageKeys } from '../services/storage';
 import { loadHadithProgress, loadQuranProgress, onReadingProgressChanged } from '../services/readingProgress';
@@ -24,6 +26,7 @@ import {
 import type {
   ActivityStats,
   AIChatMessage,
+  AssistantAction,
   AppLanguage,
   CustomReminder,
   FamilyMember,
@@ -45,16 +48,18 @@ interface AppContextValue {
   habits: SpiritualHabit[];
   addHabit: (habit: Omit<SpiritualHabit, 'id' | 'completedDates'>) => Promise<void>;
   toggleHabitToday: (id: string) => Promise<void>;
+  removeHabit: (id: string) => Promise<void>;
   family: FamilyMember[];
   addFamilyMember: (member: Omit<FamilyMember, 'id' | 'habitIds'>) => Promise<void>;
   removeFamilyMember: (id: string) => Promise<void>;
   setActiveFamilyMember: (id: string | null) => Promise<void>;
   stats: ActivityStats;
   refreshStats: () => Promise<void>;
-  trackActivity: (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer') => Promise<void>;
+  /** `report: false` records locally without an analytics event (e.g. every single tasbih tap) */
+  trackActivity: (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report?: boolean) => Promise<void>;
   habitScore: number;
   aiMessages: AIChatMessage[];
-  sendAIMessage: (text: string, reply: string) => Promise<void>;
+  sendAIMessage: (text: string, reply: string, actions?: AssistantAction[]) => Promise<void>;
   clearAIChat: () => Promise<void>;
   syncNow: () => Promise<{ success: boolean; mergedAt: string }>;
   exportSyncPayload: () => Promise<SyncPayload>;
@@ -158,7 +163,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setHadithProgress(hp);
       await refreshTodayPrayers();
       if (savedSettings.customReminders.length > 0) {
-        void scheduleCustomReminders(savedSettings.customReminders);
+        void scheduleCustomReminders(savedSettings.customReminders, savedSettings.appLanguage);
       }
       setLoading(false);
     })();
@@ -256,7 +261,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         void schedulePrayerNotifications(location.latitude, location.longitude, next);
       }
       if (patch.customReminders || next.customReminders) {
-        void scheduleCustomReminders(next.customReminders);
+        void scheduleCustomReminders(next.customReminders, next.appLanguage);
       }
       notifyAppDataChanged();
       return next;
@@ -285,7 +290,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleHabitToday = useCallback(async (id: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateKey();
     setHabits((prev) => {
       const next = prev.map((h) => {
         if (h.id !== id) return h;
@@ -304,6 +309,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, [refreshStats]);
+
+  const removeHabit = useCallback(async (id: string) => {
+    setHabits((prev) => {
+      const next = prev.filter((h) => h.id !== id);
+      void setJson(storageKeys.habits, next);
+      notifyAppDataChanged();
+      return next;
+    });
+  }, []);
 
   const addFamilyMember = useCallback(async (member: Omit<FamilyMember, 'id' | 'habitIds'>) => {
     const newMember: FamilyMember = {
@@ -339,10 +353,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const trackActivity = useCallback(
-    async (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer') => {
+    async (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report = true) => {
       const next = await recordActivity(type);
       setStats(next);
-      void trackFeatureAction(type, 'activity_recorded');
+      if (report) void trackFeatureAction(type, 'activity_recorded');
       notifyAppDataChanged();
     },
     []
@@ -352,12 +366,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (prayer: PrayerName) => {
       const added = await togglePrayerCompletion(prayer);
       if (added) await trackActivity('prayer');
+      // Streak depends on full days of prayers, so recompute on every toggle (including un-marking)
+      setStats(await updatePrayerStreak(await loadPrayerCompletions()));
       await refreshTodayPrayers();
     },
     [trackActivity, refreshTodayPrayers]
   );
 
-  const sendAIMessage = useCallback(async (text: string, reply: string) => {
+  const sendAIMessage = useCallback(async (text: string, reply: string, actions?: AssistantAction[]) => {
     const now = new Date().toISOString();
     const userText = text.trim();
     const assistantText = reply.trim();
@@ -368,7 +384,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         next.push({ id: `${now}-u`, role: 'user', content: userText, timestamp: now });
       }
       if (assistantText) {
-        next.push({ id: `${now}-a`, role: 'assistant', content: assistantText, timestamp: now });
+        next.push({ id: `${now}-a`, role: 'assistant', content: assistantText, timestamp: now, ...(actions?.length ? { actions } : {}) });
       }
       void setJson(storageKeys.aiChat, next);
       return next;
@@ -407,27 +423,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     await refreshTodayPrayers();
     if (payload.settings.customReminders.length > 0) {
-      await scheduleCustomReminders(payload.settings.customReminders);
+      await scheduleCustomReminders(payload.settings.customReminders, payload.settings.appLanguage);
     }
   }, [refreshTodayPrayers]);
 
+  /** Pulls the account's cloud copy, merges it with this device and pushes the result back. */
   const syncNow = useCallback(async () => {
-    const local = await buildSyncPayload(settings, habits, family, stats, darkMode, location);
-    const result = await performCloudSync(local, importSyncPayload);
+    if (!(await isCloudUserActive())) throw new Error('cloud_unavailable');
+    await syncAppDataFromCloud();
+    await syncReadingFromCloud();
+    const mergedAt = new Date().toISOString();
     await updateSettings({
-      cloudSync: { ...settings.cloudSync, lastSyncAt: result.mergedAt, syncEnabled: true },
+      cloudSync: { ...stateRef.current.settings.cloudSync, lastSyncAt: mergedAt, syncEnabled: true },
     });
-    await refreshStats();
-    notifyAppDataChanged();
-    return result;
-  }, [settings, habits, family, stats, darkMode, location, importSyncPayload, updateSettings, refreshStats]);
+    return { success: true, mergedAt };
+  }, [syncAppDataFromCloud, syncReadingFromCloud, updateSettings]);
 
   const addCustomReminder = useCallback(
     async (reminder: Omit<CustomReminder, 'id'>) => {
       const newR: CustomReminder = { ...reminder, id: Date.now().toString() };
       const next = [...settings.customReminders, newR];
       await updateSettings({ customReminders: next });
-      await scheduleCustomReminders(next);
+      await scheduleCustomReminders(next, settings.appLanguage);
     },
     [settings.customReminders, updateSettings]
   );
@@ -436,7 +453,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (id: string) => {
       const next = settings.customReminders.filter((r) => r.id !== id);
       await updateSettings({ customReminders: next });
-      await scheduleCustomReminders(next);
+      await scheduleCustomReminders(next, settings.appLanguage);
     },
     [settings.customReminders, updateSettings]
   );
@@ -476,6 +493,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         habits,
         addHabit,
         toggleHabitToday,
+        removeHabit,
         family,
         addFamilyMember,
         removeFamilyMember,

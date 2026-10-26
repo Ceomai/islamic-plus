@@ -62,7 +62,7 @@ export function HomeWidgetModule({ onOpenDua }: Props) {
     rows.push({
       key: 'dua',
       icon: 'hand-left-outline',
-      text: `${t(dua.titleKey)} — ${dua.arabic}`,
+      text: `${dua.title[lang]} — ${dua.arabic}`,
       onPress: onOpenDua ? () => onOpenDua(dua.id) : undefined,
     });
   }

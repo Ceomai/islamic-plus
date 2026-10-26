@@ -7,7 +7,8 @@ export interface ZakatInput {
   debts: number;
   goldPricePerGram: number;
   silverPricePerGram: number;
-  nisabBasis: 'gold' | 'silver';
+  /** gold: 85 g (common contemporary value), goldDiyanet: 80.18 g (Diyanet, Türkiye), silver: 595 g */
+  nisabBasis: 'gold' | 'goldDiyanet' | 'silver';
 }
 
 export interface ZakatResult {
@@ -19,26 +20,25 @@ export interface ZakatResult {
 }
 
 const NISAB_GOLD_GRAMS = 85;
+const NISAB_GOLD_GRAMS_DIYANET = 80.18;
 const NISAB_SILVER_GRAMS = 595;
 const ZAKAT_RATE = 0.025;
 
 export function calculateZakat(input: ZakatInput): ZakatResult {
   const goldValue = input.goldGrams * input.goldPricePerGram;
   const silverValue = input.silverGrams * input.silverPricePerGram;
-  const totalWealth =
-    input.cash +
-    goldValue +
-    silverValue +
-    input.investments +
-    input.businessAssets -
-    input.debts;
+  const totalWealth = Math.max(
+    0,
+    input.cash + goldValue + silverValue + input.investments + input.businessAssets - input.debts
+  );
 
   const nisabThreshold =
-    input.nisabBasis === 'gold'
-      ? NISAB_GOLD_GRAMS * input.goldPricePerGram
-      : NISAB_SILVER_GRAMS * input.silverPricePerGram;
+    input.nisabBasis === 'silver'
+      ? NISAB_SILVER_GRAMS * input.silverPricePerGram
+      : (input.nisabBasis === 'goldDiyanet' ? NISAB_GOLD_GRAMS_DIYANET : NISAB_GOLD_GRAMS) * input.goldPricePerGram;
 
-  const isObligatory = totalWealth >= nisabThreshold;
+  // Without a metal price there is no threshold to compare against, so nothing is due
+  const isObligatory = nisabThreshold > 0 && totalWealth > 0 && totalWealth >= nisabThreshold;
   const zakatableAmount = isObligatory ? totalWealth : 0;
   const zakatDue = zakatableAmount * ZAKAT_RATE;
 

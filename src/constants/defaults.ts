@@ -3,7 +3,7 @@ import { DEFAULT_HOME_LAUNCHER_ORDER } from './homeFeatures';
 
 const defaultPrayerNotification = {
   enabled: true,
-  sound: 'adhan_short' as const,
+  sound: 'default' as const,
   vibrate: true,
   advanceMinutes: 0,
 };
@@ -37,6 +37,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   widgetPrefs: defaultWidgetPrefs,
   customReminders: [],
   offlineAudioEnabled: true,
+  quranView: 'parallel',
+  quranFontScale: 1,
   homeLauncher: { order: [...DEFAULT_HOME_LAUNCHER_ORDER] },
   darkMode: false,
 };
@@ -69,14 +71,22 @@ export const APP_LANGUAGES = [
   { code: 'tr' as const, label: 'Türkçe' },
 ];
 
-export const QURAN_EDITIONS = [
-  { id: 'en.asad', name: 'The Message of the Quran', language: 'en', translator: 'Muhammad Asad' },
-  { id: 'en.sahih', name: 'Sahih International', language: 'en' },
-  { id: 'en.pickthall', name: 'Pickthall', language: 'en' },
-  { id: 'ar.alafasy', name: 'Arabic (Uthmani)', language: 'ar' },
+/** Translations offered in the reader. Arabic text and transliteration are fixed editions below. */
+export const QURAN_EDITIONS: { id: string; name: string; language: string; translator?: string }[] = [
+  { id: 'tr.diyanet', name: 'Diyanet İşleri', language: 'tr' },
   { id: 'tr.yazir', name: 'Elmalılı Hamdi Yazır', language: 'tr' },
+  { id: 'tr.vakfi', name: 'Diyanet Vakfı', language: 'tr' },
+  { id: 'tr.ates', name: 'Süleyman Ateş', language: 'tr' },
+  { id: 'en.sahih', name: 'Sahih International', language: 'en' },
+  { id: 'en.asad', name: 'The Message of the Quran', language: 'en', translator: 'Muhammad Asad' },
+  { id: 'en.pickthall', name: 'Pickthall', language: 'en' },
   { id: 'ur.ahmedali', name: 'Ahmed Ali', language: 'ur' },
 ];
+
+export const QURAN_ARABIC_EDITION = 'quran-uthmani';
+export const QURAN_TRANSLITERATION_EDITION = 'en.transliteration';
+/** Mishary Alafasy recitation, addressed by global ayah number */
+export const QURAN_AUDIO_BASE = 'https://cdn.islamic.network/quran/audio/128/ar.alafasy';
 
 export const HADITH_COLLECTIONS = [
   { id: 'bukhari', name: 'Sahih al-Bukhari', language: 'en', sect: 'sunni' as const },

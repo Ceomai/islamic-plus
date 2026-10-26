@@ -2,7 +2,8 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { getPrayerLabel, translate } from '../i18n';
 import type { DisabledPrayerRule, PrayerName, UserSettings } from '../types';
-import { getPrayerTimes } from './prayerTimes';
+import { localDateKey } from '../utils/date';
+import { getPrayerDates } from './prayerTimes';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -13,34 +14,25 @@ Notifications.setNotificationHandler({
   }),
 });
 
-function isPrayerDisabled(
-  prayer: PrayerName,
-  date: Date,
-  rules: DisabledPrayerRule[]
-): boolean {
-  const dateStr = date.toISOString().split('T')[0];
+/**
+ * Android channel. v2 replaces the original "prayer-times" channel, which pointed at an adhan
+ * sound file that was never bundled; channel sounds can't be changed once a channel exists.
+ */
+export const PRAYER_CHANNEL_ID = 'prayer-times-v2';
+const NOTIFY_PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const DAYS_AHEAD = 7;
+const notificationsSupported = Platform.OS !== 'web';
+
+function isPrayerDisabled(prayer: PrayerName, date: Date, rules: DisabledPrayerRule[]): boolean {
+  const dateStr = localDateKey(date);
   const dayOfWeek = date.getDay();
   return rules.some(
-    (r) =>
-      r.prayer === prayer &&
-      (r.specificDates.includes(dateStr) || r.daysOfWeek.includes(dayOfWeek))
+    (r) => r.prayer === prayer && (r.specificDates.includes(dateStr) || r.daysOfWeek.includes(dayOfWeek))
   );
 }
 
-function parseTimeOnDate(timeStr: string, date: Date): Date {
-  const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-  if (!match) return date;
-  let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  const period = match[3]?.toUpperCase();
-  if (period === 'PM' && hours < 12) hours += 12;
-  if (period === 'AM' && hours === 12) hours = 0;
-  const result = new Date(date);
-  result.setHours(hours, minutes, 0, 0);
-  return result;
-}
-
 export async function requestNotificationPermissions(): Promise<boolean> {
+  if (!notificationsSupported) return false;
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === 'granted') return true;
   const { status } = await Notifications.requestPermissionsAsync();
@@ -61,44 +53,30 @@ export async function schedulePrayerNotifications(
   longitude: number,
   settings: UserSettings
 ): Promise<void> {
+  if (!notificationsSupported) return;
   await cancelPrayerNotifications();
   if (!settings.globalNotificationsEnabled) return;
 
   const granted = await requestNotificationPermissions();
   if (!granted) return;
 
-  const notifyPrayers: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-
-  for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+  const now = new Date();
+  for (let dayOffset = 0; dayOffset < DAYS_AHEAD; dayOffset++) {
     const date = new Date();
     date.setDate(date.getDate() + dayOffset);
-    date.setHours(0, 0, 0, 0);
+    date.setHours(12, 0, 0, 0);
 
-    const schedule = getPrayerTimes(
-      latitude,
-      longitude,
-      date,
-      settings.calculationMethod,
-      settings.madhab
-    );
+    // Use the computed Date objects directly: formatting to a clock string and parsing it back
+    // depended on the device locale (e.g. Turkish "ÖS" instead of "PM").
+    const times = getPrayerDates(latitude, longitude, date, settings.calculationMethod, settings.madhab);
 
-    for (const prayer of notifyPrayers) {
+    for (const prayer of NOTIFY_PRAYERS) {
       const notifSettings = settings.prayerNotifications[prayer];
       if (!notifSettings?.enabled) continue;
       if (isPrayerDisabled(prayer, date, settings.disabledPrayerRules)) continue;
 
-      let triggerDate = parseTimeOnDate(schedule.times[prayer], date);
-      if (notifSettings.advanceMinutes > 0) {
-        triggerDate = new Date(triggerDate.getTime() - notifSettings.advanceMinutes * 60000);
-      }
-      if (triggerDate <= new Date()) continue;
-
-      const sound =
-        notifSettings.sound === 'silent'
-          ? false
-          : notifSettings.sound === 'default'
-            ? 'default'
-            : notifSettings.sound;
+      const triggerDate = new Date(times[prayer].getTime() - (notifSettings.advanceMinutes ?? 0) * 60000);
+      if (triggerDate <= now) continue;
 
       const prayerLabel = getPrayerLabel(settings.appLanguage, prayer);
       await Notifications.scheduleNotificationAsync({
@@ -106,8 +84,9 @@ export async function schedulePrayerNotifications(
         content: {
           title: translate(settings.appLanguage, 'notifications.title', { prayer: prayerLabel }),
           body: translate(settings.appLanguage, 'notifications.body', { prayer: prayerLabel }),
-          sound: sound === false ? undefined : sound,
-          ...(Platform.OS === 'android' && { channelId: 'prayer-times' }),
+          // Custom adhan sounds are not bundled yet; anything but "silent" uses the system sound
+          sound: notifSettings.sound === 'silent' ? undefined : 'default',
+          ...(Platform.OS === 'android' && { channelId: PRAYER_CHANNEL_ID }),
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
       });
@@ -117,10 +96,10 @@ export async function schedulePrayerNotifications(
 
 export async function setupNotificationChannels(): Promise<void> {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('prayer-times', {
-      name: 'Prayer Times',
+    await Notifications.setNotificationChannelAsync(PRAYER_CHANNEL_ID, {
+      name: 'Prayer times',
       importance: Notifications.AndroidImportance.HIGH,
-      sound: 'adhan_short.wav',
+      sound: 'default',
       vibrationPattern: [0, 250, 250, 250],
     });
   }

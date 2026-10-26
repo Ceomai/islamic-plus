@@ -1,0 +1,2405 @@
+[
+  {
+    "id": "morning-1",
+    "category": "morning_evening",
+    "repeat": 1,
+    "title": {
+      "tr": "Sabah zikri (Asbahnâ)",
+      "en": "Morning remembrance (Asbahna)"
+    },
+    "arabic": "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
+    "transliteration": "Asbahnâ ve asbaha'l-mulku lillâh, ve'l-hamdu lillâh. Lâ ilâhe illallâhu vahdehû lâ şerîke leh, lehu'l-mulku ve lehu'l-hamdu ve huve alâ kulli şey'in kadîr.",
+    "translation": {
+      "tr": "Sabaha erdik, mülk de Allah için sabaha erdi. Hamd Allah'adır. Allah'tan başka ilah yoktur; O tektir, ortağı yoktur. Mülk O'nundur, hamd O'nadır ve O her şeye kadirdir.",
+      "en": "We have reached the morning and so has the dominion of Allah, and all praise is for Allah. None has the right to be worshipped but Allah alone, without partner. His is the dominion and His is the praise, and He is able to do all things."
+    },
+    "tags": {
+      "tr": [
+        "sabah",
+        "güne başlarken",
+        "sabah ezkarı"
+      ],
+      "en": [
+        "morning",
+        "start of day"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/77.mp3",
+    "verified": true
+  },
+  {
+    "id": "evening-1",
+    "category": "morning_evening",
+    "repeat": 1,
+    "title": {
+      "tr": "Akşam zikri (Emseynâ)",
+      "en": "Evening remembrance (Amsayna)"
+    },
+    "arabic": "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ",
+    "transliteration": "Emseynâ ve emse'l-mulku lillâh.",
+    "translation": {
+      "tr": "Akşama erdik, mülk de Allah için akşama erdi. (Sabah zikrinin devamı \"emseynâ\" şeklinde okunur.)",
+      "en": "We have reached the evening and so has the dominion of Allah. (The rest follows the morning version, said with \"amsayna\".)"
+    },
+    "tags": {
+      "tr": [
+        "akşam",
+        "akşam ezkarı",
+        "gün biterken"
+      ],
+      "en": [
+        "evening",
+        "end of day"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/89.mp3",
+    "verified": true
+  },
+  {
+    "id": "morning-bika",
+    "category": "morning_evening",
+    "repeat": 1,
+    "title": {
+      "tr": "Seninle sabaha erdik",
+      "en": "By You we enter the morning"
+    },
+    "arabic": "اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ",
+    "transliteration": "Allâhumme bike asbahnâ ve bike emseynâ ve bike nahyâ ve bike nemûtu ve ileyke'n-nuşûr.",
+    "translation": {
+      "tr": "Allah'ım! Seninle sabaha erdik, Seninle akşama erdik. Seninle yaşar, Seninle ölürüz. Dönüş ancak Sanadır.",
+      "en": "O Allah, by You we enter the morning and by You we enter the evening, by You we live and by You we die, and to You is the resurrection."
+    },
+    "tags": {
+      "tr": [
+        "sabah",
+        "akşam",
+        "tevekkül"
+      ],
+      "en": [
+        "morning",
+        "evening",
+        "reliance"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/78.mp3",
+    "verified": true
+  },
+  {
+    "id": "protection-bismillah",
+    "category": "protection",
+    "repeat": 3,
+    "title": {
+      "tr": "Hiçbir şeyin zarar vermemesi için",
+      "en": "Protection from all harm"
+    },
+    "arabic": "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ",
+    "transliteration": "Bismillâhillezî lâ yedurru mea'smihî şey'un fi'l-ardı ve lâ fi's-semâi ve huve's-semîu'l-alîm.",
+    "translation": {
+      "tr": "İsmi anıldığında yerde ve gökte hiçbir şeyin zarar veremeyeceği Allah'ın adıyla. O işitendir, bilendir.",
+      "en": "In the name of Allah, with whose name nothing on earth or in the heavens can cause harm, and He is the All-Hearing, the All-Knowing."
+    },
+    "tags": {
+      "tr": [
+        "korunma",
+        "koruma",
+        "sabah",
+        "akşam",
+        "kaza",
+        "bela",
+        "nazar"
+      ],
+      "en": [
+        "protection",
+        "harm",
+        "safety"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/86.mp3",
+    "verified": true
+  },
+  {
+    "id": "radhitu",
+    "category": "morning_evening",
+    "repeat": 3,
+    "title": {
+      "tr": "Rab olarak Allah'tan razıyım",
+      "en": "Pleased with Allah as Lord"
+    },
+    "arabic": "رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ نَبِيًّا",
+    "transliteration": "Radîtu billâhi rabben ve bi'l-islâmi dînen ve bi-Muhammedin sallallâhu aleyhi ve selleme nebiyyen.",
+    "translation": {
+      "tr": "Rab olarak Allah'tan, din olarak İslam'dan, peygamber olarak Muhammed'den (s.a.v.) razı oldum.",
+      "en": "I am pleased with Allah as my Lord, with Islam as my religion and with Muhammad (peace be upon him) as my Prophet."
+    },
+    "tags": {
+      "tr": [
+        "sabah",
+        "akşam",
+        "iman",
+        "rıza"
+      ],
+      "en": [
+        "faith",
+        "contentment",
+        "morning",
+        "evening"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/87.mp3",
+    "verified": true
+  },
+  {
+    "id": "hasbiyallah",
+    "category": "protection",
+    "repeat": 7,
+    "title": {
+      "tr": "Allah bana yeter",
+      "en": "Allah is sufficient for me"
+    },
+    "arabic": "حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ",
+    "transliteration": "Hasbiyallâhu lâ ilâhe illâ hû, aleyhi tevekkeltu ve huve rabbu'l-arşi'l-azîm.",
+    "translation": {
+      "tr": "Allah bana yeter. O'ndan başka ilah yoktur. O'na tevekkül ettim; O, büyük Arş'ın Rabbidir.",
+      "en": "Allah is sufficient for me; there is no god but He. In Him I put my trust, and He is the Lord of the Mighty Throne."
+    },
+    "tags": {
+      "tr": [
+        "tevekkül",
+        "kaygı",
+        "endişe",
+        "sabah",
+        "akşam",
+        "güven"
+      ],
+      "en": [
+        "trust",
+        "worry",
+        "reliance"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/83.mp3",
+    "verified": true
+  },
+  {
+    "id": "istighfar",
+    "category": "forgiveness",
+    "repeat": 3,
+    "title": {
+      "tr": "İstiğfar",
+      "en": "Seeking forgiveness"
+    },
+    "arabic": "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ الَّذِي لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ وَأَتُوبُ إِلَيْهِ",
+    "transliteration": "Estağfirullâhe'l-azîme'llezî lâ ilâhe illâ huve'l-hayyu'l-kayyûmu ve etûbu ileyh.",
+    "translation": {
+      "tr": "Kendisinden başka ilah olmayan, diri ve her şeyi ayakta tutan Yüce Allah'tan bağışlanma diler ve O'na tövbe ederim.",
+      "en": "I seek the forgiveness of Allah the Mighty, besides whom there is no god, the Ever-Living, the Sustainer, and I turn to Him in repentance."
+    },
+    "tags": {
+      "tr": [
+        "tövbe",
+        "istiğfar",
+        "bağışlanma",
+        "günah"
+      ],
+      "en": [
+        "forgiveness",
+        "repentance"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الاستغفار و التوبة"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/250.mp3",
+    "verified": true
+  },
+  {
+    "id": "sleep",
+    "category": "sleep",
+    "repeat": 1,
+    "title": {
+      "tr": "Yatarken",
+      "en": "Before sleeping"
+    },
+    "arabic": "بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا",
+    "transliteration": "Bismikallâhumme emûtu ve ahyâ.",
+    "translation": {
+      "tr": "Allah'ım! Senin adınla ölür (uyur), Senin adınla dirilirim (uyanırım).",
+      "en": "In Your name, O Allah, I die and I live."
+    },
+    "tags": {
+      "tr": [
+        "uyku",
+        "yatarken",
+        "gece"
+      ],
+      "en": [
+        "sleep",
+        "bedtime",
+        "night"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار النوم"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/105.mp3",
+    "verified": true
+  },
+  {
+    "id": "sleep-qina",
+    "category": "sleep",
+    "repeat": 3,
+    "title": {
+      "tr": "Uyumadan önce: azaptan korunma",
+      "en": "Before sleep: protection from punishment"
+    },
+    "arabic": "اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ",
+    "transliteration": "Allâhumme kınî azâbeke yevme teb'asu ibâdek.",
+    "translation": {
+      "tr": "Allah'ım! Kullarını dirilttiğin gün beni azabından koru.",
+      "en": "O Allah, protect me from Your punishment on the Day You resurrect Your servants."
+    },
+    "tags": {
+      "tr": [
+        "uyku",
+        "yatarken",
+        "gece",
+        "ahiret"
+      ],
+      "en": [
+        "sleep",
+        "bedtime",
+        "hereafter"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار النوم"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/104.mp3",
+    "verified": true
+  },
+  {
+    "id": "wake",
+    "category": "sleep",
+    "repeat": 1,
+    "title": {
+      "tr": "Uyanınca",
+      "en": "Upon waking up"
+    },
+    "arabic": "الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ",
+    "transliteration": "Elhamdu lillâhillezî ahyânâ ba'de mâ emâtenâ ve ileyhi'n-nuşûr.",
+    "translation": {
+      "tr": "Bizi öldürdükten (uyuttuktan) sonra dirilten Allah'a hamdolsun. Dönüş O'nadır.",
+      "en": "All praise is for Allah who gave us life after causing us to die, and to Him is the resurrection."
+    },
+    "tags": {
+      "tr": [
+        "uyanınca",
+        "sabah",
+        "kalkınca"
+      ],
+      "en": [
+        "waking",
+        "morning"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الاستيقاظ من النوم"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/1.mp3",
+    "verified": true
+  },
+  {
+    "id": "toilet-enter",
+    "category": "purification",
+    "repeat": 1,
+    "title": {
+      "tr": "Tuvalete girerken",
+      "en": "Entering the toilet"
+    },
+    "arabic": "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبْثِ وَالْخَبَائِثِ",
+    "transliteration": "Allâhumme innî eûzu bike mine'l-hubsi ve'l-habâis.",
+    "translation": {
+      "tr": "Allah'ım! Erkek ve dişi şeytanların şerrinden Sana sığınırım.",
+      "en": "O Allah, I seek refuge in You from the male and female devils."
+    },
+    "tags": {
+      "tr": [
+        "tuvalet",
+        "lavabo",
+        "banyo"
+      ],
+      "en": [
+        "toilet",
+        "bathroom"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء دخول الخلاء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/10.mp3",
+    "verified": true
+  },
+  {
+    "id": "toilet-exit",
+    "category": "purification",
+    "repeat": 1,
+    "title": {
+      "tr": "Tuvaletten çıkınca",
+      "en": "Leaving the toilet"
+    },
+    "arabic": "غُفْرَانَكَ",
+    "transliteration": "Gufrâneke.",
+    "translation": {
+      "tr": "(Allah'ım!) Bağışlamanı dilerim.",
+      "en": "(O Allah,) I ask Your forgiveness."
+    },
+    "tags": {
+      "tr": [
+        "tuvalet",
+        "lavabo"
+      ],
+      "en": [
+        "toilet",
+        "bathroom"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الخروج من الخلاء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/11.mp3",
+    "verified": true
+  },
+  {
+    "id": "after-wudu",
+    "category": "purification",
+    "repeat": 1,
+    "title": {
+      "tr": "Abdestten sonra şehadet",
+      "en": "Testimony after wudu"
+    },
+    "arabic": "أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ",
+    "transliteration": "Eşhedu en lâ ilâhe illallâhu vahdehû lâ şerîke leh, ve eşhedu enne Muhammeden abduhû ve rasûluh.",
+    "translation": {
+      "tr": "Allah'tan başka ilah olmadığına, O'nun tek ve ortaksız olduğuna; Muhammed'in O'nun kulu ve elçisi olduğuna şahitlik ederim.",
+      "en": "I bear witness that there is no god but Allah alone, without partner, and that Muhammad is His servant and Messenger."
+    },
+    "tags": {
+      "tr": [
+        "abdest",
+        "temizlik",
+        "şehadet"
+      ],
+      "en": [
+        "wudu",
+        "ablution",
+        "purification"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر بعد الفراغ من الوضوء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/13.mp3",
+    "verified": true
+  },
+  {
+    "id": "after-wudu-2",
+    "category": "purification",
+    "repeat": 1,
+    "title": {
+      "tr": "Abdestten sonra: temizlenenlerden eyle",
+      "en": "After wudu: make me among the purified"
+    },
+    "arabic": "اللَّهُمَّ اجْعَلْنِي مِنَ التَّوَّابِينَ وَاجْعَلْنِي مِنَ الْمُتَطَهِّرِينَ",
+    "transliteration": "Allâhumme'c'alnî mine't-tevvâbîne ve'c'alnî mine'l-mutetahhirîn.",
+    "translation": {
+      "tr": "Allah'ım! Beni tövbe edenlerden ve temizlenenlerden eyle.",
+      "en": "O Allah, make me among those who repent and make me among those who purify themselves."
+    },
+    "tags": {
+      "tr": [
+        "abdest",
+        "tövbe",
+        "temizlik"
+      ],
+      "en": [
+        "wudu",
+        "repentance",
+        "purification"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر بعد الفراغ من الوضوء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/14.mp3",
+    "verified": true
+  },
+  {
+    "id": "leave-home",
+    "category": "home",
+    "repeat": 1,
+    "title": {
+      "tr": "Evden çıkarken",
+      "en": "Leaving home"
+    },
+    "arabic": "بِسْمِ اللَّهِ، تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ",
+    "transliteration": "Bismillâh, tevekkeltu alallâh, ve lâ havle ve lâ kuvvete illâ billâh.",
+    "translation": {
+      "tr": "Allah'ın adıyla. Allah'a tevekkül ettim. Güç ve kuvvet ancak Allah'tandır.",
+      "en": "In the name of Allah. I put my trust in Allah, and there is no power and no strength except with Allah."
+    },
+    "tags": {
+      "tr": [
+        "evden çıkarken",
+        "dışarı",
+        "işe giderken",
+        "okula giderken",
+        "tevekkül"
+      ],
+      "en": [
+        "leaving home",
+        "going out",
+        "work",
+        "school"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر عند الخروج من المنزل"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/16.mp3",
+    "verified": true
+  },
+  {
+    "id": "enter-home",
+    "category": "home",
+    "repeat": 1,
+    "title": {
+      "tr": "Eve girerken",
+      "en": "Entering home"
+    },
+    "arabic": "بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى اللَّهِ رَبِّنَا تَوَكَّلْنَا",
+    "transliteration": "Bismillâhi velecnâ, ve bismillâhi harecnâ, ve alallâhi rabbinâ tevekkelnâ.",
+    "translation": {
+      "tr": "Allah'ın adıyla girdik, Allah'ın adıyla çıktık ve Rabbimiz Allah'a tevekkül ettik. (Ardından ev halkına selam verilir.)",
+      "en": "In the name of Allah we enter, in the name of Allah we leave, and upon Allah our Lord we rely. (Then greet the household.)"
+    },
+    "tags": {
+      "tr": [
+        "eve girerken",
+        "ev",
+        "aile"
+      ],
+      "en": [
+        "entering home",
+        "home",
+        "family"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر عند دخول المنزل"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/18.mp3",
+    "verified": true
+  },
+  {
+    "id": "enter-mosque",
+    "category": "mosque",
+    "repeat": 1,
+    "title": {
+      "tr": "Camiye girerken",
+      "en": "Entering the mosque"
+    },
+    "arabic": "اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ",
+    "transliteration": "Allâhumme'ftah lî ebvâbe rahmetik.",
+    "translation": {
+      "tr": "Allah'ım! Bana rahmetinin kapılarını aç.",
+      "en": "O Allah, open for me the gates of Your mercy."
+    },
+    "tags": {
+      "tr": [
+        "cami",
+        "mescit",
+        "namaz"
+      ],
+      "en": [
+        "mosque",
+        "prayer"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء دخول المسجد"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/20.mp3",
+    "verified": true
+  },
+  {
+    "id": "leave-mosque",
+    "category": "mosque",
+    "repeat": 1,
+    "title": {
+      "tr": "Camiden çıkarken",
+      "en": "Leaving the mosque"
+    },
+    "arabic": "اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ",
+    "transliteration": "Allâhumme innî es'eluke min fadlik.",
+    "translation": {
+      "tr": "Allah'ım! Senden lütfunu isterim.",
+      "en": "O Allah, I ask You of Your bounty."
+    },
+    "tags": {
+      "tr": [
+        "cami",
+        "mescit",
+        "rızık"
+      ],
+      "en": [
+        "mosque",
+        "bounty"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الخروج من المسجد"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/21.mp3",
+    "verified": true
+  },
+  {
+    "id": "after-adhan",
+    "category": "mosque",
+    "repeat": 1,
+    "title": {
+      "tr": "Ezandan sonra",
+      "en": "After the adhan"
+    },
+    "arabic": "اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ",
+    "transliteration": "Allâhumme rabbe hâzihi'd-da'veti't-tâmmeh, ve's-salâti'l-kâimeh, âti Muhammeden'il-vesîlete ve'l-fadîleh, veb'ashu makâmen mahmûdeni'llezî vaadteh.",
+    "translation": {
+      "tr": "Ey bu eksiksiz davetin ve kılınacak namazın Rabbi Allah'ım! Muhammed'e vesileyi ve fazileti ver; onu vaat ettiğin Makâm-ı Mahmûd'a ulaştır.",
+      "en": "O Allah, Lord of this perfect call and the prayer to be established, grant Muhammad the intercession and favour, and raise him to the praised station You have promised him."
+    },
+    "tags": {
+      "tr": [
+        "ezan",
+        "namaz",
+        "şefaat"
+      ],
+      "en": [
+        "adhan",
+        "call to prayer",
+        "intercession"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الآذان"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/25.mp3",
+    "verified": true
+  },
+  {
+    "id": "before-food",
+    "category": "food",
+    "repeat": 1,
+    "title": {
+      "tr": "Yemekten önce",
+      "en": "Before eating"
+    },
+    "arabic": "بِسْمِ اللَّهِ",
+    "transliteration": "Bismillâh.",
+    "translation": {
+      "tr": "Allah'ın adıyla.",
+      "en": "In the name of Allah."
+    },
+    "tags": {
+      "tr": [
+        "yemek",
+        "sofra",
+        "kahvaltı",
+        "besmele"
+      ],
+      "en": [
+        "food",
+        "meal",
+        "eating"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر قبل الوضوء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/12.mp3",
+    "verified": true
+  },
+  {
+    "id": "before-food-forgot",
+    "category": "food",
+    "repeat": 1,
+    "title": {
+      "tr": "Besmeleyi unutunca",
+      "en": "If you forgot to say Bismillah"
+    },
+    "arabic": "بِسْمِ اللَّهِ فِي أَوَّلِهِ وَآخِرِهِ",
+    "transliteration": "Bismillâhi fî evvelihî ve âhirih.",
+    "translation": {
+      "tr": "Başında da sonunda da Allah'ın adıyla.",
+      "en": "In the name of Allah at its beginning and at its end."
+    },
+    "tags": {
+      "tr": [
+        "yemek",
+        "unuttum",
+        "besmele"
+      ],
+      "en": [
+        "food",
+        "forgot",
+        "meal"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء قبل الطعام"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/178.mp3",
+    "verified": true
+  },
+  {
+    "id": "after-food",
+    "category": "food",
+    "repeat": 1,
+    "title": {
+      "tr": "Yemekten sonra",
+      "en": "After eating"
+    },
+    "arabic": "الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنِي هَذَا، وَرَزَقَنِيهِ، مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ",
+    "transliteration": "Elhamdu lillâhillezî at'amenî hâzâ ve rezekanîhi min ğayri havlin minnî ve lâ kuvveh.",
+    "translation": {
+      "tr": "Bana bu yemeği yediren ve benden hiçbir güç ve kuvvet olmaksızın onu bana rızık olarak veren Allah'a hamdolsun.",
+      "en": "All praise is for Allah who fed me this and provided it for me without any might or power from me."
+    },
+    "tags": {
+      "tr": [
+        "yemek",
+        "şükür",
+        "hamd",
+        "sofra"
+      ],
+      "en": [
+        "food",
+        "gratitude",
+        "meal"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء عند الفراغ من الطعام"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/180.mp3",
+    "verified": true
+  },
+  {
+    "id": "host-dua",
+    "category": "food",
+    "repeat": 1,
+    "title": {
+      "tr": "Misafirken ev sahibi için",
+      "en": "For your host"
+    },
+    "arabic": "اللَّهُمَّ بَارِكْ لَهُمْ فِيمَا رَزَقْتَهُمْ، وَاغْفِرْ لَهُمْ وَارْحَمْهُمْ",
+    "transliteration": "Allâhumme bârik lehum fîmâ rezaktehum, vağfir lehum verhamhum.",
+    "translation": {
+      "tr": "Allah'ım! Onlara verdiğin rızkı bereketli kıl; onları bağışla ve onlara merhamet et.",
+      "en": "O Allah, bless them in what You have provided them, and forgive them and have mercy on them."
+    },
+    "tags": {
+      "tr": [
+        "misafir",
+        "davet",
+        "yemek",
+        "teşekkür"
+      ],
+      "en": [
+        "guest",
+        "host",
+        "invitation"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الضيف لصاحب الطعام"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/182.mp3",
+    "verified": true
+  },
+  {
+    "id": "iftar",
+    "category": "food",
+    "repeat": 1,
+    "title": {
+      "tr": "İftarda",
+      "en": "When breaking the fast"
+    },
+    "arabic": "ذَهَبَ الظَّمَأُ وَابْتَلَّتِ الْعُرُوقُ، وَثَبَتَ الْأَجْرُ إِنْ شَاءَ اللَّهُ",
+    "transliteration": "Zehebe'z-zameu ve'btelleti'l-urûku ve sebete'l-ecru inşâallâh.",
+    "translation": {
+      "tr": "Susuzluk gitti, damarlar ıslandı; Allah dilerse sevap da sabit oldu.",
+      "en": "Thirst has gone, the veins are moistened, and the reward is assured, if Allah wills."
+    },
+    "tags": {
+      "tr": [
+        "iftar",
+        "oruç",
+        "ramazan"
+      ],
+      "en": [
+        "iftar",
+        "fasting",
+        "ramadan"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء عند إفطار الصائم"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/176.mp3",
+    "verified": true
+  },
+  {
+    "id": "travel",
+    "category": "travel",
+    "repeat": 1,
+    "title": {
+      "tr": "Bir vasıtaya binerken",
+      "en": "Boarding a vehicle"
+    },
+    "arabic": "سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ، وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ",
+    "transliteration": "Subhâne'llezî sahhara lenâ hâzâ ve mâ kunnâ lehû mukrinîn, ve innâ ilâ rabbinâ le-munkalibûn.",
+    "translation": {
+      "tr": "Bunu bizim hizmetimize veren Allah'ı tesbih ederiz; yoksa biz buna güç yetiremezdik. Şüphesiz biz Rabbimize döneceğiz.",
+      "en": "Glory be to Him who has subjected this to us, for we could never have done it ourselves, and to our Lord we shall surely return."
+    },
+    "tags": {
+      "tr": [
+        "yolculuk",
+        "araba",
+        "uçak",
+        "otobüs",
+        "seyahat",
+        "binerken",
+        "trafik"
+      ],
+      "en": [
+        "travel",
+        "car",
+        "plane",
+        "journey",
+        "vehicle"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الركوب"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/206.mp3",
+    "verified": true
+  },
+  {
+    "id": "travel-return",
+    "category": "travel",
+    "repeat": 1,
+    "title": {
+      "tr": "Yolculuktan dönerken",
+      "en": "Returning from a journey"
+    },
+    "arabic": "آيِبُونَ تَائِبُونَ عَابِدُونَ لِرَبِّنَا حَامِدُونَ",
+    "transliteration": "Âyibûne tâibûne âbidûne li-rabbinâ hâmidûn.",
+    "translation": {
+      "tr": "Dönenleriz, tövbe edenleriz, ibadet edenleriz; Rabbimize hamd edenleriz.",
+      "en": "We return, repenting, worshipping and praising our Lord."
+    },
+    "tags": {
+      "tr": [
+        "yolculuk",
+        "dönüş",
+        "seyahat"
+      ],
+      "en": [
+        "travel",
+        "return",
+        "journey"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "ذكر الرجوع من السفر"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/217.mp3",
+    "verified": true
+  },
+  {
+    "id": "distress-hamm",
+    "category": "distress",
+    "repeat": 1,
+    "title": {
+      "tr": "Kaygı ve üzüntüden sığınma",
+      "en": "Refuge from anxiety and grief"
+    },
+    "arabic": "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ",
+    "transliteration": "Allâhumme innî eûzu bike mine'l-hemmi ve'l-hazen, ve'l-acezi ve'l-kesel, ve'l-buhli ve'l-cubn, ve dala'i'd-deyni ve ğalebeti'r-ricâl.",
+    "translation": {
+      "tr": "Allah'ım! Kaygıdan ve üzüntüden, acizlikten ve tembellikten, cimrilikten ve korkaklıktan, borç yükünden ve insanların baskısından Sana sığınırım.",
+      "en": "O Allah, I seek refuge in You from anxiety and grief, from weakness and laziness, from miserliness and cowardice, from the burden of debt and from being overpowered by people."
+    },
+    "tags": {
+      "tr": [
+        "kaygı",
+        "endişe",
+        "stres",
+        "üzüntü",
+        "depresyon",
+        "tembellik",
+        "borç",
+        "sıkıntı"
+      ],
+      "en": [
+        "anxiety",
+        "worry",
+        "stress",
+        "grief",
+        "sadness",
+        "debt",
+        "laziness"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الهم والحزن"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/121.mp3",
+    "verified": true
+  },
+  {
+    "id": "karb",
+    "category": "distress",
+    "repeat": 1,
+    "title": {
+      "tr": "Büyük sıkıntı anında",
+      "en": "In times of great distress"
+    },
+    "arabic": "لَا إِلَهَ إِلَّا اللَّهُ الْعَظِيمُ الْحَلِيمُ، لَا إِلَهَ إِلَّا اللَّهُ رَبُّ الْعَرْشِ الْعَظِيمِ",
+    "transliteration": "Lâ ilâhe illallâhu'l-azîmu'l-halîm, lâ ilâhe illallâhu rabbu'l-arşi'l-azîm.",
+    "translation": {
+      "tr": "Azîm ve Halîm olan Allah'tan başka ilah yoktur. Büyük Arş'ın Rabbi Allah'tan başka ilah yoktur.",
+      "en": "There is no god but Allah, the Mighty, the Forbearing. There is no god but Allah, Lord of the Mighty Throne."
+    },
+    "tags": {
+      "tr": [
+        "sıkıntı",
+        "dert",
+        "keder",
+        "zor durum",
+        "panik"
+      ],
+      "en": [
+        "distress",
+        "hardship",
+        "trouble"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الكرب"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/122.mp3",
+    "verified": true
+  },
+  {
+    "id": "rahmataka",
+    "category": "distress",
+    "repeat": 1,
+    "title": {
+      "tr": "Beni nefsime bırakma",
+      "en": "Do not leave me to myself"
+    },
+    "arabic": "اللَّهُمَّ رَحْمَتَكَ أَرْجُو، فَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ، وَأَصْلِحْ لِي شَأْنِي كُلَّهُ، لَا إِلَهَ إِلَّا أَنْتَ",
+    "transliteration": "Allâhumme rahmeteke ercû, fe-lâ tekilnî ilâ nefsî tarfete aynin, ve aslih lî şe'nî kullehû, lâ ilâhe illâ ente.",
+    "translation": {
+      "tr": "Allah'ım! Rahmetini umuyorum. Beni göz açıp kapayıncaya kadar bile nefsime bırakma; bütün işlerimi düzelt. Senden başka ilah yoktur.",
+      "en": "O Allah, it is Your mercy I hope for, so do not leave me to myself even for the blink of an eye, and set right all my affairs. There is no god but You."
+    },
+    "tags": {
+      "tr": [
+        "sıkıntı",
+        "kaygı",
+        "işlerin düzelmesi",
+        "rahmet"
+      ],
+      "en": [
+        "distress",
+        "mercy",
+        "affairs"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الكرب"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/123.mp3",
+    "verified": true
+  },
+  {
+    "id": "yunus",
+    "category": "distress",
+    "repeat": 1,
+    "title": {
+      "tr": "Hz. Yunus'un duası",
+      "en": "The supplication of Prophet Yunus"
+    },
+    "arabic": "لَا إِلَهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ",
+    "transliteration": "Lâ ilâhe illâ ente subhâneke innî kuntu mine'z-zâlimîn.",
+    "translation": {
+      "tr": "Senden başka ilah yoktur. Seni tesbih ederim. Ben gerçekten zalimlerden oldum.",
+      "en": "There is no god but You, glory be to You; I have indeed been among the wrongdoers."
+    },
+    "tags": {
+      "tr": [
+        "sıkıntı",
+        "dert",
+        "tövbe",
+        "darlık",
+        "yunus"
+      ],
+      "en": [
+        "distress",
+        "repentance",
+        "yunus",
+        "jonah"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الكرب"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/124.mp3",
+    "verified": true
+  },
+  {
+    "id": "hasbunallah",
+    "category": "protection",
+    "repeat": 1,
+    "title": {
+      "tr": "Allah bize yeter",
+      "en": "Allah is sufficient for us"
+    },
+    "arabic": "حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ",
+    "transliteration": "Hasbunallâhu ve ni'me'l-vekîl.",
+    "translation": {
+      "tr": "Allah bize yeter; O ne güzel vekildir.",
+      "en": "Allah is sufficient for us, and He is the best disposer of affairs."
+    },
+    "tags": {
+      "tr": [
+        "korku",
+        "düşman",
+        "haksızlık",
+        "tevekkül",
+        "zulüm"
+      ],
+      "en": [
+        "fear",
+        "enemy",
+        "injustice",
+        "trust"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء لقاء العدو و ذي السلطان"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/128.mp3",
+    "verified": true
+  },
+  {
+    "id": "difficulty",
+    "category": "knowledge",
+    "repeat": 1,
+    "title": {
+      "tr": "Zor bir işi kolaylaştırmak için",
+      "en": "When something is difficult"
+    },
+    "arabic": "اللَّهُمَّ لَا سَهْلَ إِلَّا مَا جَعَلْتَهُ سَهْلًا، وَأَنْتَ تَجْعَلُ الْحَزْنَ إِذَا شِئْتَ سَهْلًا",
+    "transliteration": "Allâhumme lâ sehle illâ mâ ce'altehû sehlâ, ve ente tec'alu'l-hazne izâ şi'te sehlâ.",
+    "translation": {
+      "tr": "Allah'ım! Senin kolaylaştırdığından başka kolay yoktur. Sen dilersen zoru da kolaylaştırırsın.",
+      "en": "O Allah, nothing is easy except what You make easy, and You make the difficult easy if You will."
+    },
+    "tags": {
+      "tr": [
+        "sınav",
+        "zorluk",
+        "kolaylık",
+        "iş",
+        "mülakat",
+        "ödev"
+      ],
+      "en": [
+        "exam",
+        "difficulty",
+        "ease",
+        "test",
+        "interview"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء من استصعب عليه أمر"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/139.mp3",
+    "verified": true
+  },
+  {
+    "id": "debt",
+    "category": "provision",
+    "repeat": 1,
+    "title": {
+      "tr": "Borçtan kurtulmak için",
+      "en": "For relief from debt"
+    },
+    "arabic": "اللَّهُمَّ اكْفِنِي بِحَلَالِكَ عَنْ حَرَامِكَ، وَأَغْنِنِي بِفَضْلِكَ عَمَّنْ سِوَاكَ",
+    "transliteration": "Allâhumme'kfinî bi-halâlike an harâmik, ve ağninî bi-fadlike ammen sivâk.",
+    "translation": {
+      "tr": "Allah'ım! Helalinle beni haramından koru; lütfunla beni Senden başkasına muhtaç etme.",
+      "en": "O Allah, suffice me with what You have made lawful against what You have forbidden, and by Your bounty make me independent of all besides You."
+    },
+    "tags": {
+      "tr": [
+        "borç",
+        "para",
+        "rızık",
+        "geçim",
+        "helal kazanç"
+      ],
+      "en": [
+        "debt",
+        "money",
+        "provision",
+        "income"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء قضاء الدين"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/136.mp3",
+    "verified": true
+  },
+  {
+    "id": "sick-visit",
+    "category": "health",
+    "repeat": 1,
+    "title": {
+      "tr": "Hasta ziyaretinde",
+      "en": "When visiting the sick"
+    },
+    "arabic": "لَا بَأْسَ طَهُورٌ إِنْ شَاءَ اللَّهُ",
+    "transliteration": "Lâ be'se tahûrun inşâallâh.",
+    "translation": {
+      "tr": "Geçmiş olsun; inşallah (bu hastalık) günahlardan arınmaya vesiledir.",
+      "en": "No harm; it is a purification, if Allah wills."
+    },
+    "tags": {
+      "tr": [
+        "hasta",
+        "ziyaret",
+        "geçmiş olsun",
+        "hastane"
+      ],
+      "en": [
+        "sick",
+        "visit",
+        "hospital",
+        "illness"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء للمريض في عيادته"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/147.mp3",
+    "verified": true
+  },
+  {
+    "id": "sick-heal",
+    "category": "health",
+    "repeat": 7,
+    "title": {
+      "tr": "Hastanın şifası için",
+      "en": "For the healing of the sick"
+    },
+    "arabic": "أَسْأَلُ اللَّهَ الْعَظِيمَ رَبَّ الْعَرْشِ الْعَظِيمِ أَنْ يَشْفِيَكَ",
+    "transliteration": "Es'elullâhe'l-azîme rabbe'l-arşi'l-azîmi en yeşfiyek.",
+    "translation": {
+      "tr": "Büyük Arş'ın Rabbi olan Yüce Allah'tan sana şifa vermesini dilerim.",
+      "en": "I ask Allah the Mighty, Lord of the Mighty Throne, to heal you."
+    },
+    "tags": {
+      "tr": [
+        "şifa",
+        "hasta",
+        "hastalık",
+        "iyileşme",
+        "ameliyat"
+      ],
+      "en": [
+        "healing",
+        "cure",
+        "sick",
+        "illness",
+        "recovery"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء للمريض في عيادته"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/148.mp3",
+    "verified": true
+  },
+  {
+    "id": "pain",
+    "category": "health",
+    "repeat": 7,
+    "title": {
+      "tr": "Bir yeri ağrıyınca",
+      "en": "When feeling pain"
+    },
+    "arabic": "أَعُوذُ بِاللَّهِ وَقُدْرَتِهِ مِنْ شَرِّ مَا أَجِدُ وَأُحَاذِرُ",
+    "transliteration": "Eûzu billâhi ve kudretihî min şerri mâ ecidu ve uhâzir.",
+    "translation": {
+      "tr": "Hissettiğim ve endişe ettiğim şeyin şerrinden Allah'a ve O'nun kudretine sığınırım. (Elini ağrıyan yere koyup üç kez \"Bismillâh\" dedikten sonra yedi kez okunur.)",
+      "en": "I seek refuge in Allah and His power from the evil of what I feel and fear. (Place your hand on the pain, say \"Bismillah\" three times, then this seven times.)"
+    },
+    "tags": {
+      "tr": [
+        "ağrı",
+        "acı",
+        "hastalık",
+        "şifa",
+        "baş ağrısı"
+      ],
+      "en": [
+        "pain",
+        "ache",
+        "illness",
+        "healing"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "ما يقول من أحس وجعا في جسده"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/243.mp3",
+    "verified": true
+  },
+  {
+    "id": "anger",
+    "category": "daily",
+    "repeat": 1,
+    "title": {
+      "tr": "Öfkelenince",
+      "en": "When angry"
+    },
+    "arabic": "أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",
+    "transliteration": "Eûzu billâhi mine'ş-şeytâni'r-racîm.",
+    "translation": {
+      "tr": "Kovulmuş şeytandan Allah'a sığınırım.",
+      "en": "I seek refuge in Allah from the accursed devil."
+    },
+    "tags": {
+      "tr": [
+        "öfke",
+        "sinir",
+        "kızgınlık",
+        "vesvese",
+        "şeytan"
+      ],
+      "en": [
+        "anger",
+        "temper",
+        "whispers",
+        "devil"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الغضب"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/193.mp3",
+    "verified": true
+  },
+  {
+    "id": "new-clothes",
+    "category": "daily",
+    "repeat": 1,
+    "title": {
+      "tr": "Yeni elbise giyince",
+      "en": "Wearing new clothes"
+    },
+    "arabic": "اللَّهُمَّ لَكَ الْحَمْدُ أَنْتَ كَسَوْتَنِيهِ، أَسْأَلُكَ مِنْ خَيْرِهِ وَخَيْرِ مَا صُنِعَ لَهُ، وَأَعُوذُ بِكَ مِنْ شَرِّهِ وَشَرِّ مَا صُنِعَ لَهُ",
+    "transliteration": "Allâhumme leke'l-hamdu ente kesevtenîh, es'eluke min hayrihî ve hayri mâ suni'a leh, ve eûzu bike min şerrihî ve şerri mâ suni'a leh.",
+    "translation": {
+      "tr": "Allah'ım! Hamd Sana mahsustur; bunu bana Sen giydirdin. Senden onun hayrını ve yapılış amacının hayrını isterim; onun şerrinden ve yapılış amacının şerrinden Sana sığınırım.",
+      "en": "O Allah, praise is Yours; You have clothed me with it. I ask You for its good and the good it was made for, and I seek refuge in You from its evil and the evil it was made for."
+    },
+    "tags": {
+      "tr": [
+        "elbise",
+        "kıyafet",
+        "yeni",
+        "giyinme"
+      ],
+      "en": [
+        "clothes",
+        "new",
+        "dressing"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء ُلبْس الثوب الجديد"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/6.mp3",
+    "verified": true
+  },
+  {
+    "id": "thunder",
+    "category": "nature",
+    "repeat": 1,
+    "title": {
+      "tr": "Gök gürlediğinde",
+      "en": "When hearing thunder"
+    },
+    "arabic": "سُبْحَانَ الَّذِي يُسَبِّحُ الرَّعْدُ بِحَمْدِهِ وَالْمَلَائِكَةُ مِنْ خِيفَتِهِ",
+    "transliteration": "Subhâne'llezî yusebbihu'r-ra'du bi-hamdihî ve'l-melâiketu min hîfetih.",
+    "translation": {
+      "tr": "Gök gürültüsünün hamd ile, meleklerin de O'nun korkusuyla tesbih ettiği Allah'ı tesbih ederim.",
+      "en": "Glory be to Him whom the thunder glorifies with His praise, as do the angels out of awe of Him."
+    },
+    "tags": {
+      "tr": [
+        "gök gürültüsü",
+        "fırtına",
+        "şimşek",
+        "hava"
+      ],
+      "en": [
+        "thunder",
+        "storm",
+        "weather"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء الرعد"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/168.mp3",
+    "verified": true
+  },
+  {
+    "id": "rain",
+    "category": "nature",
+    "repeat": 1,
+    "title": {
+      "tr": "Yağmur yağarken",
+      "en": "When it rains"
+    },
+    "arabic": "اللَّهُمَّ صَيِّبًا نَافِعًا",
+    "transliteration": "Allâhumme sayyiben nâfi'â.",
+    "translation": {
+      "tr": "Allah'ım! Faydalı bir yağmur (yağdır).",
+      "en": "O Allah, (let it be) a beneficial rain."
+    },
+    "tags": {
+      "tr": [
+        "yağmur",
+        "hava",
+        "bereket"
+      ],
+      "en": [
+        "rain",
+        "weather"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء إذا نزل المطر"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/172.mp3",
+    "verified": true
+  },
+  {
+    "id": "after-rain",
+    "category": "nature",
+    "repeat": 1,
+    "title": {
+      "tr": "Yağmurdan sonra",
+      "en": "After rainfall"
+    },
+    "arabic": "مُطِرْنَا بِفَضْلِ اللَّهِ وَرَحْمَتِهِ",
+    "transliteration": "Mutirnâ bi-fadlillâhi ve rahmetih.",
+    "translation": {
+      "tr": "Allah'ın lütfu ve rahmetiyle bize yağmur yağdı.",
+      "en": "We have been given rain by the grace and mercy of Allah."
+    },
+    "tags": {
+      "tr": [
+        "yağmur",
+        "şükür",
+        "hava"
+      ],
+      "en": [
+        "rain",
+        "gratitude"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر بعد نزول المطر"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/173.mp3",
+    "verified": true
+  },
+  {
+    "id": "new-moon",
+    "category": "nature",
+    "repeat": 1,
+    "title": {
+      "tr": "Hilali görünce",
+      "en": "On sighting the new moon"
+    },
+    "arabic": "اللَّهُ أَكْبَرُ، اللَّهُمَّ أَهِلَّهُ عَلَيْنَا بِالْأَمْنِ وَالْإِيمَانِ، وَالسَّلَامَةِ وَالْإِسْلَامِ، وَالتَّوْفِيقِ لِمَا تُحِبُّ رَبَّنَا وَتَرْضَى، رَبُّنَا وَرَبُّكَ اللَّهُ",
+    "transliteration": "Allâhu ekber. Allâhumme ehillehû aleynâ bi'l-emni ve'l-îmân, ve's-selâmeti ve'l-islâm, ve't-tevfîki li-mâ tuhibbu rabbenâ ve terdâ. Rabbunâ ve rabbukellâh.",
+    "translation": {
+      "tr": "Allah en büyüktür. Allah'ım! Bu hilali bize güven ve imanla, esenlik ve İslam ile, sevdiğin ve razı olduğun şeylere muvaffak kılarak doğdur, ey Rabbimiz. (Ey hilal!) Bizim de senin de Rabbin Allah'tır.",
+      "en": "Allah is the Greatest. O Allah, let this crescent rise upon us with security and faith, safety and Islam, and success in what You love and are pleased with, our Lord. Our Lord and your Lord is Allah."
+    },
+    "tags": {
+      "tr": [
+        "hilal",
+        "yeni ay",
+        "ramazan",
+        "bayram"
+      ],
+      "en": [
+        "new moon",
+        "crescent",
+        "month"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء رؤية الهلال"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/175.mp3",
+    "verified": true
+  },
+  {
+    "id": "grave-visit",
+    "category": "loss",
+    "repeat": 1,
+    "title": {
+      "tr": "Kabir ziyaretinde",
+      "en": "Visiting the graves"
+    },
+    "arabic": "السَّلَامُ عَلَيْكُمْ أَهْلَ الدِّيَارِ مِنَ الْمُؤْمِنِينَ وَالْمُسْلِمِينَ، وَإِنَّا إِنْ شَاءَ اللَّهُ بِكُمْ لَاحِقُونَ",
+    "transliteration": "Es-selâmu aleykum ehle'd-diyâri mine'l-mu'minîne ve'l-muslimîn, ve innâ inşâallâhu bikum lâhikûn.",
+    "translation": {
+      "tr": "Ey bu diyarın mümin ve müslüman sakinleri! Selam üzerinize olsun. Biz de inşallah size katılacağız.",
+      "en": "Peace be upon you, O believing and Muslim inhabitants of these dwellings, and we will, if Allah wills, join you."
+    },
+    "tags": {
+      "tr": [
+        "kabir",
+        "mezar",
+        "ziyaret",
+        "vefat",
+        "ölüm"
+      ],
+      "en": [
+        "grave",
+        "cemetery",
+        "visit",
+        "death"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء زيارة القبور"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/165.mp3",
+    "verified": true
+  },
+  {
+    "id": "musibah",
+    "category": "loss",
+    "repeat": 1,
+    "title": {
+      "tr": "Bir musibete uğrayınca",
+      "en": "When afflicted by a calamity"
+    },
+    "arabic": "إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ، اللَّهُمَّ أْجُرْنِي فِي مُصِيبَتِي وَأَخْلِفْ لِي خَيْرًا مِنْهَا",
+    "transliteration": "İnnâ lillâhi ve innâ ileyhi râci'ûn. Allâhumme'cumî fî musîbetî ve ahlif lî hayran minhâ.",
+    "translation": {
+      "tr": "Biz Allah'a aidiz ve O'na döneceğiz. Allah'ım! Bu musibetimde bana ecir ver ve bana ondan daha hayırlısını ihsan et.",
+      "en": "To Allah we belong and to Him we return. O Allah, reward me in my affliction and replace it for me with something better."
+    },
+    "tags": {
+      "tr": [
+        "musibet",
+        "kayıp",
+        "vefat",
+        "taziye",
+        "acı",
+        "felaket"
+      ],
+      "en": [
+        "calamity",
+        "loss",
+        "death",
+        "grief",
+        "disaster"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "دعاء من أصيب بمصيبة"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/154.mp3",
+    "verified": true
+  },
+  {
+    "id": "newlywed",
+    "category": "family",
+    "repeat": 1,
+    "title": {
+      "tr": "Yeni evlenenler için",
+      "en": "For newlyweds"
+    },
+    "arabic": "بَارَكَ اللَّهُ لَكَ، وَبَارَكَ عَلَيْكَ، وَجَمَعَ بَيْنَكُمَا فِي خَيْرٍ",
+    "transliteration": "Bârakallâhu leke ve bâreke aleyke ve ceme'a beynekumâ fî hayr.",
+    "translation": {
+      "tr": "Allah sana bereket versin, üzerine bereket indirsin ve ikinizi hayır üzere bir araya getirsin.",
+      "en": "May Allah bless you, shower His blessings upon you, and join you both in goodness."
+    },
+    "tags": {
+      "tr": [
+        "evlilik",
+        "düğün",
+        "nikah",
+        "tebrik"
+      ],
+      "en": [
+        "marriage",
+        "wedding",
+        "congratulation"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء للمتزوج"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/190.mp3",
+    "verified": true
+  },
+  {
+    "id": "kaffarat-majlis",
+    "category": "forgiveness",
+    "repeat": 1,
+    "title": {
+      "tr": "Bir meclisten kalkarken",
+      "en": "When leaving a gathering"
+    },
+    "arabic": "سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا أَنْتَ، أَسْتَغْفِرُكَ وَأَتُوبُ إِلَيْكَ",
+    "transliteration": "Subhânekallâhumme ve bi-hamdik, eşhedu en lâ ilâhe illâ ent, estağfiruke ve etûbu ileyk.",
+    "translation": {
+      "tr": "Allah'ım! Seni hamdinle tesbih ederim. Senden başka ilah olmadığına şahitlik ederim. Senden bağışlanma diler ve Sana tövbe ederim.",
+      "en": "Glory be to You, O Allah, and with Your praise. I bear witness that there is no god but You; I seek Your forgiveness and turn to You in repentance."
+    },
+    "tags": {
+      "tr": [
+        "meclis",
+        "sohbet",
+        "toplantı",
+        "istiğfar",
+        "gıybet"
+      ],
+      "en": [
+        "gathering",
+        "meeting",
+        "forgiveness"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر بعد الفراغ من الوضوء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/15.mp3",
+    "verified": true
+  },
+  {
+    "id": "children-protection",
+    "category": "family",
+    "repeat": 1,
+    "title": {
+      "tr": "Çocukları nazar ve kötülükten korumak için",
+      "en": "Protecting children from harm and the evil eye"
+    },
+    "arabic": "أُعِيذُكُمَا بِكَلِمَاتِ اللَّهِ التَّامَّةِ مِنْ كُلِّ شَيْطَانٍ وَهَامَّةٍ وَمِنْ كُلِّ عَيْنٍ لَامَّةٍ",
+    "transliteration": "Uîzukumâ bi-kelimâtillâhi't-tâmmeti min kulli şeytânin ve hâmmeh, ve min kulli aynin lâmmeh.",
+    "translation": {
+      "tr": "Sizi her şeytandan, her zehirli hayvandan ve her nazar eden gözden Allah'ın eksiksiz kelimelerine sığındırırım. (Tek çocuk için \"uîzuke\" denir.)",
+      "en": "I seek protection for you both in the perfect words of Allah from every devil, every poisonous creature and every evil eye. (For one child say \"u'idhuka\".)"
+    },
+    "tags": {
+      "tr": [
+        "çocuk",
+        "nazar",
+        "korunma",
+        "bebek",
+        "aile"
+      ],
+      "en": [
+        "children",
+        "evil eye",
+        "protection",
+        "baby"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "ما يعوذ به الأولاد"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/146.mp3",
+    "verified": true
+  },
+  {
+    "id": "jazakallah",
+    "category": "daily",
+    "repeat": 1,
+    "title": {
+      "tr": "İyilik yapana teşekkür",
+      "en": "Thanking someone for a favour"
+    },
+    "arabic": "جَزَاكَ اللَّهُ خَيْرًا",
+    "transliteration": "Cezâkallâhu hayrâ.",
+    "translation": {
+      "tr": "Allah seni hayırla mükâfatlandırsın.",
+      "en": "May Allah reward you with good."
+    },
+    "tags": {
+      "tr": [
+        "teşekkür",
+        "iyilik",
+        "minnet"
+      ],
+      "en": [
+        "thanks",
+        "favour",
+        "gratitude"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الدعاء لمن صنع إليك معروفا"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/198.mp3",
+    "verified": true
+  },
+  {
+    "id": "subhanallahi-wabihamdihi",
+    "category": "dhikr",
+    "repeat": 100,
+    "title": {
+      "tr": "Sübhânallâhi ve bihamdihî",
+      "en": "Subhan Allahi wa bihamdihi"
+    },
+    "arabic": "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ",
+    "transliteration": "Subhânallâhi ve bi-hamdih.",
+    "translation": {
+      "tr": "Allah'ı hamdiyle tesbih ederim. (Günde yüz kez söyleyenin, günahları deniz köpüğü kadar olsa bile bağışlanacağı müjdelenmiştir.)",
+      "en": "Glory be to Allah and with His praise. (Whoever says it a hundred times a day has his sins forgiven, even if they are like the foam of the sea.)"
+    },
+    "tags": {
+      "tr": [
+        "zikir",
+        "tesbih",
+        "günlük"
+      ],
+      "en": [
+        "dhikr",
+        "tasbih",
+        "daily"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/91.mp3",
+    "verified": true
+  },
+  {
+    "id": "kalimatan",
+    "category": "dhikr",
+    "repeat": 1,
+    "title": {
+      "tr": "Dile hafif, mizanda ağır iki kelime",
+      "en": "Two words light on the tongue, heavy on the scale"
+    },
+    "arabic": "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ",
+    "transliteration": "Subhânallâhi ve bi-hamdihî, subhânallâhi'l-azîm.",
+    "translation": {
+      "tr": "Allah'ı hamdiyle tesbih ederim; Yüce Allah'ı tesbih ederim.",
+      "en": "Glory be to Allah and with His praise; glory be to Allah the Mighty."
+    },
+    "tags": {
+      "tr": [
+        "zikir",
+        "tesbih",
+        "mizan"
+      ],
+      "en": [
+        "dhikr",
+        "tasbih"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "فضل التسبيح و التحميد، و التهليل، و التكبير"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/256.mp3",
+    "verified": true
+  },
+  {
+    "id": "tahlil",
+    "category": "dhikr",
+    "repeat": 10,
+    "title": {
+      "tr": "Tevhid zikri",
+      "en": "Declaration of Oneness"
+    },
+    "arabic": "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
+    "transliteration": "Lâ ilâhe illallâhu vahdehû lâ şerîke leh, lehu'l-mulku ve lehu'l-hamdu ve huve alâ kulli şey'in kadîr.",
+    "translation": {
+      "tr": "Allah'tan başka ilah yoktur; O tektir, ortağı yoktur. Mülk O'nundur, hamd O'nadır ve O her şeye kadirdir.",
+      "en": "There is no god but Allah alone, without partner. His is the dominion and His is the praise, and He is able to do all things."
+    },
+    "tags": {
+      "tr": [
+        "zikir",
+        "tevhid",
+        "kelime-i tevhid"
+      ],
+      "en": [
+        "dhikr",
+        "tawhid",
+        "oneness"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "أذكار الصباح والمساء"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/93.mp3",
+    "verified": true
+  },
+  {
+    "id": "baqiyat",
+    "category": "dhikr",
+    "repeat": 1,
+    "title": {
+      "tr": "Bâkıyâtü's-sâlihât",
+      "en": "The enduring good words"
+    },
+    "arabic": "سُبْحَانَ اللَّهِ، وَالْحَمْدُ لِلَّهِ، وَلَا إِلَهَ إِلَّا اللَّهُ، وَاللَّهُ أَكْبَرُ",
+    "transliteration": "Subhânallâh, ve'l-hamdu lillâh, ve lâ ilâhe illallâh, vallâhu ekber.",
+    "translation": {
+      "tr": "Allah'ı tesbih ederim, hamd Allah'adır, Allah'tan başka ilah yoktur, Allah en büyüktür.",
+      "en": "Glory be to Allah, praise be to Allah, there is no god but Allah, and Allah is the Greatest."
+    },
+    "tags": {
+      "tr": [
+        "zikir",
+        "tesbih",
+        "tekbir",
+        "hamd"
+      ],
+      "en": [
+        "dhikr",
+        "tasbih",
+        "takbir"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "فضل التسبيح و التحميد، و التهليل، و التكبير"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/265.mp3",
+    "verified": true
+  },
+  {
+    "id": "hawqala",
+    "category": "dhikr",
+    "repeat": 1,
+    "title": {
+      "tr": "Havkale",
+      "en": "There is no power except with Allah"
+    },
+    "arabic": "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ",
+    "transliteration": "Lâ havle ve lâ kuvvete illâ billâh.",
+    "translation": {
+      "tr": "Güç ve kuvvet ancak Allah'tandır.",
+      "en": "There is no power and no strength except with Allah."
+    },
+    "tags": {
+      "tr": [
+        "zikir",
+        "tevekkül",
+        "güç",
+        "çaresizlik"
+      ],
+      "en": [
+        "dhikr",
+        "strength",
+        "reliance"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الذكر عند الخروج من المنزل"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/16.mp3",
+    "verified": true
+  },
+  {
+    "id": "salawat",
+    "category": "dhikr",
+    "repeat": 10,
+    "title": {
+      "tr": "Salavat",
+      "en": "Blessings upon the Prophet"
+    },
+    "arabic": "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ",
+    "transliteration": "Allâhumme salli alâ Muhammedin ve alâ âli Muhammed.",
+    "translation": {
+      "tr": "Allah'ım! Muhammed'e ve Muhammed'in ailesine salat eyle.",
+      "en": "O Allah, send blessings upon Muhammad and the family of Muhammad."
+    },
+    "tags": {
+      "tr": [
+        "salavat",
+        "peygamber",
+        "cuma",
+        "zikir"
+      ],
+      "en": [
+        "salawat",
+        "prophet",
+        "friday",
+        "blessings"
+      ]
+    },
+    "source": {
+      "type": "hisn",
+      "chapter": "الصلاة على النبي بعد التشهد"
+    },
+    "audioUrl": "https://cdn.jsdelivr.net/gh/Alsarmad/Adhkar-json@main/audio/53.mp3",
+    "verified": true
+  },
+  {
+    "id": "rabbana-atina",
+    "category": "quranic",
+    "repeat": 1,
+    "title": {
+      "tr": "Dünya ve ahiret iyiliği",
+      "en": "Good in this world and the next"
+    },
+    "arabic": "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
+    "transliteration": "Rabbenâ âtinâ fi'd-dunyâ haseneten ve fi'l-âhirati haseneten ve kınâ azâbe'n-nâr.",
+    "translation": {
+      "tr": "Rabbimiz! Bize dünyada da iyilik ver, ahirette de iyilik ver ve bizi ateş azabından koru.",
+      "en": "Our Lord, give us good in this world and good in the Hereafter, and protect us from the punishment of the Fire."
+    },
+    "tags": {
+      "tr": [
+        "rabbena",
+        "dünya",
+        "ahiret",
+        "genel",
+        "namaz sonrası"
+      ],
+      "en": [
+        "rabbana",
+        "world",
+        "hereafter",
+        "general"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "2:201"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/208.mp3",
+    "verified": true
+  },
+  {
+    "id": "rabbi-zidni",
+    "category": "knowledge",
+    "repeat": 1,
+    "title": {
+      "tr": "İlmimi artır",
+      "en": "Increase me in knowledge"
+    },
+    "arabic": "رَبِّ زِدْنِي عِلْمًا",
+    "transliteration": "Rabbi zidnî ilmâ.",
+    "translation": {
+      "tr": "Rabbim! İlmimi artır.",
+      "en": "My Lord, increase me in knowledge."
+    },
+    "tags": {
+      "tr": [
+        "ilim",
+        "sınav",
+        "ders",
+        "öğrenci",
+        "okul",
+        "ezber"
+      ],
+      "en": [
+        "knowledge",
+        "exam",
+        "study",
+        "student",
+        "school"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "20:114"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/2462.mp3",
+    "verified": true
+  },
+  {
+    "id": "rabbi-ishrah",
+    "category": "knowledge",
+    "repeat": 1,
+    "title": {
+      "tr": "Göğsümü genişlet, işimi kolaylaştır",
+      "en": "Expand my chest, ease my task"
+    },
+    "arabic": "رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي وَاحْلُلْ عُقْدَةً مِنْ لِسَانِي يَفْقَهُوا قَوْلِي",
+    "transliteration": "Rabbi'şrah lî sadrî, ve yessir lî emrî, vahlul ukdeten min lisânî, yefkahû kavlî.",
+    "translation": {
+      "tr": "Rabbim! Göğsümü genişlet, işimi kolaylaştır, dilimdeki düğümü çöz ki sözümü anlasınlar.",
+      "en": "My Lord, expand my chest for me, ease my task for me, and untie the knot from my tongue so they may understand my speech."
+    },
+    "tags": {
+      "tr": [
+        "sınav",
+        "konuşma",
+        "sunum",
+        "mülakat",
+        "heyecan",
+        "kolaylık",
+        "iş"
+      ],
+      "en": [
+        "exam",
+        "speech",
+        "presentation",
+        "interview",
+        "ease",
+        "nervous"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "20:25-28"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/2373.mp3",
+    "verified": true
+  },
+  {
+    "id": "parents-rahma",
+    "category": "family",
+    "repeat": 1,
+    "title": {
+      "tr": "Anne baba için rahmet",
+      "en": "Mercy for parents"
+    },
+    "arabic": "رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا",
+    "transliteration": "Rabbi'rhamhumâ kemâ rabbeyânî sağîrâ.",
+    "translation": {
+      "tr": "Rabbim! Onlar beni küçükken nasıl yetiştirdilerse Sen de onlara öyle merhamet et.",
+      "en": "My Lord, have mercy on them as they raised me when I was small."
+    },
+    "tags": {
+      "tr": [
+        "anne",
+        "baba",
+        "ebeveyn",
+        "aile",
+        "rahmet"
+      ],
+      "en": [
+        "parents",
+        "mother",
+        "father",
+        "family",
+        "mercy"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "17:24"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/2053.mp3",
+    "verified": true
+  },
+  {
+    "id": "parents-maghfira",
+    "category": "family",
+    "repeat": 1,
+    "title": {
+      "tr": "Kendim, anne babam ve müminler için bağışlanma",
+      "en": "Forgiveness for me, my parents and the believers"
+    },
+    "arabic": "رَبَّنَا اغْفِرْ لِي وَلِوَالِدَيَّ وَلِلْمُؤْمِنِينَ يَوْمَ يَقُومُ الْحِسَابُ",
+    "transliteration": "Rabbena'ğfir lî ve li-vâlideyye ve li'l-mu'minîne yevme yekûmu'l-hisâb.",
+    "translation": {
+      "tr": "Rabbimiz! Hesap gününde beni, anne babamı ve müminleri bağışla.",
+      "en": "Our Lord, forgive me, my parents and the believers on the Day the reckoning is established."
+    },
+    "tags": {
+      "tr": [
+        "anne",
+        "baba",
+        "ebeveyn",
+        "bağışlanma",
+        "namaz sonrası",
+        "vefat"
+      ],
+      "en": [
+        "parents",
+        "forgiveness",
+        "believers"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "14:41"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/1791.mp3",
+    "verified": true
+  },
+  {
+    "id": "family-qurrata",
+    "category": "family",
+    "repeat": 1,
+    "title": {
+      "tr": "Eş ve çocukları göz aydınlığı kıl",
+      "en": "Make our spouses and children a comfort"
+    },
+    "arabic": "رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا",
+    "transliteration": "Rabbenâ heb lenâ min ezvâcinâ ve zurriyyâtinâ kurrate a'yunin vec'alnâ li'l-muttakîne imâmâ.",
+    "translation": {
+      "tr": "Rabbimiz! Eşlerimizi ve çocuklarımızı bize göz aydınlığı kıl ve bizi takva sahiplerine önder eyle.",
+      "en": "Our Lord, grant us from our spouses and offspring comfort to our eyes, and make us leaders of the God-conscious."
+    },
+    "tags": {
+      "tr": [
+        "eş",
+        "evlilik",
+        "çocuk",
+        "aile",
+        "huzur"
+      ],
+      "en": [
+        "spouse",
+        "marriage",
+        "children",
+        "family"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "25:74"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/2929.mp3",
+    "verified": true
+  },
+  {
+    "id": "righteous-offspring",
+    "category": "family",
+    "repeat": 1,
+    "title": {
+      "tr": "Hayırlı evlat için",
+      "en": "For righteous offspring"
+    },
+    "arabic": "رَبِّ هَبْ لِي مِنْ لَدُنْكَ ذُرِّيَّةً طَيِّبَةً إِنَّكَ سَمِيعُ الدُّعَاءِ",
+    "transliteration": "Rabbi heb lî min ledunke zurriyyeten tayyibeh, inneke semîu'd-duâ.",
+    "translation": {
+      "tr": "Rabbim! Bana katından temiz bir nesil bağışla. Şüphesiz Sen duayı işitensin.",
+      "en": "My Lord, grant me from Yourself good offspring; indeed You are the Hearer of supplication."
+    },
+    "tags": {
+      "tr": [
+        "çocuk",
+        "evlat",
+        "hamilelik",
+        "bebek",
+        "aile"
+      ],
+      "en": [
+        "children",
+        "offspring",
+        "pregnancy",
+        "baby"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "3:38"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/331.mp3",
+    "verified": true
+  },
+  {
+    "id": "steadfast-heart",
+    "category": "quranic",
+    "repeat": 1,
+    "title": {
+      "tr": "Kalplerimizi eğriltme",
+      "en": "Do not let our hearts deviate"
+    },
+    "arabic": "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً إِنَّكَ أَنْتَ الْوَهَّابُ",
+    "transliteration": "Rabbenâ lâ tuziğ kulûbenâ ba'de iz hedeytenâ ve heb lenâ min ledunke rahmeh, inneke ente'l-vehhâb.",
+    "translation": {
+      "tr": "Rabbimiz! Bizi doğru yola ilettikten sonra kalplerimizi eğriltme; bize katından rahmet bağışla. Şüphesiz Sen çok bağışlayansın.",
+      "en": "Our Lord, do not let our hearts deviate after You have guided us, and grant us mercy from Yourself; indeed You are the Bestower."
+    },
+    "tags": {
+      "tr": [
+        "iman",
+        "hidayet",
+        "kalp",
+        "sebat"
+      ],
+      "en": [
+        "faith",
+        "guidance",
+        "heart",
+        "steadfastness"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "3:8"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/301.mp3",
+    "verified": true
+  },
+  {
+    "id": "patience",
+    "category": "distress",
+    "repeat": 1,
+    "title": {
+      "tr": "Sabır ve sebat için",
+      "en": "For patience and firmness"
+    },
+    "arabic": "رَبَّنَا أَفْرِغْ عَلَيْنَا صَبْرًا وَثَبِّتْ أَقْدَامَنَا",
+    "transliteration": "Rabbenâ efriğ aleynâ sabran ve sebbit akdâmenâ.",
+    "translation": {
+      "tr": "Rabbimiz! Üzerimize sabır yağdır ve ayaklarımızı sabit kıl.",
+      "en": "Our Lord, pour upon us patience and make our steps firm."
+    },
+    "tags": {
+      "tr": [
+        "sabır",
+        "zorluk",
+        "sıkıntı",
+        "sebat",
+        "dayanma gücü"
+      ],
+      "en": [
+        "patience",
+        "hardship",
+        "firmness",
+        "endurance"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "2:250"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/257.mp3",
+    "verified": true
+  },
+  {
+    "id": "adam-forgiveness",
+    "category": "forgiveness",
+    "repeat": 1,
+    "title": {
+      "tr": "Hz. Adem'in tövbesi",
+      "en": "The repentance of Adam"
+    },
+    "arabic": "رَبَّنَا ظَلَمْنَا أَنْفُسَنَا وَإِنْ لَمْ تَغْفِرْ لَنَا وَتَرْحَمْنَا لَنَكُونَنَّ مِنَ الْخَاسِرِينَ",
+    "transliteration": "Rabbenâ zalemnâ enfusenâ ve in lem tağfir lenâ ve terhamnâ le-nekûnenne mine'l-hâsirîn.",
+    "translation": {
+      "tr": "Rabbimiz! Biz kendimize zulmettik. Eğer bizi bağışlamaz ve bize merhamet etmezsen mutlaka ziyana uğrayanlardan oluruz.",
+      "en": "Our Lord, we have wronged ourselves; if You do not forgive us and have mercy on us, we will surely be among the losers."
+    },
+    "tags": {
+      "tr": [
+        "tövbe",
+        "günah",
+        "pişmanlık",
+        "bağışlanma",
+        "adem"
+      ],
+      "en": [
+        "repentance",
+        "sin",
+        "regret",
+        "forgiveness",
+        "adam"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "7:23"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/977.mp3",
+    "verified": true
+  },
+  {
+    "id": "need-of-good",
+    "category": "provision",
+    "repeat": 1,
+    "title": {
+      "tr": "İndireceğin hayra muhtacım",
+      "en": "I am in need of any good You send"
+    },
+    "arabic": "رَبِّ إِنِّي لِمَا أَنْزَلْتَ إِلَيَّ مِنْ خَيْرٍ فَقِيرٌ",
+    "transliteration": "Rabbi innî li-mâ enzelte ileyye min hayrin fakîr.",
+    "translation": {
+      "tr": "Rabbim! Bana indireceğin her hayra muhtacım.",
+      "en": "My Lord, I am truly in need of whatever good You send down to me."
+    },
+    "tags": {
+      "tr": [
+        "rızık",
+        "iş",
+        "iş arama",
+        "geçim",
+        "evlilik",
+        "hayır",
+        "musa"
+      ],
+      "en": [
+        "provision",
+        "job",
+        "work",
+        "need",
+        "musa"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "28:24"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/3276.mp3",
+    "verified": true
+  },
+  {
+    "id": "ayyub",
+    "category": "health",
+    "repeat": 1,
+    "title": {
+      "tr": "Hz. Eyyub'un duası",
+      "en": "The supplication of Ayyub"
+    },
+    "arabic": "أَنِّي مَسَّنِيَ الضُّرُّ وَأَنْتَ أَرْحَمُ الرَّاحِمِينَ",
+    "transliteration": "Ennî messeniye'd-durru ve ente erhamu'r-râhimîn.",
+    "translation": {
+      "tr": "(Rabbim!) Başıma bu dert geldi; Sen ise merhametlilerin en merhametlisisin.",
+      "en": "(My Lord,) harm has touched me, and You are the Most Merciful of the merciful."
+    },
+    "tags": {
+      "tr": [
+        "hastalık",
+        "şifa",
+        "dert",
+        "sabır",
+        "eyyub"
+      ],
+      "en": [
+        "illness",
+        "healing",
+        "hardship",
+        "patience",
+        "job"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "21:83"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/2566.mp3",
+    "verified": true
+  },
+  {
+    "id": "truthful-entry",
+    "category": "provision",
+    "repeat": 1,
+    "title": {
+      "tr": "Yeni bir başlangıçta (iş, ev, okul)",
+      "en": "For a new beginning (job, home, school)"
+    },
+    "arabic": "رَبِّ أَدْخِلْنِي مُدْخَلَ صِدْقٍ وَأَخْرِجْنِي مُخْرَجَ صِدْقٍ وَاجْعَلْ لِي مِنْ لَدُنْكَ سُلْطَانًا نَصِيرًا",
+    "transliteration": "Rabbi edhilnî mudhale sıdkın ve ahricnî muhrace sıdkın vec'al lî min ledunke sultânen nasîrâ.",
+    "translation": {
+      "tr": "Rabbim! Gireceğim yere doğrulukla girmemi, çıkacağım yerden doğrulukla çıkmamı sağla; katından bana yardımcı bir güç ver.",
+      "en": "My Lord, cause me to enter a sound entrance and to exit a sound exit, and grant me from Yourself a supporting authority."
+    },
+    "tags": {
+      "tr": [
+        "yeni iş",
+        "taşınma",
+        "yeni ev",
+        "okul",
+        "başlangıç",
+        "mülakat"
+      ],
+      "en": [
+        "new job",
+        "moving",
+        "new home",
+        "school",
+        "beginning"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "17:80"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/2109.mp3",
+    "verified": true
+  },
+  {
+    "id": "accept-from-us",
+    "category": "quranic",
+    "repeat": 1,
+    "title": {
+      "tr": "Bizden kabul et",
+      "en": "Accept it from us"
+    },
+    "arabic": "رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنْتَ السَّمِيعُ الْعَلِيمُ",
+    "transliteration": "Rabbenâ tekabbel minnâ inneke ente's-semîu'l-alîm.",
+    "translation": {
+      "tr": "Rabbimiz! Bizden kabul et. Şüphesiz Sen işitensin, bilensin.",
+      "en": "Our Lord, accept this from us; indeed You are the All-Hearing, the All-Knowing."
+    },
+    "tags": {
+      "tr": [
+        "kabul",
+        "ibadet",
+        "namaz sonrası",
+        "hayır",
+        "sadaka"
+      ],
+      "en": [
+        "acceptance",
+        "worship",
+        "charity"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "2:127"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/134.mp3",
+    "verified": true
+  },
+  {
+    "id": "establish-prayer",
+    "category": "quranic",
+    "repeat": 1,
+    "title": {
+      "tr": "Beni namazı kılanlardan eyle",
+      "en": "Make me one who establishes prayer"
+    },
+    "arabic": "رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِنْ ذُرِّيَّتِي رَبَّنَا وَتَقَبَّلْ دُعَاءِ",
+    "transliteration": "Rabbi'c'alnî mukîme's-salâti ve min zurriyyetî, rabbenâ ve tekabbel duâ.",
+    "translation": {
+      "tr": "Rabbim! Beni ve soyumdan gelecekleri namazı devamlı kılanlardan eyle. Rabbimiz! Duamı kabul et.",
+      "en": "My Lord, make me an establisher of prayer, and from my descendants. Our Lord, and accept my supplication."
+    },
+    "tags": {
+      "tr": [
+        "namaz",
+        "çocuk",
+        "aile",
+        "ibadet"
+      ],
+      "en": [
+        "prayer",
+        "salah",
+        "children",
+        "worship"
+      ]
+    },
+    "source": {
+      "type": "quran",
+      "ref": "14:40"
+    },
+    "audioUrl": "https://cdn.islamic.network/quran/audio/128/ar.alafasy/1790.mp3",
+    "verified": true
+  }
+]

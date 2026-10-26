@@ -1,82 +1,58 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { Card } from '../components/Card';
+import { Switch } from 'react-native';
 import { HomeWidgetModule } from '../components/HomeWidgetModule';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import type { WidgetPreferences } from '../types';
+import { AppText, ListRow, Screen, SectionHeader, Surface } from '../ui';
+
+const ROWS: { key: keyof WidgetPreferences; icon: React.ComponentProps<typeof ListRow>['icon']; label: string }[] = [
+  { key: 'showNextPrayer', icon: 'time-outline', label: 'widgets.nextPrayer' },
+  { key: 'showHijriDate', icon: 'calendar-outline', label: 'widgets.hijri' },
+  { key: 'showDailyDua', icon: 'hand-left-outline', label: 'widgets.dailyDua' },
+  { key: 'compactMode', icon: 'contract-outline', label: 'widgets.compact' },
+];
 
 export function WidgetsScreen() {
   const { settings, updateSettings } = useApp();
-  const { colors } = useTheme();
+  const { colors, space } = useTheme();
   const { t } = useTranslation();
   const prefs = settings.widgetPrefs;
 
-  const updateWidget = (patch: Partial<typeof prefs>) => {
-    void updateSettings({ widgetPrefs: { ...prefs, ...patch } });
-  };
-
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('widgets.intro')}</Text>
+    <Screen>
+      <AppText variant="callout" tone="secondary" style={{ marginBottom: space[4] }}>
+        {t('widgets.intro')}
+      </AppText>
 
+      <AppText variant="overline" tone="muted" style={{ marginBottom: space[2] }}>
+        {t('widgets.preview')}
+      </AppText>
       <HomeWidgetModule />
 
-      <Card>
-        <WidgetToggle
-          label={t('widgets.nextPrayer')}
-          value={prefs.showNextPrayer}
-          onChange={(v) => updateWidget({ showNextPrayer: v })}
-          colors={colors}
-        />
-        <WidgetToggle
-          label={t('widgets.hijri')}
-          value={prefs.showHijriDate}
-          onChange={(v) => updateWidget({ showHijriDate: v })}
-          colors={colors}
-        />
-        <WidgetToggle
-          label={t('widgets.dailyDua')}
-          value={prefs.showDailyDua}
-          onChange={(v) => updateWidget({ showDailyDua: v })}
-          colors={colors}
-        />
-        <WidgetToggle
-          label={t('widgets.compact')}
-          value={prefs.compactMode}
-          onChange={(v) => updateWidget({ compactMode: v })}
-          colors={colors}
-        />
-      </Card>
+      <SectionHeader title={t('widgets.contents')} />
+      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+        {ROWS.map((row, i) => (
+          <ListRow
+            key={row.key}
+            icon={row.icon}
+            title={t(row.label)}
+            divider={i < ROWS.length - 1}
+            trailing={
+              <Switch
+                value={prefs[row.key]}
+                onValueChange={(v) => updateSettings({ widgetPrefs: { ...prefs, [row.key]: v } })}
+                trackColor={{ true: colors.primary, false: colors.borderStrong }}
+              />
+            }
+          />
+        ))}
+      </Surface>
 
-      <Text style={[styles.note, { color: colors.textSecondary }]}>{t('widgets.nativeNote')}</Text>
-    </ScrollView>
+      <AppText variant="caption" tone="muted" style={{ marginTop: space[4] }}>
+        {t('widgets.nativeNote')}
+      </AppText>
+    </Screen>
   );
 }
-
-function WidgetToggle({
-  label,
-  value,
-  onChange,
-  colors,
-}: {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-  colors: ReturnType<typeof useTheme>['colors'];
-}) {
-  return (
-    <View style={styles.row}>
-      <Text style={{ color: colors.text }}>{label}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.primary }} />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  intro: { lineHeight: 22, marginBottom: 16 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  note: { fontSize: 13, lineHeight: 20, marginTop: 16 },
-});
