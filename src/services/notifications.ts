@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { getPrayerLabel, translate } from '../i18n';
 import type { DisabledPrayerRule, PrayerName, UserSettings } from '../types';
 import { localDateKey } from '../utils/date';
+import { prayerDaysAhead } from './notificationBudget';
 import { getPrayerDates } from './prayerTimes';
 
 Notifications.setNotificationHandler({
@@ -19,8 +20,18 @@ Notifications.setNotificationHandler({
  * sound file that was never bundled; channel sounds can't be changed once a channel exists.
  */
 export const PRAYER_CHANNEL_ID = 'prayer-times-v2';
+/** Android plays the channel's sound, not the notification's, so each sound choice has a channel */
+const ADHAN_CHANNEL_ID = 'prayer-adhan-v1';
+const SILENT_CHANNEL_ID = 'prayer-silent-v1';
+/** Bundled through the expo-notifications plugin (app.json); 28 s, under iOS's 30 s limit */
+const ADHAN_SOUND_FILE = 'adhan_short.wav';
+
+function soundFor(sound: string | undefined): { sound?: string; channelId: string } {
+  if (sound === 'silent') return { sound: undefined, channelId: SILENT_CHANNEL_ID };
+  if (sound === 'adhan_short' || sound === 'adhan_full') return { sound: ADHAN_SOUND_FILE, channelId: ADHAN_CHANNEL_ID };
+  return { sound: 'default', channelId: PRAYER_CHANNEL_ID };
+}
 const NOTIFY_PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-const DAYS_AHEAD = 7;
 const notificationsSupported = Platform.OS !== 'web';
 
 function isPrayerDisabled(prayer: PrayerName, date: Date, rules: DisabledPrayerRule[]): boolean {
@@ -61,7 +72,10 @@ export async function schedulePrayerNotifications(
   if (!granted) return;
 
   const now = new Date();
-  for (let dayOffset = 0; dayOffset < DAYS_AHEAD; dayOffset++) {
+  // Shares iOS's 64-notification limit with custom reminders (see notificationBudget)
+  const perDay = NOTIFY_PRAYERS.filter((p) => settings.prayerNotifications[p]?.enabled).length;
+  const daysAhead = prayerDaysAhead(settings.customReminders ?? [], perDay);
+  for (let dayOffset = 0; dayOffset < daysAhead; dayOffset++) {
     const date = new Date();
     date.setDate(date.getDate() + dayOffset);
     date.setHours(12, 0, 0, 0);
@@ -79,16 +93,34 @@ export async function schedulePrayerNotifications(
       if (triggerDate <= now) continue;
 
       const prayerLabel = getPrayerLabel(settings.appLanguage, prayer);
+      const tone = soundFor(notifSettings.sound);
       await Notifications.scheduleNotificationAsync({
         identifier: `prayer-${prayer}-${dayOffset}`,
         content: {
           title: translate(settings.appLanguage, 'notifications.title', { prayer: prayerLabel }),
           body: translate(settings.appLanguage, 'notifications.body', { prayer: prayerLabel }),
-          // Custom adhan sounds are not bundled yet; anything but "silent" uses the system sound
-          sound: notifSettings.sound === 'silent' ? undefined : 'default',
-          ...(Platform.OS === 'android' && { channelId: PRAYER_CHANNEL_ID }),
+          sound: tone.sound,
+          ...(Platform.OS === 'android' && { channelId: tone.channelId }),
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
+      });
+    }
+  }
+
+  // The window ends after daysAhead days unless the app is opened again; say so on the last evening
+  if (perDay > 0) {
+    const notice = new Date();
+    notice.setDate(notice.getDate() + daysAhead - 1);
+    notice.setHours(21, 0, 0, 0);
+    if (notice > now) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: 'prayer-refresh',
+        content: {
+          title: translate(settings.appLanguage, 'notifications.refreshTitle'),
+          body: translate(settings.appLanguage, 'notifications.refreshBody'),
+          ...(Platform.OS === 'android' && { channelId: PRAYER_CHANNEL_ID }),
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: notice },
       });
     }
   }
@@ -101,6 +133,18 @@ export async function setupNotificationChannels(): Promise<void> {
       importance: Notifications.AndroidImportance.HIGH,
       sound: 'default',
       vibrationPattern: [0, 250, 250, 250],
+    });
+    await Notifications.setNotificationChannelAsync(ADHAN_CHANNEL_ID, {
+      name: 'Prayer times (adhan)',
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: ADHAN_SOUND_FILE,
+      vibrationPattern: [0, 250, 250, 250],
+    });
+    await Notifications.setNotificationChannelAsync(SILENT_CHANNEL_ID, {
+      name: 'Prayer times (silent)',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: null,
+      vibrationPattern: [0, 250],
     });
   }
 }

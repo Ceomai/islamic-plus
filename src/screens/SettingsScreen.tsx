@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import React from 'react';
-import { Switch, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Linking, Share, Switch, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { APP_LANGUAGES, CALCULATION_METHODS, MADHABS, QURAN_EDITIONS } from '../constants/defaults';
 import { useApp } from '../context/AppContext';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
+import { formatErrorReport, getErrorLog } from '../services/errorLog';
 import type { CalculationMethodId, Madhab, SectPreference } from '../types';
 import { AppText, Button, Chip, IconBadge, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
@@ -24,6 +25,9 @@ const FEATURE_LINKS: { route: keyof RootStackParamList; icon: keyof typeof Ionic
 ];
 
 const SECTS: SectPreference[] = ['neutral', 'sunni', 'shia'];
+const PRIVACY_URL =
+  (Constants.expoConfig?.extra?.privacyPolicyUrl as string | undefined) ??
+  'https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md';
 
 export function SettingsScreen({ navigation }: Props) {
   const { settings, updateSettings, darkMode, toggleDarkMode } = useApp();
@@ -33,6 +37,17 @@ export function SettingsScreen({ navigation }: Props) {
 
   const sectLabel = (s: SectPreference) =>
     s === 'sunni' ? t('settings.sectSunni') : s === 'shia' ? t('settings.sectShia') : t('settings.sectNeutral');
+
+  const [errorCount, setErrorCount] = useState(0);
+  useEffect(() => {
+    const load = () => getErrorLog().then((log) => setErrorCount(log.length));
+    void load();
+    return navigation.addListener('focus', load);
+  }, [navigation]);
+
+  const shareErrorReport = async () => {
+    await Share.share({ message: await formatErrorReport() });
+  };
 
   const switchTrack = { true: colors.primary, false: colors.borderStrong };
   const check = <Ionicons name="checkmark" size={20} color={colors.primary} />;
@@ -183,6 +198,21 @@ export function SettingsScreen({ navigation }: Props) {
             divider={i < FEATURE_LINKS.length - 1}
           />
         ))}
+      </Surface>
+
+      {/* Test and support: error report for testers, privacy policy */}
+      <SectionHeader title={t('settings.supportSection')} />
+      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
+        <ListRow icon="chatbox-ellipses-outline" title={t('settings.feedback')} onPress={() => navigation.navigate('Feedback')} divider />
+        <ListRow
+          icon="bug-outline"
+          title={t('settings.shareErrors')}
+          subtitle={t('settings.shareErrorsHint', { n: String(errorCount) })}
+          onPress={shareErrorReport}
+          divider
+        />
+        <ListRow icon="shield-checkmark-outline" title={t('settings.privacy')} onPress={() => void Linking.openURL(PRIVACY_URL)} divider />
+        <ListRow icon="play-circle-outline" title={t('settings.replayIntro')} onPress={() => void updateSettings({ onboardingDone: false })} />
       </Surface>
 
       {!isGuest && (

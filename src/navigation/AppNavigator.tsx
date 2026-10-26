@@ -21,7 +21,10 @@ import { EducationScreen } from '../screens/EducationScreen';
 import { FamilyModeScreen as FamilyModeScreenBase } from '../screens/FamilyModeScreen';
 import { HabitsScreen } from '../screens/HabitsScreen';
 import { HadithScreen } from '../screens/HadithScreen';
+import { FeedbackScreen } from '../screens/FeedbackScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { ImsakiyeScreen } from '../screens/ImsakiyeScreen';
+import { KazaScreen } from '../screens/KazaScreen';
 import { HomeLauncherEditScreen } from '../screens/HomeLauncherEditScreen';
 import { NotificationSettingsScreen } from '../screens/NotificationSettingsScreen';
 import { PlacesScreen } from '../screens/PlacesScreen';
@@ -98,6 +101,8 @@ function HomeStack() {
       <Stack.Screen name="Tasbih" component={TasbihScreen} options={{ title: t('nav.tasbih') }} />
       <Stack.Screen name="TasbihStats" component={TasbihStatsScreen} options={{ title: t('tasbih.statsTitle') }} />
       <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: t('nav.calendar') }} />
+      <Stack.Screen name="Imsakiye" component={ImsakiyeScreen} options={{ title: t('nav.imsakiye') }} />
+      <Stack.Screen name="Kaza" component={KazaScreen} options={{ title: t('nav.kaza') }} />
       <Stack.Screen name="Habits" component={HabitsScreen} options={{ title: t('nav.habits') }} />
       <Stack.Screen name="Duties" component={DutiesScreen} options={{ title: t('nav.duties') }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: t('nav.notifications') }} />
@@ -111,6 +116,7 @@ function HomeStack() {
       <Stack.Screen name="Themes" component={ThemesScreen} options={{ title: t('nav.themes') }} />
       <Stack.Screen name="CloudSync" component={CloudSyncScreen} options={{ title: t('nav.cloudSync') }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
+      <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ title: t('nav.feedback') }} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: t('account.deleteTitle') }} />
     </Stack.Navigator>
   );
@@ -122,6 +128,7 @@ function MoreStack() {
   return (
     <Stack.Navigator screenOptions={screenOpts}>
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
+      <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ title: t('nav.feedback') }} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: t('account.deleteTitle') }} />
       <Stack.Screen name="Themes" component={ThemesScreen} options={{ title: t('nav.themes') }} />
       <Stack.Screen name="CloudSync" component={CloudSyncScreen} options={{ title: t('nav.cloudSync') }} />

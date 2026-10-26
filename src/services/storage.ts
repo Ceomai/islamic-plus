@@ -18,6 +18,7 @@ const KEYS = {
   educationProgress: '@islamic/educationProgress',
   zakatHistory: '@islamic/zakatHistory',
   deviceLanguage: '@islamic/deviceLanguage',
+  kaza: '@islamic/kaza',
 };
 
 /** Device-wide keys — everything else belongs to the signed-in account. */

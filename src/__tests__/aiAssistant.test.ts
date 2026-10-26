@@ -55,6 +55,9 @@ const CASES: Case[] = [
   { q: 'افتح القبلة', lang: 'ar', screen: 'Qibla', auto: true },
   { q: 'zeig die qibla', lang: 'de', screen: 'Qibla', auto: true },
   { q: 'ouvre le tasbih', lang: 'fr', screen: 'Tasbih', auto: true },
+  { q: 'imsakiyeyi aç', lang: 'tr', screen: 'Imsakiye', auto: true },
+  { q: 'iftara ne kadar kaldı', lang: 'tr', screen: 'Imsakiye' },
+  { q: 'kaza namazı takibi', lang: 'tr', screen: 'Kaza' },
   // Learn topics
   { q: 'Orucu bozan şeyler nedir?', lang: 'tr', screen: 'EducationDetail', params: { topicId: 'orucu-bozanlar' } },
   { q: 'abdesti bozan durumlar', lang: 'tr', screen: 'EducationDetail', params: { topicId: 'abdesti-bozanlar' } },

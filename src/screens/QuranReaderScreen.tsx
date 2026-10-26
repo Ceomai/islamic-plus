@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, View, type ListViewToken } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, View, type ListViewToken } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QURAN_AUDIO_BASE, QURAN_EDITIONS } from '../constants/defaults';
 import { useApp } from '../context/AppContext';
@@ -91,10 +91,21 @@ export function QuranReaderScreen({ route }: Props) {
     if (index > 0) requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: false }));
   }, [rows.length]);
 
+  // The cleanup below runs with the values of its first render, so the ayah count lives in a ref
+  const ayahCountRef = useRef(0);
+  ayahCountRef.current = ayahs.length;
+
   useEffect(() => {
     return () => {
       void stopAudio();
-      void updateQuranLastRead(settings.activeFamilyMemberId, surahNumber, translationId, surahName, lastAyahRef.current).then(
+      void updateQuranLastRead(
+        settings.activeFamilyMemberId,
+        surahNumber,
+        translationId,
+        surahName,
+        lastAyahRef.current,
+        ayahCountRef.current
+      ).then(
         () => refreshReadingProgress()
       );
       void trackActivity('quran');
@@ -112,6 +123,11 @@ export function QuranReaderScreen({ route }: Props) {
     () => new Set(quranProgress.bookmarks.filter((b) => b.surahNumber === surahNumber).map((b) => b.ayahNumber)),
     [quranProgress.bookmarks, surahNumber]
   );
+
+  const shareAyah = (a: ReaderAyah) => {
+    const text = [a.arabic, a.translation, `— ${surahName} ${surahNumber}:${a.numberInSurah}`].filter(Boolean).join('\n\n');
+    void Share.share({ message: text });
+  };
 
   const bookmarkAyah = async (ayahNumber: number) => {
     lastAyahRef.current = ayahNumber;
@@ -214,6 +230,14 @@ export function QuranReaderScreen({ route }: Props) {
             <Ionicons name={isPlaying ? 'stop-circle' : 'play-circle-outline'} size={22} color={colors.primary} />
           </Pressable>
           <Pressable
+            onPress={() => shareAyah(a)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('quran.share')} ${a.numberInSurah}`}
+          >
+            <Ionicons name="share-outline" size={20} color={colors.primary} />
+          </Pressable>
+          <Pressable
             onPress={() => bookmarkAyah(a.numberInSurah)}
             hitSlop={10}
             accessibilityRole="button"
@@ -311,6 +335,12 @@ export function QuranReaderScreen({ route }: Props) {
           extraData={{ bookmarked, playing, scale }}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={{ itemVisiblePercentThreshold: 40 }}
+          // Reaching the bottom (or a short surah that fits on screen) means the last ayah was read
+          onEndReached={() => {
+            const last = ayahs[ayahs.length - 1];
+            if (last) lastAyahRef.current = Math.max(lastAyahRef.current, last.numberInSurah);
+          }}
+          onEndReachedThreshold={0.1}
           onScrollToIndexFailed={({ index, averageItemLength }) =>
             listRef.current?.scrollToOffset({ offset: index * averageItemLength, animated: false })
           }

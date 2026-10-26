@@ -29,6 +29,9 @@ function mergeQuranProgress(local: QuranProgress, remote: QuranProgress): QuranP
 
   const merged: QuranProgress = {
     lastRead: useLocalLast ? local.lastRead : remote.lastRead,
+    // The newer device's checklist wins so a "new khatm" reset is not undone by the other device
+    completedSurahs: useLocalLast ? local.completedSurahs ?? [] : remote.completedSurahs ?? [],
+    khatmCount: Math.max(local.khatmCount ?? 0, remote.khatmCount ?? 0),
     bookmarks: [...bookmarkMap.values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 50),

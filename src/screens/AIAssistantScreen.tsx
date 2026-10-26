@@ -10,6 +10,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { askAssistant, getAIWelcome } from '../services/aiAssistant';
 import { askRemoteAssistant, isRemoteAssistantAvailable } from '../services/assistantRemote';
+import { trackFeatureAction } from '../services/cloudAnalytics';
 import { formatClock, getNextPrayer } from '../services/prayerTimes';
 import type { AssistantAction, AssistantTarget } from '../types';
 import { AppText, Chip } from '../ui';
@@ -89,7 +90,10 @@ export function AIAssistantScreen() {
       }
       await sendAIMessage('', reply.text, reply.actions);
     } else {
-      reply = askAssistant(text, { appLang: lang, quranEdition: settings.quranEditionId, nextPrayer });
+      const local = askAssistant(text, { appLang: lang, quranEdition: settings.quranEditionId, nextPrayer });
+      // Unanswered questions show which words the on-device vocabulary still lacks
+      if (local.matched === false) void trackFeatureAction('ai', 'unmatched', { lang: local.lang });
+      reply = local;
       await sendAIMessage(text, reply.text, reply.actions);
     }
     scrollDown();

@@ -67,10 +67,21 @@ export function PlacesScreen({ route, navigation }: Props) {
     km < 1 ? `${Math.round(km * 1000)} m` : `${km.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} km`;
 
   const header = (
-    <View style={{ flexDirection: 'row', gap: space[2], marginBottom: space[4] }}>
-      {RADII.map((r) => (
-        <Chip key={r} label={`${r / 1000} km`} selected={radius === r} onPress={() => setRadius(r)} />
-      ))}
+    <View style={{ marginBottom: space[4] }}>
+      <View style={{ flexDirection: 'row', gap: space[2] }}>
+        {RADII.map((r) => (
+          <Chip key={r} label={`${r / 1000} km`} selected={radius === r} onPress={() => setRadius(r)} />
+        ))}
+      </View>
+      {/* Free OSM sources are incomplete and sometimes slow; say so up front */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[1], marginTop: space[2] }}>
+        <AppText variant="overline" tone="brand">
+          BETA
+        </AppText>
+        <AppText variant="caption" tone="muted" style={{ flex: 1 }}>
+          {t('places.beta')}
+        </AppText>
+      </View>
     </View>
   );
 

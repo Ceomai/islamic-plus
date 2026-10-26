@@ -1,5 +1,7 @@
 import { localDateKey } from '../utils/date';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+import { updatePrayerWidget, type WidgetInput } from '../services/homeWidget';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { useAuth } from './AuthContext';
 import { scheduleCustomReminders } from '../services/advancedReminders';
@@ -82,6 +84,15 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
+const widgetInput = (loc: StoredLocation, s: UserSettings): WidgetInput => ({
+  latitude: loc.latitude,
+  longitude: loc.longitude,
+  city: loc.city,
+  method: s.calculationMethod,
+  madhab: s.madhab,
+  lang: s.appLanguage,
+});
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { session, authReady } = useAuth();
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
@@ -139,10 +150,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         getJson<AIChatMessage[]>(storageKeys.aiChat, []),
       ]);
       // New accounts and the sign-in screen start in the language last chosen on this device
-      const baseSettings = storedSettings ?? {
+      // Settings saved before the introduction existed belong to people who are past it
+      const baseSettings = storedSettings
+        ? { ...storedSettings, onboardingDone: storedSettings.onboardingDone ?? true }
+        : {
         ...DEFAULT_SETTINGS,
         appLanguage: deviceLanguage ?? DEFAULT_SETTINGS.appLanguage,
         quranEditionId: deviceLanguage === 'tr' ? 'tr.yazir' : DEFAULT_SETTINGS.quranEditionId,
+        calculationMethod: deviceLanguage === 'tr' ? 'turkey' : DEFAULT_SETTINGS.calculationMethod,
       };
       const rawSettings = !session && deviceLanguage ? { ...baseSettings, appLanguage: deviceLanguage } : baseSettings;
       const savedSettings = migrateSettings(rawSettings);
@@ -246,18 +261,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings]);
 
+  // Always call: with notifications switched off it cancels what was scheduled before
+  const lastScheduleRef = useRef(0);
   useEffect(() => {
-    if (location && settings.globalNotificationsEnabled) {
-      schedulePrayerNotifications(location.latitude, location.longitude, settings);
+    if (location) {
+      lastScheduleRef.current = Date.now();
+      void schedulePrayerNotifications(location.latitude, location.longitude, settings);
+      updatePrayerWidget(widgetInput(location, settings));
     }
   }, [location, settings]);
+
+  // Prayer notifications cover a limited number of days; extend the window and roll "today"
+  // over whenever the app comes back to the foreground (at most once an hour)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void refreshTodayPrayers();
+      if (location && Date.now() - lastScheduleRef.current > 60 * 60 * 1000) {
+        lastScheduleRef.current = Date.now();
+        void schedulePrayerNotifications(location.latitude, location.longitude, settings);
+        updatePrayerWidget(widgetInput(location, settings));
+      }
+    });
+    return () => sub.remove();
+  }, [location, settings, refreshTodayPrayers]);
 
   const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
     setSettings((prev) => {
       const next = { ...prev, ...patch };
       void setJson(storageKeys.settings, next);
       if (patch.appLanguage) void setJson(storageKeys.deviceLanguage, patch.appLanguage);
-      if (location && next.globalNotificationsEnabled) {
+      if (location) {
         void schedulePrayerNotifications(location.latitude, location.longitude, next);
       }
       if (patch.customReminders || next.customReminders) {

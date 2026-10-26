@@ -12,6 +12,8 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { gregorianToHijri } from '../services/hijriCalendar';
+import { fastCountdown, formatDuration, ramadanWindow } from '../services/ramadan';
+import { addDays } from '../utils/date';
 import { formatClock, getNextPrayer, getPrayerDates } from '../services/prayerTimes';
 import type { HomeFeatureId, PrayerName } from '../types';
 import { AppText, ListRow, SectionHeader, Surface } from '../ui';
@@ -75,6 +77,15 @@ export function HomeScreen({ navigation }: Props) {
   }, [location, settings.calculationMethod, settings.madhab, now]);
 
   const completedPrayers = useMemo(() => new Set(todayPrayers.map((p) => p.prayer)), [todayPrayers]);
+
+  // Ramadan card: suhoor/iftar countdown during Ramadan, days left in the month before it
+  const ramadan = useMemo(() => ramadanWindow(new Date(now)), [today]);
+  const fast = useMemo(() => {
+    if (!location || !prayerDates || !ramadan.inRamadan) return null;
+    const tomorrow = getPrayerDates(location.latitude, location.longitude, addDays(new Date(now), 1), settings.calculationMethod, settings.madhab);
+    return fastCountdown(new Date(now), prayerDates, tomorrow.fajr);
+  }, [location, prayerDates, ramadan.inRamadan, now, settings.calculationMethod, settings.madhab]);
+  const showRamadan = ramadan.inRamadan || ramadan.daysUntil <= 30;
 
   if (loading) {
     return (
@@ -225,6 +236,33 @@ export function HomeScreen({ navigation }: Props) {
           ) : (
             <HomeWidgetModule key={id} onOpenDua={(duaId) => navigation.navigate('DuaDetail', { duaId })} />
           )
+        )}
+
+        {showRamadan && (
+          <Surface
+            variant="soft"
+            onPress={() => openFeature('imsakiye')}
+            accessibilityLabel={t('nav.imsakiye')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[4] }}
+          >
+            <Ionicons name={fast?.kind === 'iftar' ? 'restaurant-outline' : 'moon-outline'} size={26} color={colors.onPrimarySoft} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }}>
+                {ramadan.inRamadan ? t('ramadan.dayOf', { n: String(ramadan.dayOfRamadan), total: String(ramadan.length) }) : t('nav.imsakiye')}
+              </AppText>
+              <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
+                {fast
+                  ? (() => {
+                      const { h, m } = formatDuration(fast.target.getTime() - now);
+                      return `${fast.kind === 'iftar' ? t('ramadan.untilIftar') : t('ramadan.untilSahur')}: ${t('ramadan.left', { h: String(h), m: String(m) })}`;
+                    })()
+                  : ramadan.inRamadan
+                    ? t('ramadan.needLocation')
+                    : t('ramadan.daysUntil', { n: String(ramadan.daysUntil) })}
+              </AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.onPrimarySoft} />
+          </Surface>
         )}
 
         {(quranProgress.lastRead || hadithProgress.lastRead) && (

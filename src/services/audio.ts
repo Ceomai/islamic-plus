@@ -22,11 +22,12 @@ export async function stopAudio() {
   currentPlayer = null;
 }
 
-async function playUri(uri: string, onFinish?: () => void): Promise<boolean> {
+/** A remote/local URI, or a bundled asset (require(...) module id) */
+async function playUri(source: string | number, onFinish?: () => void): Promise<boolean> {
   try {
     await initAudio();
     await stopAudio();
-    const player = createAudioPlayer({ uri });
+    const player = createAudioPlayer(typeof source === 'number' ? source : { uri: source });
     currentPlayer = player;
     if (onFinish) {
       player.addListener('playbackStatusUpdate', (status) => {
@@ -39,6 +40,14 @@ async function playUri(uri: string, onFinish?: () => void): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Full adhan (CC0 recording from Wikimedia Commons, see docs/CONTENT-SOURCES.md) */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ADHAN_FULL: number = require('../../assets/sounds/adhan_full.m4a');
+
+export async function playAdhan(onFinish?: () => void): Promise<boolean> {
+  return playUri(ADHAN_FULL, onFinish);
 }
 
 /** `onFinish` fires once the clip plays to the end (not when stopped or replaced). */

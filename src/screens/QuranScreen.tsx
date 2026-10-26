@@ -8,12 +8,13 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { fetchSurahList, type SurahListItem } from '../services/quranApi';
+import { startNewKhatm } from '../services/readingProgress';
 import { AppText, Button, IconBadge, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quran'>;
 
 export function QuranScreen({ navigation }: Props) {
-  const { settings, quranProgress } = useApp();
+  const { settings, quranProgress, refreshReadingProgress } = useApp();
   const { colors, radius, space, type } = useTheme();
   const { t } = useTranslation();
   const [surahs, setSurahs] = useState<SurahListItem[]>([]);
@@ -44,6 +45,11 @@ export function QuranScreen({ navigation }: Props) {
   }, [surahs, query]);
 
   const lastRead = quranProgress.lastRead;
+  const completed = useMemo(() => new Set(quranProgress.completedSurahs ?? []), [quranProgress.completedSurahs]);
+  const newKhatm = async () => {
+    await startNewKhatm(settings.activeFamilyMemberId);
+    await refreshReadingProgress();
+  };
 
   const header = (
     <View style={{ paddingBottom: space[2] }}>
@@ -71,6 +77,27 @@ export function QuranScreen({ navigation }: Props) {
           <Ionicons name="chevron-forward" size={18} color={colors.onPrimarySoft} />
         </Surface>
       )}
+
+      {/* Khatm: surahs read to the end in the current round */}
+      <Surface style={{ marginBottom: space[4] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <AppText variant="bodyStrong">{t('quran.khatm')}</AppText>
+          <AppText variant="callout" tone="brand" style={{ fontWeight: '600' }}>
+            {completed.size}/114
+          </AppText>
+        </View>
+        <View style={{ height: 6, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted, marginTop: space[2], overflow: 'hidden' }}>
+          <View style={{ width: `${(completed.size / 114) * 100}%`, height: '100%', backgroundColor: colors.primary }} />
+        </View>
+        <AppText variant="caption" tone="secondary" style={{ marginTop: space[2] }}>
+          {completed.size >= 114
+            ? t('quran.khatmDone', { n: String(quranProgress.khatmCount ?? 1) })
+            : t('quran.khatmHint', { n: String(quranProgress.khatmCount ?? 0) })}
+        </AppText>
+        {completed.size >= 114 && (
+          <Button label={t('quran.newKhatm')} icon="refresh" variant="secondary" onPress={newKhatm} style={{ marginTop: space[3] }} />
+        )}
+      </Surface>
 
       <View
         style={{
@@ -167,7 +194,10 @@ export function QuranScreen({ navigation }: Props) {
             </AppText>
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="bodyStrong">{item.englishName}</AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[1] }}>
+              <AppText variant="bodyStrong">{item.englishName}</AppText>
+              {completed.has(item.number) && <Ionicons name="checkmark-circle" size={14} color={colors.primary} />}
+            </View>
             <AppText variant="caption" tone="secondary">
               {item.numberOfAyahs} {t('quran.ayahs')}
             </AppText>

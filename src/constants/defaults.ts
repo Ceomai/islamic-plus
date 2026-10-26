@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   madhab: 'hanafi',
   calculationMethod: 'muslimWorldLeague',
   sectPreference: 'neutral',
+  onboardingDone: false,
   locationReminderEnabled: true,
   globalNotificationsEnabled: true,
   prayerNotifications: prayers.reduce(
@@ -88,10 +89,3 @@ export const QURAN_TRANSLITERATION_EDITION = 'en.transliteration';
 /** Mishary Alafasy recitation, addressed by global ayah number */
 export const QURAN_AUDIO_BASE = 'https://cdn.islamic.network/quran/audio/128/ar.alafasy';
 
-export const HADITH_COLLECTIONS = [
-  { id: 'bukhari', name: 'Sahih al-Bukhari', language: 'en', sect: 'sunni' as const },
-  { id: 'muslim', name: 'Sahih Muslim', language: 'en', sect: 'sunni' as const },
-  { id: 'abudawud', name: 'Sunan Abu Dawud', language: 'en', sect: 'sunni' as const },
-  { id: 'tirmidhi', name: "Jami' at-Tirmidhi", language: 'en', sect: 'sunni' as const },
-  { id: 'nahj', name: 'Nahj al-Balagha (excerpts)', language: 'en', sect: 'shia' as const },
-];

@@ -22,6 +22,7 @@
     "submit:ios": "npx eas-cli submit --platform ios --latest --profile preview"
   },
   "dependencies": {
+    "@expo/ui": "~58.0.23",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
@@ -43,6 +44,7 @@
     "expo-sharing": "~58.0.20",
     "expo-splash-screen": "~58.0.11",
     "expo-status-bar": "~58.0.4",
+    "expo-widgets": "~58.0.23",
     "hijri-converter": "^1.1.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -67,7 +69,11 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/supabase/"
-    ]
+    ],
+    "setupFiles": [
+      "./jest.setup.js"
+    ],
+    "globalSetup": "./jest.global-setup.js"
   },
   "private": true
 }

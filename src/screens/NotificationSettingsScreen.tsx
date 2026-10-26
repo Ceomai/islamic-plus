@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
@@ -6,14 +6,17 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { getDayNames } from '../i18n';
 import type { RootStackParamList } from '../navigation/types';
+import { playAdhan, stopAudio } from '../services/audio';
 import type { PrayerName, PrayerNotificationSettings } from '../types';
 import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NotificationSettings'>;
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-/** Only sounds that actually ship with the app; adhan recordings are not bundled yet */
-const SOUNDS: PrayerNotificationSettings['sound'][] = ['default', 'silent'];
+/** Sounds that ship with the app; "adhan_short" is the bundled 28-second adhan */
+const SOUNDS: PrayerNotificationSettings['sound'][] = ['default', 'adhan_short', 'silent'];
+const soundChoice = (s: PrayerNotificationSettings['sound'] | undefined) =>
+  s === 'silent' ? 'silent' : s === 'adhan_short' || s === 'adhan_full' ? 'adhan_short' : 'default';
 const ADVANCE_OPTIONS = [0, 5, 10, 15, 30];
 
 export function NotificationSettingsScreen({ navigation }: Props) {
@@ -42,6 +45,17 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     void updateSettings({ disabledPrayerRules: [...rules, { prayer: p, daysOfWeek: [day], specificDates: [] }] });
   };
 
+  const [adhanPlaying, setAdhanPlaying] = useState(false);
+  useEffect(() => () => void stopAudio(), []);
+  const toggleAdhan = async () => {
+    if (adhanPlaying) {
+      await stopAudio();
+      setAdhanPlaying(false);
+      return;
+    }
+    setAdhanPlaying(await playAdhan(() => setAdhanPlaying(false)));
+  };
+
   const isDayOff = (p: PrayerName, day: number) =>
     settings.disabledPrayerRules.some((r) => r.prayer === p && r.daysOfWeek.includes(day));
 
@@ -59,6 +73,13 @@ export function NotificationSettingsScreen({ navigation }: Props) {
               trackColor={track}
             />
           }
+          divider
+        />
+        <ListRow
+          icon={adhanPlaying ? 'stop-circle-outline' : 'play-circle-outline'}
+          title={adhanPlaying ? t('notifications.stopAdhan') : t('notifications.listenAdhan')}
+          subtitle={t('notifications.adhanHint')}
+          onPress={toggleAdhan}
         />
       </Surface>
 
@@ -98,13 +119,12 @@ export function NotificationSettingsScreen({ navigation }: Props) {
                     <AppText variant="caption" tone="secondary" style={{ marginTop: space[4], marginBottom: space[2] }}>
                       {t('notifications.sound')}
                     </AppText>
-                    <View style={{ flexDirection: 'row', gap: space[2] }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
                       {SOUNDS.map((s) => (
                         <Chip
                           key={s}
                           label={t(`notifications.sounds.${s}`)}
-                          // Older settings may still hold an adhan value; it plays as the default sound
-                          selected={(cfg?.sound === 'silent' ? 'silent' : 'default') === s}
+                          selected={soundChoice(cfg?.sound) === s}
                           onPress={() => patchPrayer(p, { sound: s })}
                         />
                       ))}
