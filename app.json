@@ -24,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0D3B2E"
+        "backgroundColor": "#0F5C4A"
       },
       "package": "com.islamicplus.app",
       "permissions": [
@@ -118,6 +118,12 @@
     "locales": {
       "tr": "./locales/tr.json",
       "en": "./locales/en.json"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f0b025b3-ca20-44b4-98e6-e257b7124521"
     }
   }
 }

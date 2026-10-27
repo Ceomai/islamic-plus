@@ -344,6 +344,7 @@ export const tr = {
     prayerSection: 'Namaz vakitleri',
     contentSection: "Kur'an ve içerik",
     version: 'Sürüm {{v}}',
+    applyUpdate: 'Yeni sürüm indirildi, şimdi yükle',
   },
   quran: {
     source: "Arapça metin: Tanzil Kur’an Metni (tanzil.net, CC BY 3.0) · Meal: {{translation}} · Ses: Mişari Raşid el-Afasi",

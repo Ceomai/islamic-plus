@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import React, { useEffect, useState } from 'react';
 import { Linking, Share, Switch, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -229,9 +230,31 @@ export function SettingsScreen({ navigation }: Props) {
         </>
       )}
 
+      {Updates.isEnabled && <PendingUpdate />}
+
       <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[8] }}>
         {t('app.name')} · {t('settings.version', { v: appVersion() })}
       </AppText>
     </Screen>
+  );
+}
+
+/**
+ * An over-the-air update downloads in the background at launch and applies on the next cold
+ * start; testers who never fully close the app can apply it here instead.
+ */
+function PendingUpdate() {
+  const { t } = useTranslation();
+  const { space } = useTheme();
+  const { isUpdatePending } = Updates.useUpdates();
+  if (!isUpdatePending) return null;
+  return (
+    <Button
+      label={t('settings.applyUpdate')}
+      icon="refresh"
+      variant="secondary"
+      onPress={() => void Updates.reloadAsync()}
+      style={{ marginTop: space[6] }}
+    />
   );
 }

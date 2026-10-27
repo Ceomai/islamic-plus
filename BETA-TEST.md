@@ -23,7 +23,10 @@ App Store / Play Store yayını **olmadan** arkadaşlarınıza uygulamayı dağ�
 **Aşama 2 — Test turu (1–2 hafta)**
 8. Görev ver, serbest bırakma: 1. hafta vakitler/bildirim/widget, 2. hafta Kur'an, dualar, tesbih, kaza, Öğren. Her hafta başında gruba 3–4 maddelik kısa bir görev listesi at.
 9. Geri bildirimler uygulama içinden gelir; 2–3 günde bir `supabase/queries/test-feedback-report.sql` sorgularını çalıştır. Gruptaki mesajları da aynı listeye ekle.
-10. Düzeltmelerden sonra yeni APK derle (`npm run build:preview:android`). Yeni APK eskisinin üstüne kurulur, veriler silinmez; gruba "yeni sürüm" mesajını değişiklik listesiyle at.
+10. **Düzeltmeleri dağıtmak — çoğu zaman yeni APK gerekmez (uygulama içi güncelleme):**
+    - Yalnızca JavaScript/içerik değiştiyse: `npm run update:preview -- --message "Kıble düzeltmesi"`. Testçilerin telefonu güncellemeyi uygulama açılınca arka planda indirir; uygulama tamamen kapatılıp açılınca (ya da Diğer sekmesinde çıkan "Yeni sürüm indirildi, şimdi yükle" düğmesiyle) yeni sürüm gelir. Sürüm satırında `· u1a2b3c4d` gibi bir ek görünür.
+    - Yerel (native) bir şey değiştiyse — yeni paket kurulumu (`expo install`), `app.json` eklentileri, izinler, simge, bildirim sesleri: önce `app.json` içindeki `version`'ı artır (ör. 1.0.0 → 1.0.1), sonra yeni APK derle (`npm run build:preview:android`). Eski APK'lar yeni sürümün güncellemelerini almaz; bu, uyumsuz bir güncellemenin uygulamayı çökertmesini önler.
+    - Yeni APK eskisinin üstüne kurulur, veriler silinmez. Her iki durumda da gruba "yeni sürüm" mesajını değişiklik listesiyle at.
 11. Turun sonunda gruba 5 soru sor: en çok kullandığın 3 bölüm, hiç açmadığın bölüm, bildirimler doğru zamanda geldi mi, bir şey kafanı karıştırdı mı, arkadaşına önerir misin (1–10).
 
 ---
@@ -35,7 +38,6 @@ cd C:\Users\PC\Desktop\Islamic
 npm install
 npx eas login
 npm run eas:init          # zaten yapıldıysa atlayın
-node scripts/generate-assets.js
 ```
 
 EAS projesi: `@aimelih/islamic` — ID `f0b025b3-ca20-44b4-98e6-e257b7124521`

@@ -344,6 +344,7 @@ export const en = {
     prayerSection: 'Prayer times',
     contentSection: 'Quran and content',
     version: 'Version {{v}}',
+    applyUpdate: 'An update is ready, restart now',
   },
   quran: {
     source: "Arabic text: Tanzil Quran Text (tanzil.net, CC BY 3.0) · Translation: {{translation}} · Audio: Mishary Rashid Alafasy",

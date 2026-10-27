@@ -13,7 +13,6 @@
     "i18n:check": "node scripts/check-i18n.js",
     "check": "tsc --noEmit && node scripts/check-i18n.js && jest --ci",
     "content:review": "node scripts/export-content-review.js",
-    "assets:generate": "node scripts/generate-assets.js",
     "duas:verify": "node scripts/verify-duas.js",
     "assistant:catalog": "node scripts/build-assistant-catalog.js",
     "eas:init": "npx eas-cli init",
@@ -21,6 +20,7 @@
     "build:preview:android": "npx eas-cli build --platform android --profile preview",
     "build:preview:ios": "npx eas-cli build --platform ios --profile preview",
     "build:production": "npx eas-cli build --platform all --profile production",
+    "update:preview": "npx eas-cli update --channel preview --platform android",
     "submit:ios": "npx eas-cli submit --platform ios --latest --profile preview"
   },
   "dependencies": {
@@ -49,6 +49,7 @@
     "expo-splash-screen": "~58.0.11",
     "expo-status-bar": "~58.0.4",
     "expo-task-manager": "~58.0.12",
+    "expo-updates": "~58.0.18",
     "expo-widgets": "~58.0.23",
     "hijri-converter": "^1.1.1",
     "react": "19.3.0",

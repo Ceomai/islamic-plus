@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { Platform } from 'react-native';
 import { getSupabase } from '../config/supabase';
 
@@ -18,10 +19,14 @@ const MAX_PENDING = 10;
 const MAX_UPLOADS = 20;
 const uploaded = new Set<string>();
 
-/** "1.0.0 (5)": the build number tells test APKs apart (EAS raises it on every build) */
+/**
+ * "1.0.0 (5)": the build number tells test APKs apart (EAS raises it on every build). When the
+ * JS came from an over-the-air update, its id is appended: "1.0.0 (5) · u3f2a9c1d".
+ */
 export const appVersion = () => {
   const version = Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? '?';
-  return Application.nativeBuildVersion ? `${version} (${Application.nativeBuildVersion})` : version;
+  const build = Application.nativeBuildVersion ? `${version} (${Application.nativeBuildVersion})` : version;
+  return Updates.isEnabled && !Updates.isEmbeddedLaunch && Updates.updateId ? `${build} · u${Updates.updateId.slice(0, 8)}` : build;
 };
 export const platformLabel = () => `${Platform.OS} ${String(Platform.Version)}`;
 

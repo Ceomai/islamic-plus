@@ -108,4 +108,4 @@ Use it without an account, or sign in to sync between your devices.
 6. Öğren — kategori filtreleri
 7. Ana ekran widget'ı (cihazdan)
 
-Web önizlemesinden alınmış taslaklar: `docs/store/screenshots/`. Mağaza için gerçek cihazdan, istenen çözünürlükte alınmalı.
+Web önizlemesinden alınmış taslaklar: `docs/store/screenshots/`. Play için simge (512×512) ve öne çıkan görsel (1024×500): `docs/store/play-icon-512.png`, `docs/store/feature-graphic.png`. Mağaza için gerçek cihazdan, istenen çözünürlükte alınmalı.
