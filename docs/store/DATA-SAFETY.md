@@ -21,7 +21,7 @@ Kodun gerçekte topladığı veriye göre hazırlanmıştır (Ekim 2026). Kod de
 
 - Veri topluyor musunuz veya paylaşıyor musunuz? **Evet** (toplama). Üçüncü taraflarla **paylaşım yok**: OpenStreetMap'e giden konum, hizmetin kendisini sağlamak için yapılan bir istektir; Google'ın tanımına göre "paylaşım" sayılmaz, yine de beyan etmeniz önerilir.
 - Aktarım sırasında şifreleniyor mu? **Evet** (tüm istekler HTTPS).
-- Kullanıcı verilerinin silinmesini isteyebilir mi? **Evet**: uygulama içinde Ayarlar › Hesabı sil. Web üzerinden silme talebi için bir bağlantı da istenir: destek e-postası eklendiğinde politikaya yazın.
+- Kullanıcı verilerinin silinmesini isteyebilir mi? **Evet**: uygulama içinde Ayarlar › Hesabı sil. Web üzerinden silme bağlantısı: https://ceomai.github.io/islamic-plus/delete-account/ (destek e-postası eklenince sayfadaki yer tutucuyu değiştirin).
 - Veri türleri: Konum (yaklaşık, hassas), Kişisel bilgiler (e-posta), Uygulama etkinliği (uygulama içi işlemler, diğer kullanıcı içeriği), Uygulama bilgileri ve performans (çökme kayıtları, tanılama), Cihaz kimlikleri: **yok**.
 
 ## Apple App Privacy cevapları

@@ -28,7 +28,7 @@ const FEATURE_LINKS: { route: keyof RootStackParamList; icon: keyof typeof Ionic
 const SECTS: SectPreference[] = ['neutral', 'sunni', 'shia'];
 const PRIVACY_URL =
   (Constants.expoConfig?.extra?.privacyPolicyUrl as string | undefined) ??
-  'https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md';
+  'https://ceomai.github.io/islamic-plus/privacy/';
 
 export function SettingsScreen({ navigation }: Props) {
   const { settings, updateSettings, darkMode, toggleDarkMode } = useApp();
