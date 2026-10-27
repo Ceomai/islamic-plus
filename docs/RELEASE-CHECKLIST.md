@@ -6,13 +6,13 @@
 
 | # | İş | Sahip | Durum |
 |---|---|---|---|
-| 1 | Paket kimliğini seç (`com.islamic.app` çok genel; yayından sonra değişmez) | S → C | ⏳ |
-| 2 | Supabase'de `007` ve `008` migration'larını çalıştır (`008`: geri bildirim + hata tabloları) | S | `007` ✅, `008` ⏳ |
+| 1 | Paket kimliği: `com.islamicplus.app` (iOS ve Android) | S → C | ✅ |
+| 2 | Supabase'de `007`, `008` ve `009` migration'larını çalıştır (`008`: geri bildirim + hata tabloları, `009`: yoğun gönderim sınırı) | S | `007` ✅, `008` ✅, `009` ✅ |
 | 3 | Gizlilik politikasına iletişim e-postası ekle | S → C | ⏳ |
 | 4 | EAS geliştirme/test derlemesi: Android APK (ücretsiz). iOS için TestFlight: Apple Developer hesabı (yıllık 99 $) | S + C | ⏳ |
 | 5 | Gerçek cihazda: bildirim zamanlaması, ezan sesi, widget, izin pencereleri, kıble | S | ⏳ (Expo Go'da kısmen) |
 | 6 | Test grubuna `docs/TEST-PLAN.md` ile yönergeyi ilet; geri bildirimler uygulama içinden gelir | S | ⏳ |
-| 7 | Gelen geri bildirim ve hataları izle: Supabase › Table Editor › `app_feedback`, `app_errors` | S | ⏳ |
+| 7 | Gelen geri bildirim ve hataları izle: Supabase › SQL Editor'e `supabase/queries/test-feedback-report.sql` | S | ⏳ |
 | 8 | Vakitler Diyanet ile karşılaştırıldı (İstanbul, Ankara; en fazla 1 dk) | C | ✅ |
 | 9 | Hata ekranı, hata kaydı ve uygulama içi geri bildirim | C | ✅ |
 | 10 | Kullanılmayan izinler kaldırıldı, iOS bildirim sınırı | C | ✅ |

@@ -7,6 +7,30 @@ App Store / Play Store yayını **olmadan** arkadaşlarınıza uygulamayı dağ�
 
 ---
 
+## Kısa yol: test turunu adım adım yürütmek
+
+**Aşama 1 — Önce sen dene (1–2 gün)**
+1. ✅ Migration 009 çalıştırıldı. Ayrıntılı hazırlık listesi: [docs/TEST-HAZIRLIK.md](docs/TEST-HAZIRLIK.md).
+2. [Builds](https://expo.dev/accounts/aimelih/projects/islamic/builds) sayfasında son Android derlemesi **Finished** olunca telefondan aç → **Install** → APK'yı kur (Chrome'a "bilinmeyen uygulama" izni ver).
+3. `docs/TEST-PLAN.md` listesini bir kez yürü. Özellikle Expo Go'da denenemeyenler: vakit bildirimi ve ezan sesi (telefon kilitliyken), ana ekran widget'ı, telefonu yeniden başlatınca bildirimlerin sürmesi.
+4. Bir test geri bildirimi gönder (Diğer › Geri bildirim gönder) ve Supabase'de `app_feedback` tablosunda göründüğünü kontrol et.
+
+**Aşama 1 — Test grubunu kur**
+5. 5–15 kişi seç; farklı marka telefonlar olsun (Samsung, Xiaomi/Redmi, eski bir Android). Bildirimleri en çok bu markaların pil tasarrufu keser.
+6. Bir WhatsApp/Telegram grubu aç; aşağıdaki "Arkadaşlara gönderilecek mesaj"ı APK bağlantısıyla gönder. Bağlantı, Builds sayfasındaki derlemenin adresidir (giriş gerektirmez; "internal distribution").
+7. Herkesten ilk gün yalnızca kurulum + izinler + "yarın sabah namazı bildirimi geldi mi?" sorusunu iste.
+
+**Aşama 2 — Test turu (1–2 hafta)**
+8. Görev ver, serbest bırakma: 1. hafta vakitler/bildirim/widget, 2. hafta Kur'an, dualar, tesbih, kaza, Öğren. Her hafta başında gruba 3–4 maddelik kısa bir görev listesi at.
+9. Geri bildirimler uygulama içinden gelir; 2–3 günde bir `supabase/queries/test-feedback-report.sql` sorgularını çalıştır. Gruptaki mesajları da aynı listeye ekle.
+10. **Düzeltmeleri dağıtmak — çoğu zaman yeni APK gerekmez (uygulama içi güncelleme):**
+    - Yalnızca JavaScript/içerik değiştiyse: `npm run update:preview -- --message "Kıble düzeltmesi"`. Testçilerin telefonu güncellemeyi uygulama açılınca arka planda indirir; uygulama tamamen kapatılıp açılınca (ya da Diğer sekmesinde çıkan "Yeni sürüm indirildi, şimdi yükle" düğmesiyle) yeni sürüm gelir. Sürüm satırında `· u1a2b3c4d` gibi bir ek görünür.
+    - Yerel (native) bir şey değiştiyse — yeni paket kurulumu (`expo install`), `app.json` eklentileri, izinler, simge, bildirim sesleri: önce `app.json` içindeki `version`'ı artır (ör. 1.0.0 → 1.0.1), sonra yeni APK derle (`npm run build:preview:android`). Eski APK'lar yeni sürümün güncellemelerini almaz; bu, uyumsuz bir güncellemenin uygulamayı çökertmesini önler.
+    - Yeni APK eskisinin üstüne kurulur, veriler silinmez. Her iki durumda da gruba "yeni sürüm" mesajını değişiklik listesiyle at.
+11. Turun sonunda gruba 5 soru sor: en çok kullandığın 3 bölüm, hiç açmadığın bölüm, bildirimler doğru zamanda geldi mi, bir şey kafanı karıştırdı mı, arkadaşına önerir misin (1–10).
+
+---
+
 ## Geliştirici: ilk kurulum (bir kez)
 
 ```powershell
@@ -14,7 +38,6 @@ cd C:\Users\PC\Desktop\Islamic
 npm install
 npx eas login
 npm run eas:init          # zaten yapıldıysa atlayın
-node scripts/generate-assets.js
 ```
 
 EAS projesi: `@aimelih/islamic` — ID `f0b025b3-ca20-44b4-98e6-e257b7124521`
@@ -45,7 +68,8 @@ Islamic+ beta (Android)
 1) Bu linke tıkla ve APK indir: [APK_LINK]
 2) Ayarlar → Güvenlik → "Bilinmeyen uygulamalar" / Chrome'dan yüklemeye izin ver
 3) APK'yı kur, Konum ve Bildirim izinlerini aç
-4) Geri bildirim: [FORM_LINK veya WhatsApp grubu]
+4) Geri bildirim: uygulamada Diğer sekmesi › Geri bildirim gönder (hata olduysa "Hata kayıtlarını ekle" açık kalsın)
+5) Xiaomi/Samsung: Ayarlar › Uygulamalar › Islamic+ › Pil › Kısıtlama yok (yoksa bildirimler gecikebilir)
 ```
 
 ---
@@ -55,7 +79,7 @@ Islamic+ beta (Android)
 ### Ön koşullar
 
 - Apple Developer Program (~99 USD/yıl)
-- [App Store Connect](https://appstoreconnect.apple.com) → yeni uygulama → Bundle ID: `com.islamic.app`
+- [App Store Connect](https://appstoreconnect.apple.com) → yeni uygulama → Bundle ID: `com.islamicplus.app`
 - Gizlilik politikası URL: GitHub’daki `docs/PRIVACY.md` ham linki veya Pages
 
 ### Derleme ve yükleme

@@ -42,7 +42,17 @@ export interface Dua {
   verified?: boolean;
 }
 
-export const DUAS = library as Dua[];
+/**
+ * The Hisnul Muslim recordings come from Alsarmad/Adhkar-json, which has no licence file yet
+ * (docs/store/DUA-AUDIO-PERMISSION.md). If permission is refused, set this to false: those duas
+ * become text-only, while Quran duas keep their recitation audio.
+ */
+export const ADHKAR_AUDIO_ENABLED = true;
+const ADHKAR_AUDIO_HOST = 'Alsarmad/Adhkar-json';
+
+export const DUAS = (library as Dua[]).map((d) =>
+  !ADHKAR_AUDIO_ENABLED && d.audioUrl?.includes(ADHKAR_AUDIO_HOST) ? { ...d, audioUrl: undefined } : d
+);
 
 /** Display order of categories, each with an icon for chips and list rows */
 export const DUA_CATEGORIES: { id: DuaCategory; icon: keyof typeof Ionicons.glyphMap }[] = [

@@ -9,6 +9,7 @@ import {
   fetchHadithSection,
   hadithCollectionName,
   hadithEdition,
+  hadithSectionName,
   sectionOfHadith,
   type HadithItem,
   type HadithSection,
@@ -71,8 +72,9 @@ export function HadithScreen() {
   const sections = useMemo(() => {
     const q = fold(query.trim());
     if (!q) return collection.sections;
-    return collection.sections.filter((s) => fold(`${s.n} ${s.name}`).includes(q) || String(s.first) === q);
-  }, [collection, query]);
+    // Both the Turkish and the original English title are searchable
+    return collection.sections.filter((s) => fold(`${s.n} ${s.name} ${hadithSectionName(s, lang)}`).includes(q) || String(s.first) === q);
+  }, [collection, query, lang]);
 
   const bookmarked = useMemo(
     () => new Set(hadithProgress.bookmarks.filter((b) => b.collectionId === collection.id).map((b) => b.itemIndex)),
@@ -195,7 +197,7 @@ export function HadithScreen() {
                 {s.n}
               </AppText>
               <View style={{ flex: 1 }}>
-                <AppText variant="body">{s.name}</AppText>
+                <AppText variant="body">{hadithSectionName(s, lang)}</AppText>
                 <AppText variant="caption" tone="muted">
                   {t('hadith.range', { a: String(s.first), b: String(s.last) })}
                 </AppText>
@@ -223,7 +225,7 @@ export function HadithScreen() {
         )}
         <View style={{ flex: 1 }}>
           <AppText variant="bodyStrong" numberOfLines={2}>
-            {collection.sections.length > 1 ? `${openSection.n}. ${openSection.name}` : collectionName}
+            {collection.sections.length > 1 ? `${openSection.n}. ${hadithSectionName(openSection, lang)}` : collectionName}
           </AppText>
         </View>
         <Chip label={t('hadith.arabic')} icon="language-outline" selected={showArabic} onPress={() => setShowArabic((v) => !v)} />

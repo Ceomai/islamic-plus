@@ -27,6 +27,18 @@ function openDirections(p: NearbyPlace) {
   );
 }
 
+/** Fallback when the free OSM sources fail or know nothing nearby: the phone's maps app searches instead */
+function searchInMaps(query: string, lat: number, lon: number) {
+  const q = encodeURIComponent(query);
+  const url =
+    Platform.OS === 'ios'
+      ? `https://maps.apple.com/?q=${q}&sll=${lat},${lon}`
+      : Platform.OS === 'android'
+        ? `geo:${lat},${lon}?q=${q}`
+        : `https://www.google.com/maps/search/${q}/@${lat},${lon},14z`;
+  void Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/search/${q}/@${lat},${lon},14z`));
+}
+
 export function PlacesScreen({ route, navigation }: Props) {
   const { type } = route.params;
   const { location, refreshLocation } = useApp();
@@ -52,16 +64,26 @@ export function PlacesScreen({ route, navigation }: Props) {
     }
     setStatus('loading');
     try {
-      setPlaces(await fetchNearbyPlaces(location.latitude, location.longitude, type, radius));
+      setPlaces(await fetchNearbyPlaces(location.latitude, location.longitude, type, radius, lang));
       setStatus('ready');
     } catch {
       setStatus('error');
     }
-  }, [location?.latitude, location?.longitude, type, radius]);
+  }, [location?.latitude, location?.longitude, type, radius, lang]);
 
   useEffect(() => {
     void search();
   }, [search]);
+
+  const mapsButton = location ? (
+    <Button
+      label={t('places.openMaps')}
+      icon="map-outline"
+      variant="ghost"
+      onPress={() => searchInMaps(t(`places.mapsQuery.${type}`), location.latitude, location.longitude)}
+      style={{ marginTop: space[3] }}
+    />
+  ) : null;
 
   const distance = (km: number) =>
     km < 1 ? `${Math.round(km * 1000)} m` : `${km.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} km`;
@@ -109,6 +131,7 @@ export function PlacesScreen({ route, navigation }: Props) {
           onPress={status === 'error' ? search : refreshLocation}
           variant="secondary"
         />
+        {status === 'error' && mapsButton}
       </View>
     );
   }
@@ -125,6 +148,7 @@ export function PlacesScreen({ route, navigation }: Props) {
           <AppText variant="callout" tone="secondary" align="center">
             {t('places.empty')}
           </AppText>
+          {mapsButton}
         </Surface>
       }
       ListFooterComponent={

@@ -2,6 +2,7 @@ import { localDateKey } from '../utils/date';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { updatePrayerWidget, type WidgetInput } from '../services/homeWidget';
+import { registerWidgetTask, saveWidgetInput } from '../services/widgetBackground';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { useAuth } from './AuthContext';
 import { scheduleCustomReminders } from '../services/advancedReminders';
@@ -267,7 +268,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (location) {
       lastScheduleRef.current = Date.now();
       void schedulePrayerNotifications(location.latitude, location.longitude, settings);
-      updatePrayerWidget(widgetInput(location, settings));
+      const input = widgetInput(location, settings);
+      updatePrayerWidget(input);
+      // Android refreshes the widget in the background from this copy
+      void saveWidgetInput(input).then(registerWidgetTask);
     }
   }, [location, settings]);
 

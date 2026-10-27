@@ -1,8 +1,8 @@
 # Islamic+ — Test grubu için deneme listesi
 
-Her maddeyi deneyin. Bir sorun görürseniz **Ayarlar › Geri bildirim gönder** ile yazın; hangi ekranda olduğunuzu ve neye dokunduğunuzu ekleyin. Uygulama çöktüyse aynı ekranda “Hata kayıtlarını ekle” açık kalsın.
+Her maddeyi deneyin. Bir sorun görürseniz **Diğer › Geri bildirim gönder** ile yazın; hangi ekranda olduğunuzu ve neye dokunduğunuzu ekleyin. Uygulama çöktüyse aynı ekranda “Hata kayıtlarını ekle” açık kalsın.
 
-Telefon: ______ (iPhone / Android, model)   Sürüm: Ayarlar'ın en altında
+Telefon: ______ (iPhone / Android, model)   Sürüm: Diğer sekmesinin en altında, ör. 1.0.0 (5)
 
 ## 1. İlk açılış (5 dk)
 - [ ] Kayıt olun ya da misafir olarak girin.
@@ -14,7 +14,9 @@ Telefon: ______ (iPhone / Android, model)   Sürüm: Ayarlar'ın en altında
 - [ ] Ana sayfadaki vakitleri [Diyanet](https://namazvakitleri.diyanet.gov.tr) ile karşılaştırın. 1 dakikadan fazla fark varsa şehir ve vakti yazın.
 - [ ] Kıldığınız vakitlere dokunun; seri (istatistikler) artıyor mu?
 - [ ] Bildirimler vaktinde geliyor mu? Telefon kilitliyken, gece imsak bildirimi?
-- [ ] Ayarlar › Bildirimler: “Ezanı dinle” çalışıyor mu? Bir vakit için “Ezan” sesini seçin; bildirimde ezan çalıyor mu? (yalnızca yüklenen uygulamada, Expo Go'da değil)
+- [ ] Android 12+: Diğer › Bildirimler ekranında "Bildirimler dakikasında gelsin" kartı çıktıysa "İzni aç"a dokunup izni verin.
+- [ ] Telefonu yeniden başlatın; bir sonraki vakit bildirimi yine geliyor mu?
+- [ ] Diğer › Bildirimler: “Ezanı dinle” çalışıyor mu? Bir vakit için “Ezan” sesini seçin; bildirimde ezan çalıyor mu? (yalnızca yüklenen uygulamada, Expo Go'da değil)
 
 ## 3. Kur'an
 - [ ] Bir sure açın; görünümler (meal, Arapça, paralel, çalışma, mushaf) arasında geçin.

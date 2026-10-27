@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Switch, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { AppState, Switch, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
@@ -7,6 +7,8 @@ import { useTranslation } from '../hooks/useTranslation';
 import { getDayNames } from '../i18n';
 import type { RootStackParamList } from '../navigation/types';
 import { playAdhan, stopAudio } from '../services/audio';
+import { scheduleCustomReminders } from '../services/advancedReminders';
+import { exactAlarmsAllowed, requestExactAlarms, schedulePrayerNotifications } from '../services/notifications';
 import type { PrayerName, PrayerNotificationSettings } from '../types';
 import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
@@ -45,6 +47,30 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     void updateSettings({ disabledPrayerRules: [...rules, { prayer: p, daysOfWeek: [day], specificDates: [] }] });
   };
 
+  const [exactOk, setExactOk] = useState(true);
+  const exactRef = useRef(true);
+  // Alarms already set were inexact; set them again once exact ones are allowed
+  const onExactChange = (ok: boolean) => {
+    if (ok && !exactRef.current) {
+      if (location) void schedulePrayerNotifications(location.latitude, location.longitude, settings);
+      void scheduleCustomReminders(settings.customReminders, settings.appLanguage);
+    }
+    exactRef.current = ok;
+    setExactOk(ok);
+  };
+  // Checked again on return to the app: the permission may have been changed in system settings
+  useEffect(() => {
+    void exactAlarmsAllowed().then((ok) => {
+      exactRef.current = ok;
+      setExactOk(ok);
+    });
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void exactAlarmsAllowed().then(onExactChange);
+    });
+    return () => sub.remove();
+  }, [location, settings]);
+  const allowExact = async () => onExactChange(await requestExactAlarms());
+
   const [adhanPlaying, setAdhanPlaying] = useState(false);
   useEffect(() => () => void stopAudio(), []);
   const toggleAdhan = async () => {
@@ -82,6 +108,18 @@ export function NotificationSettingsScreen({ navigation }: Props) {
           onPress={toggleAdhan}
         />
       </Surface>
+
+      {settings.globalNotificationsEnabled && !exactOk && (
+        <Surface variant="soft" style={{ marginTop: space[3] }}>
+          <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
+            {t('notifications.exactTitle')}
+          </AppText>
+          <AppText variant="callout" color={colors.onPrimarySoft} style={{ marginTop: space[1], marginBottom: space[3] }}>
+            {t('notifications.exactBody')}
+          </AppText>
+          <Button label={t('notifications.exactAllow')} icon="alarm-outline" onPress={allowExact} variant="secondary" />
+        </Surface>
+      )}
 
       {!location && (
         <Surface variant="soft" style={{ marginTop: space[3] }}>

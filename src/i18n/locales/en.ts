@@ -344,8 +344,10 @@ export const en = {
     prayerSection: 'Prayer times',
     contentSection: 'Quran and content',
     version: 'Version {{v}}',
+    applyUpdate: 'An update is ready, restart now',
   },
   quran: {
+    source: "Arabic text: Tanzil Quran Text (tanzil.net, CC BY 3.0) · Translation: {{translation}} · Audio: Mishary Rashid Alafasy",
     share: "Share",
     khatm: "Khatm",
     khatmHint: "A surah is ticked when you read it to its last ayah. Khatms completed: {{n}}",
@@ -405,6 +407,8 @@ export const en = {
     osmNote: "Map data © OpenStreetMap contributors (ODbL); it may be incomplete. Tap a place for directions.",
     halalName: 'Halal restaurant',
     mosqueName: 'Mosque',
+    openMaps: 'Search in your maps app',
+    mapsQuery: { mosque: 'mosque', prayer_room: 'prayer room', halal_restaurant: 'halal restaurant' },
   },
   tasbih: {
     goalReached: "Daily goal reached: {{n}}",
@@ -514,6 +518,9 @@ export const en = {
     sadaqaDue: 'Suggested monthly sadaqa',
   },
   notifications: {
+    exactTitle: 'Get alerts on the minute',
+    exactBody: 'Your phone has "Alarms & reminders" turned off for this app, so prayer alerts can arrive a few minutes late. Turn it on, then come back to the app.',
+    exactAllow: 'Allow',
     listenAdhan: "Listen to the adhan",
     stopAdhan: "Stop the adhan",
     adhanHint: "Choose the “Adhan” sound for a prayer to hear a short adhan in its notification.",
