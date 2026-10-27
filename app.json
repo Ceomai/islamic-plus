@@ -109,7 +109,7 @@
       "expo-background-task"
     ],
     "extra": {
-      "privacyPolicyUrl": "https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md",
+      "privacyPolicyUrl": "https://denizturkbayragii.github.io/Islamic/privacy/",
       "eas": {
         "projectId": "f0b025b3-ca20-44b4-98e6-e257b7124521"
       }

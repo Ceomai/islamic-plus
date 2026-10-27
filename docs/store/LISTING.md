@@ -10,7 +10,8 @@ Karakter sınırları parantez içinde. Yayından önce son kez okuyup düzenley
 | Paket kimliği | `com.islamicplus.app` |
 | Kategori | iOS: Lifestyle (Yaşam Tarzı) · Android: Lifestyle |
 | Yaş sınırı | 4+ (iOS) · Herkes / PEGI 3 (Android). Reklam, kullanıcı içeriği paylaşımı, satın alma yok |
-| Gizlilik politikası | https://github.com/denizturkbayragii/Islamic/blob/main/docs/PRIVACY.md |
+| Gizlilik politikası | https://denizturkbayragii.github.io/Islamic/privacy/ |
+| Hesap silme (Play: web bağlantısı) | https://denizturkbayragii.github.io/Islamic/delete-account/ |
 | Destek bağlantısı | Uygulama içi Ayarlar › Geri bildirim gönder (destek e-postası eklenecek) |
 | Fiyat | Ücretsiz, uygulama içi satın alma yok |
 
