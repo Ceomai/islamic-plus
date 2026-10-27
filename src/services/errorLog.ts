@@ -15,6 +15,11 @@ const MAX_ENTRIES = 30;
 /** Errors that could not be sent (offline, server down); retried on the next app start */
 const PENDING_KEY = '@islamic/error-pending';
 const MAX_PENDING = 10;
+/** A report the server keeps rejecting (rate limit, constraint) is dropped after this many tries */
+const MAX_ATTEMPTS = 3;
+
+type PendingEntry = ErrorEntry & { attempts?: number };
+const sameEntry = (a: ErrorEntry, b: ErrorEntry) => a.at === b.at && a.message === b.message;
 /** Per app session: at most this many uploads, and each distinct message only once */
 const MAX_UPLOADS = 20;
 const uploaded = new Set<string>();
@@ -30,10 +35,10 @@ export const appVersion = () => {
 };
 export const platformLabel = () => `${Platform.OS} ${String(Platform.Version)}`;
 
-async function readPending(): Promise<ErrorEntry[]> {
+async function readPending(): Promise<PendingEntry[]> {
   try {
     const raw = await AsyncStorage.getItem(PENDING_KEY);
-    return raw ? (JSON.parse(raw) as ErrorEntry[]) : [];
+    return raw ? (JSON.parse(raw) as PendingEntry[]) : [];
   } catch {
     return [];
   }
@@ -48,40 +53,43 @@ async function addPending(entry: ErrorEntry): Promise<void> {
   }
 }
 
-/** Returns false when the row did not reach the server */
-async function insertError(entry: ErrorEntry): Promise<boolean> {
+const toRow = (entry: ErrorEntry) => ({
+  source: entry.source,
+  message: entry.message,
+  stack: entry.stack?.slice(0, 4000) ?? null,
+  fatal: !!entry.fatal,
+  app_version: appVersion(),
+  platform: platformLabel(),
+  occurred_at: entry.at,
+});
+
+/** Returns false when the rows did not reach the server */
+async function insertErrors(entries: ErrorEntry[]): Promise<boolean> {
   const supabase = getSupabase();
   if (!supabase) return true; // not configured: nothing to retry
-  const { error } = await supabase.from('app_errors').insert({
-    source: entry.source,
-    message: entry.message,
-    stack: entry.stack?.slice(0, 4000) ?? null,
-    fatal: !!entry.fatal,
-    app_version: appVersion(),
-    platform: platformLabel(),
-    occurred_at: entry.at,
-  });
+  const { error } = await supabase.from('app_errors').insert(entries.map(toRow));
   return !error;
 }
 
 async function uploadError(entry: ErrorEntry): Promise<void> {
   if (uploaded.size >= MAX_UPLOADS || uploaded.has(entry.message)) return;
   uploaded.add(entry.message);
-  const ok = await insertError(entry).catch(() => false);
+  const ok = await insertErrors([entry]).catch(() => false);
   if (!ok) await addPending(entry);
 }
 
-/** Sends errors queued while offline. Called once at app start. */
+/** Sends errors queued while offline, in one request. Called once at app start. */
 export async function flushPendingErrors(): Promise<void> {
-  const pending = await readPending();
-  if (!pending.length) return;
-  const failed: ErrorEntry[] = [];
-  for (const entry of pending) {
-    const ok = await insertError(entry).catch(() => false);
-    if (!ok) failed.push(entry);
-  }
+  const batch = await readPending();
+  if (!batch.length) return;
+  const ok = await insertErrors(batch).catch(() => false);
   try {
-    if (failed.length) await AsyncStorage.setItem(PENDING_KEY, JSON.stringify(failed));
+    // Re-read: errors logged while the request was in flight were added meanwhile
+    const current = await readPending();
+    const next = current
+      .map((e) => (batch.some((b) => sameEntry(b, e)) ? (ok ? null : { ...e, attempts: (e.attempts ?? 1) + 1 }) : e))
+      .filter((e): e is PendingEntry => e !== null && (e.attempts ?? 1) <= MAX_ATTEMPTS);
+    if (next.length) await AsyncStorage.setItem(PENDING_KEY, JSON.stringify(next));
     else await AsyncStorage.removeItem(PENDING_KEY);
   } catch {
     // Best effort only

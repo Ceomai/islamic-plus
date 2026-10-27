@@ -17,7 +17,7 @@ order by 1 desc, 3 desc;
 
 -- 3) Errors grouped: the most frequent first, with how many distinct users hit them
 select message, source, bool_or(fatal) as fatal, count(*) as times,
-       count(distinct user_id) as users, min(app_version) as first_version,
+       count(distinct user_id) as users, (array_agg(app_version order by created_at))[1] as first_version,
        max(created_at) as last_seen, (array_agg(platform order by created_at desc))[1] as last_platform
 from public.app_errors
 where created_at > now() - interval '14 days'

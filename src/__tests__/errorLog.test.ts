@@ -36,4 +36,15 @@ describe('error reports sent while offline', () => {
     await flushPendingErrors();
     expect(await pending()).toHaveLength(1);
   });
+
+  it('drops a report the server keeps rejecting after three tries', async () => {
+    mockInsertResult = { error: new Error('rate limit') };
+    await logError(new Error('rejected crash'), 'global');
+    await settle();
+    await flushPendingErrors();
+    await flushPendingErrors();
+    expect(await pending()).toHaveLength(1);
+    await flushPendingErrors();
+    expect(await pending()).toHaveLength(0);
+  });
 });
