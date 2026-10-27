@@ -517,6 +517,9 @@ export const en = {
     sadaqaDue: 'Suggested monthly sadaqa',
   },
   notifications: {
+    exactTitle: 'Get alerts on the minute',
+    exactBody: 'Your phone has "Alarms & reminders" turned off for this app, so prayer alerts can arrive a few minutes late. Turn it on, then come back to the app.',
+    exactAllow: 'Allow',
     listenAdhan: "Listen to the adhan",
     stopAdhan: "Stop the adhan",
     adhanHint: "Choose the “Adhan” sound for a prayer to hear a short adhan in its notification.",

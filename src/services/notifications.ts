@@ -50,6 +50,28 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   return status === 'granted';
 }
 
+/**
+ * Android 12+ needs the "Alarms & reminders" permission for on-the-minute notifications; on
+ * Android 14+ it starts off for new installs, and without it prayer alerts can arrive minutes late.
+ */
+export async function exactAlarmsAllowed(): Promise<boolean> {
+  if (!notificationsSupported || Platform.OS !== 'android') return true;
+  try {
+    return (await Notifications.getExactAlarmPermissionsAsync()).granted;
+  } catch {
+    return true; // API missing (older build): nothing the user can do
+  }
+}
+
+/** Opens the system screen for exact alarms; resolves when the user comes back */
+export async function requestExactAlarms(): Promise<boolean> {
+  try {
+    return (await Notifications.requestExactAlarmPermissionsAsync()).granted;
+  } catch {
+    return false;
+  }
+}
+
 async function cancelPrayerNotifications(): Promise<void> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const n of scheduled) {

@@ -517,6 +517,9 @@ export const tr = {
     sadaqaDue: 'Önerilen aylık sadaka',
   },
   notifications: {
+    exactTitle: 'Bildirimler dakikasında gelsin',
+    exactBody: 'Telefonunuz "Alarmlar ve hatırlatıcılar" iznini kapalı tutuyor; bu yüzden vakit bildirimleri birkaç dakika gecikebilir. Açtıktan sonra uygulamaya geri dönün.',
+    exactAllow: 'İzni aç',
     listenAdhan: "Ezanı dinle",
     stopAdhan: "Ezanı durdur",
     adhanHint: "Bildirimde “Ezan” sesi seçilirse ezanın kısa hali çalar.",

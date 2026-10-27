@@ -7,6 +7,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { getDayNames } from '../i18n';
 import type { RootStackParamList } from '../navigation/types';
 import { playAdhan, stopAudio } from '../services/audio';
+import { exactAlarmsAllowed, requestExactAlarms, schedulePrayerNotifications } from '../services/notifications';
 import type { PrayerName, PrayerNotificationSettings } from '../types';
 import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
@@ -43,6 +44,17 @@ export function NotificationSettingsScreen({ navigation }: Props) {
       return;
     }
     void updateSettings({ disabledPrayerRules: [...rules, { prayer: p, daysOfWeek: [day], specificDates: [] }] });
+  };
+
+  const [exactOk, setExactOk] = useState(true);
+  useEffect(() => {
+    void exactAlarmsAllowed().then(setExactOk);
+  }, []);
+  const allowExact = async () => {
+    const ok = await requestExactAlarms();
+    setExactOk(ok);
+    // Alarms already set were inexact; set them again now that exact ones are allowed
+    if (ok && location) void schedulePrayerNotifications(location.latitude, location.longitude, settings);
   };
 
   const [adhanPlaying, setAdhanPlaying] = useState(false);
@@ -82,6 +94,18 @@ export function NotificationSettingsScreen({ navigation }: Props) {
           onPress={toggleAdhan}
         />
       </Surface>
+
+      {settings.globalNotificationsEnabled && !exactOk && (
+        <Surface variant="soft" style={{ marginTop: space[3] }}>
+          <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
+            {t('notifications.exactTitle')}
+          </AppText>
+          <AppText variant="callout" color={colors.onPrimarySoft} style={{ marginTop: space[1], marginBottom: space[3] }}>
+            {t('notifications.exactBody')}
+          </AppText>
+          <Button label={t('notifications.exactAllow')} icon="alarm-outline" onPress={allowExact} variant="secondary" />
+        </Surface>
+      )}
 
       {!location && (
         <Surface variant="soft" style={{ marginTop: space[3] }}>
