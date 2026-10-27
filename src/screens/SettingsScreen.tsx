@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { formatErrorReport, getErrorLog } from '../services/errorLog';
+import { appVersion, formatErrorReport, getErrorLog } from '../services/errorLog';
 import type { CalculationMethodId, Madhab, SectPreference } from '../types';
 import { AppText, Button, Chip, IconBadge, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
@@ -230,7 +230,7 @@ export function SettingsScreen({ navigation }: Props) {
       )}
 
       <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[8] }}>
-        {t('app.name')} · {t('settings.version', { v: Constants.expoConfig?.version ?? '1.0.0' })}
+        {t('app.name')} · {t('settings.version', { v: appVersion() })}
       </AppText>
     </Screen>
   );

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { getSupabase } from '../config/supabase';
@@ -17,7 +18,11 @@ const MAX_PENDING = 10;
 const MAX_UPLOADS = 20;
 const uploaded = new Set<string>();
 
-export const appVersion = () => Constants.expoConfig?.version ?? '?';
+/** "1.0.0 (5)": the build number tells test APKs apart (EAS raises it on every build) */
+export const appVersion = () => {
+  const version = Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? '?';
+  return Application.nativeBuildVersion ? `${version} (${Application.nativeBuildVersion})` : version;
+};
 export const platformLabel = () => `${Platform.OS} ${String(Platform.Version)}`;
 
 async function readPending(): Promise<ErrorEntry[]> {
