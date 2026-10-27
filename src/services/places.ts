@@ -36,7 +36,7 @@ interface OverpassElement {
   lat?: number;
   lon?: number;
   center?: { lat: number; lon: number };
-  tags?: { name?: string; 'addr:street'?: string };
+  tags?: { name?: string; 'addr:street'?: string } & Record<string, string | undefined>;
 }
 interface OverpassResponse {
   elements?: OverpassElement[];
@@ -91,7 +91,9 @@ export async function fetchNearbyPlaces(
   latitude: number,
   longitude: number,
   type: 'mosque' | 'prayer_room' | 'halal_restaurant',
-  radiusMeters = 5000
+  radiusMeters = 5000,
+  /** Place names in this language when OSM has them (otherwise the local name) */
+  lang = 'tr'
 ): Promise<NearbyPlace[]> {
   const proxied = await fetchViaProxy(latitude, longitude, type, radiusMeters);
   if (proxied) return proxied;
@@ -129,20 +131,20 @@ export async function fetchNearbyPlaces(
       .sort((a, b) => a.distanceKm - b.distanceKm);
 
   // ~100 m grid so small GPS jitter reuses the last result
-  const cacheKey = `${type}:${radiusMeters}:${latitude.toFixed(3)},${longitude.toFixed(3)}`;
+  const cacheKey = `${lang}:${type}:${radiusMeters}:${latitude.toFixed(3)},${longitude.toFixed(3)}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return toPlaces(cached.points);
 
   // Overpass has the complete list; when it is busy, Nominatim answers quickly with the main places
   const full = queryOverpass(query).then((data) => {
-    const points = overpassPoints(data);
+    const points = overpassPoints(data, lang);
     cache.set(cacheKey, { at: Date.now(), points });
     return points;
   });
   const quick = await Promise.race([full.catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), OVERPASS_PATIENCE_MS))]);
   if (quick) return toPlaces(quick);
   try {
-    const points = await searchNominatim(latitude, longitude, type, radiusMeters);
+    const points = await searchNominatim(latitude, longitude, type, radiusMeters, lang);
     if (points.length > 0) return toPlaces(points);
   } catch {
     // fall through to the slower full answer
@@ -159,11 +161,11 @@ interface RawPoint {
   address?: string;
 }
 
-function overpassPoints(data: OverpassResponse): RawPoint[] {
+function overpassPoints(data: OverpassResponse, lang: string): RawPoint[] {
   return (data.elements ?? [])
     .map((el) => ({ el, lat: el.lat ?? el.center?.lat, lon: el.lon ?? el.center?.lon }))
     .filter((x): x is { el: OverpassElement; lat: number; lon: number } => x.lat != null && x.lon != null)
-    .map(({ el, lat, lon }) => ({ id: String(el.id), name: el.tags?.name, lat, lon, address: el.tags?.['addr:street'] }));
+    .map(({ el, lat, lon }) => ({ id: String(el.id), name: el.tags?.[`name:${lang}`] ?? el.tags?.name, lat, lon, address: el.tags?.['addr:street'] }));
 }
 
 /** Overpass gets this long before the quicker Nominatim search answers instead */
@@ -175,7 +177,7 @@ const NOMINATIM_QUERY: Record<NearbyPlace['type'], string> = {
 };
 
 /** OpenStreetMap's search API; only called when the user opens the screen and Overpass is slow */
-async function searchNominatim(lat: number, lon: number, type: NearbyPlace['type'], radius: number): Promise<RawPoint[]> {
+async function searchNominatim(lat: number, lon: number, type: NearbyPlace['type'], radius: number, lang: string): Promise<RawPoint[]> {
   const dLat = radius / 111000;
   const dLon = radius / (111000 * Math.max(Math.cos((lat * Math.PI) / 180), 0.1));
   const params = [
@@ -184,6 +186,8 @@ async function searchNominatim(lat: number, lon: number, type: NearbyPlace['type
     `viewbox=${[lon - dLon, lat + dLat, lon + dLon, lat - dLat].join(',')}`,
     'bounded=1',
     'limit=40',
+    // Without this Nominatim names places in the browser's language ("Blue Mosque" for Sultanahmet)
+    `accept-language=${lang}`,
   ].join('&');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);

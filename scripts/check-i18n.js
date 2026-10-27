@@ -17,7 +17,7 @@ const DYNAMIC = [
   ...['bug', 'idea', 'content', 'other'].flatMap((c) => [`feedback.cat.${c}`, `feedback.placeholder.${c}`]),
   ...['dhikr', 'dua', 'quran', 'custom'].flatMap((x) => [`reminders.body.${x}`, `reminders.types.${x}`]),
   ...['parent', 'child', 'spouse', 'other'].map((x) => `family.role.${x}`),
-  ...['mosque', 'prayer_room', 'halal_restaurant'].map((x) => `places.${x}`),
+  ...['mosque', 'prayer_room', 'halal_restaurant'].flatMap((x) => [`places.${x}`, `places.mapsQuery.${x}`]),
   ...['day', 'date', 'imsak', 'sunrise', 'iftar', 'isha'].map((c) => `ramadan.col.${c}`),
 ];
 

@@ -406,6 +406,8 @@ export const en = {
     osmNote: "Map data © OpenStreetMap contributors (ODbL); it may be incomplete. Tap a place for directions.",
     halalName: 'Halal restaurant',
     mosqueName: 'Mosque',
+    openMaps: 'Search in your maps app',
+    mapsQuery: { mosque: 'mosque', prayer_room: 'prayer room', halal_restaurant: 'halal restaurant' },
   },
   tasbih: {
     goalReached: "Daily goal reached: {{n}}",

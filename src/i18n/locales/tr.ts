@@ -406,6 +406,8 @@ export const tr = {
     osmNote: "Harita verisi © OpenStreetMap katkıcıları (ODbL); eksik veya eski olabilir. Yol tarifi için bir yere dokunun.",
     halalName: 'Helal restoran',
     mosqueName: 'Cami',
+    openMaps: 'Harita uygulamasında ara',
+    mapsQuery: { mosque: 'cami', prayer_room: 'mescit', halal_restaurant: 'helal restoran' },
   },
   tasbih: {
     goalReached: "Günlük hedefe ulaştınız: {{n}}",
