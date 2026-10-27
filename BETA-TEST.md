@@ -10,7 +10,7 @@ App Store / Play Store yayını **olmadan** arkadaşlarınıza uygulamayı dağ�
 ## Kısa yol: test turunu adım adım yürütmek
 
 **Aşama 1 — Önce sen dene (1–2 gün)**
-1. Supabase › SQL Editor'de `supabase/migrations/009_feedback_flood_guard.sql` dosyasını çalıştır.
+1. ✅ Migration 009 çalıştırıldı. Ayrıntılı hazırlık listesi: [docs/TEST-HAZIRLIK.md](docs/TEST-HAZIRLIK.md).
 2. [Builds](https://expo.dev/accounts/aimelih/projects/islamic/builds) sayfasında son Android derlemesi **Finished** olunca telefondan aç → **Install** → APK'yı kur (Chrome'a "bilinmeyen uygulama" izni ver).
 3. `docs/TEST-PLAN.md` listesini bir kez yürü. Özellikle Expo Go'da denenemeyenler: vakit bildirimi ve ezan sesi (telefon kilitliyken), ana ekran widget'ı, telefonu yeniden başlatınca bildirimlerin sürmesi.
 4. Bir test geri bildirimi gönder (Diğer › Geri bildirim gönder) ve Supabase'de `app_feedback` tablosunda göründüğünü kontrol et.
