@@ -1,3 +1,5 @@
 {
-  "NSLocationWhenInUseUsageDescription": "Islamic+ uses your location while you use the app to calculate prayer times, find the Qibla and show nearby mosques."
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "Islamic+ uses your location while you use the app to calculate prayer times, find the Qibla and show nearby mosques."
+  }
 }
