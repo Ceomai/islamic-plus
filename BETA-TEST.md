@@ -3,7 +3,7 @@
 App Store / Play Store yayını **olmadan** arkadaşlarınıza uygulamayı dağıtmak için bu rehberi kullanın.
 
 **Expo proje paneli:** https://expo.dev/accounts/aimelih/projects/islamic  
-**Gizlilik politikası:** https://denizturkbayragii.github.io/Islamic/privacy/ (TestFlight ve Play için bu URL; kaynak `site/`)
+**Gizlilik politikası:** https://ceomai.github.io/islamic-plus/privacy/ (TestFlight ve Play için bu URL; kaynak `site/`)
 
 ---
 
@@ -80,7 +80,7 @@ Islamic+ beta (Android)
 
 - Apple Developer Program (~99 USD/yıl)
 - [App Store Connect](https://appstoreconnect.apple.com) → yeni uygulama → Bundle ID: `com.islamicplus.app`
-- Gizlilik politikası URL: https://denizturkbayragii.github.io/Islamic/privacy/
+- Gizlilik politikası URL: https://ceomai.github.io/islamic-plus/privacy/
 
 ### Derleme ve yükleme
 
