@@ -57,9 +57,12 @@ async function activateResult(result: AuthResult): Promise<AuthResult> {
 export async function getAuthSession(): Promise<AuthSession | null> {
   if (isSupabaseConfigured) {
     const restored = await restoreSupabaseSession();
-    if (restored) return activateSession(restored);
-    // Supabase aktifken yalnızca misafir oturumu yerelden geri yüklenebilir
     const local = await getLocalAuthSession();
+    // Offline cold start with an expired token: keep the account signed in on its stored session;
+    // the client refreshes the token once the connection is back
+    if (restored === 'offline' && local) return activateSession(local);
+    if (restored && restored !== 'offline') return activateSession(restored);
+    // Supabase aktifken yalnızca misafir oturumu yerelden geri yüklenebilir
     if (local?.isGuest) return activateSession(local);
     await setLocalAuthSession(null);
     return activateSession(null);

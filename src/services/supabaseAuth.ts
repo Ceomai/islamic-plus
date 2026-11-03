@@ -1,3 +1,4 @@
+import { isAuthRetryableFetchError } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import type { AuthSession } from '../types';
 import { getSupabase, isSupabaseConfigured } from '../config/supabase';
@@ -84,11 +85,15 @@ async function completeAuthenticatedUser(
   return session;
 }
 
-export async function restoreSupabaseSession(): Promise<AuthSession | null> {
+/**
+ * The signed-in account, null when signed out, or 'offline' when the stored session could not be
+ * refreshed because there is no connection (the account is still signed in).
+ */
+export async function restoreSupabaseSession(): Promise<AuthSession | null | 'offline'> {
   const supabase = getSupabase();
   if (!supabase) return null;
-  const { data } = await supabase.auth.getSession();
-  if (!data.session?.user) return null;
+  const { data, error } = await supabase.auth.getSession();
+  if (!data.session?.user) return error && isAuthRetryableFetchError(error) ? 'offline' : null;
   const user = data.session.user;
   const pseudonym =
     (user.user_metadata?.pseudonym as string) ||
