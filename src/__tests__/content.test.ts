@@ -101,3 +101,17 @@ describe('city list for choosing a location by hand (Y5)', () => {
     expect(searchCities('xyz')).toHaveLength(0);
   });
 });
+
+describe('surah search folding', () => {
+  const { fold } = require('../services/aiAssistant') as typeof import('../services/aiAssistant');
+  const { SURAHS } = require('../data/surahs') as typeof import('../data/surahs');
+  const key = (t: string) => fold(t).replace(/\s+/g, '');
+  const find = (q: string) => SURAHS.filter((s) => [s.tr, s.en, s.ar].some((n) => key(n).includes(key(q)))).map((s) => s.number);
+  it('finds surahs without accents or dashes', () => {
+    expect(find('yasin')).toContain(36);
+    expect(find('ya-sin')).toContain(36);
+    expect(find('kehf')).toContain(18);
+    expect(find('al-kahf')).toContain(18);
+    expect(find('ihlas')).toContain(112);
+  });
+});

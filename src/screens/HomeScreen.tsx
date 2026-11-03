@@ -186,6 +186,12 @@ export function HomeScreen({ navigation }: Props) {
                   <AppText variant="bodyStrong" color={done ? colors.onPrimarySoft : colors.text} style={{ marginTop: 2 }}>
                     {formatClock(prayerDates[p], lang).replace(/ (AM|PM)$/, '')}
                   </AppText>
+                  {/* English times drop AM/PM to fit; keep it small so "3:39" is not ambiguous */}
+                  {lang === 'en' && (
+                    <AppText variant="caption" tone="muted" style={{ fontSize: 10, lineHeight: 12 }}>
+                      {formatClock(prayerDates[p], lang).slice(-2)}
+                    </AppText>
+                  )}
                   <Ionicons
                     name={done ? 'checkmark-circle' : 'ellipse-outline'}
                     size={16}

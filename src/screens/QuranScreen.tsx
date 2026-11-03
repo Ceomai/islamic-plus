@@ -8,6 +8,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { SURAHS } from '../data/surahs';
+import { fold } from '../services/aiAssistant';
 import type { SurahListItem } from '../services/quranApi';
 import { removeQuranBookmark, startNewKhatm } from '../services/readingProgress';
 import { AppText, Button, IconBadge, Surface } from '../ui';
@@ -28,10 +29,17 @@ export function QuranScreen({ navigation }: Props) {
     [lang]
   );
 
+  // Accents, dashes and Turkish letters are ignored, and every spelling is searched:
+  // "yasin" finds Yâsîn (it found nothing), "al-kahf" and "kehf" find Kehf
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const key = (t: string) => fold(t).replace(/s+/g, '');
+    const q = key(query);
     if (!q) return surahs;
-    return surahs.filter((s) => String(s.number) === q || s.englishName.toLowerCase().includes(q) || s.name.includes(q));
+    return surahs.filter((s) => {
+      if (String(s.number) === query.trim()) return true;
+      const names = SURAHS[s.number - 1];
+      return [names.tr, names.en, names.ar].some((n) => key(n).includes(q));
+    });
   }, [surahs, query]);
 
   const lastRead = quranProgress.lastRead;

@@ -22,6 +22,26 @@ const SUGGESTIONS: Record<'tr' | 'en', string[]> = {
   en: ['Open Surah Yasin', 'Explain the travel dua', 'When is the next prayer?', 'What breaks the fast?', 'Show qibla', 'Bittgebet vor dem Schlafen'],
 };
 
+/**
+ * Replies mark headings as **bold**; they used to show with the asterisks. Bold parts become bold
+ * text and stray `code` backticks are dropped.
+ */
+function renderInline(text: string): React.ReactNode[] {
+  return text
+    .replace(/`/g, '')
+    .split(/(\*\*[^*]+\*\*)/g)
+    .filter(Boolean)
+    .map((part, i) =>
+      part.startsWith('**') && part.endsWith('**') ? (
+        <AppText key={i} variant="bodyStrong">
+          {part.slice(2, -2)}
+        </AppText>
+      ) : (
+        part
+      )
+    );
+}
+
 /** Screens that only live in the Learn tab; everything else is in the Home stack. */
 const LEARN_ONLY = new Set(['Education', 'EducationDetail']);
 const AUTO_NAVIGATE_DELAY = 1200;
@@ -174,7 +194,7 @@ export function AIAssistantScreen() {
                 }}
               >
                 <AppText variant="body" color={mine ? colors.onPrimary : colors.text} style={rtl ? { writingDirection: 'rtl', textAlign: 'right' } : undefined}>
-                  {m.content}
+                  {mine ? m.content : renderInline(m.content)}
                 </AppText>
               </View>
               {m.actions?.length ? (
