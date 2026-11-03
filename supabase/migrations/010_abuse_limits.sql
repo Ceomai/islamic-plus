@@ -317,3 +317,34 @@ where u.id = p.id
   and p.email_hash = 'pending'
   and u.email is not null
   and not exists (select 1 from public.profiles o where o.email_hash = public.email_hash_of(u.email));
+
+-- ── 4. Daily quotas for paid APIs used by Edge Functions (service role only) ──
+-- scope examples: 'places:<user id>', 'assistant:all'
+create table if not exists public.feature_usage (
+  scope text not null,
+  day date not null default (now() at time zone 'utc')::date,
+  requests integer not null default 0,
+  primary key (scope, day)
+);
+
+alter table public.feature_usage enable row level security;
+
+create or replace function public.consume_feature_quota(p_scope text, p_limit integer)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+begin
+  insert into public.feature_usage as u (scope, day, requests)
+  values (left(p_scope, 80), (now() at time zone 'utc')::date, 1)
+  on conflict (scope, day) do update set requests = u.requests + 1
+  returning requests into v_count;
+  return v_count <= p_limit;
+end;
+$$;
+
+revoke execute on function public.consume_feature_quota(text, integer) from public, anon, authenticated;
+grant execute on function public.consume_feature_quota(text, integer) to service_role;

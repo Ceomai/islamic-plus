@@ -1,6 +1,7 @@
 // Islamic+ assistant — Supabase Edge Function (Deno).
 // Answers in the user's language with Claude and returns buttons that open app screens.
-// Secrets: ANTHROPIC_API_KEY (required), ASSISTANT_DAILY_LIMIT (optional, default 60).
+// Secrets: ANTHROPIC_API_KEY (required), ASSISTANT_DAILY_LIMIT (optional, default 60 per user),
+// ASSISTANT_GLOBAL_DAILY_LIMIT (optional, default 3000 for all users together; needs migration 010).
 // Deploy: supabase functions deploy assistant   (catalog.json: npm run assistant:catalog)
 import Anthropic from 'npm:@anthropic-ai/sdk@1.3.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
@@ -326,6 +327,11 @@ Deno.serve(async (req) => {
   const { data: allowed, error: quotaError } = await admin.rpc('consume_assistant_quota', { p_user_id: user.id, p_limit: limit });
   if (quotaError) return json({ error: 'quota_unavailable' }, 503);
   if (!allowed) return json({ error: 'daily_limit' }, 429);
+  // Also a ceiling for everyone together (ASSISTANT_GLOBAL_DAILY_LIMIT, default 3000): new accounts
+  // each get their own allowance, so the per-user limit alone does not cap the bill
+  const globalLimit = Number(Deno.env.get('ASSISTANT_GLOBAL_DAILY_LIMIT') ?? 3000);
+  const { data: globalOk } = await admin.rpc('consume_feature_quota', { p_scope: 'assistant:all', p_limit: globalLimit });
+  if (globalOk === false) return json({ error: 'daily_limit' }, 429);
 
   const lang: Lang = body.appLang === 'tr' ? 'tr' : 'en';
   const quranEdition = /^[a-z]{2}\.[a-z]+$/.test(body.quranEdition ?? '') ? body.quranEdition! : 'tr.diyanet';
@@ -334,7 +340,7 @@ Deno.serve(async (req) => {
   const history = (Array.isArray(body.history) ? body.history : [])
     .filter((m) => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
     .slice(-MAX_HISTORY)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }) as Anthropic.Beta.BetaMessageParam);
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 800) }) as Anthropic.Beta.BetaMessageParam);
   while (history.length && history[0].role !== 'user') history.shift();
 
   const context = [
@@ -355,7 +361,8 @@ Deno.serve(async (req) => {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const response = await anthropic.beta.messages.create({
         model: MODEL,
-        max_tokens: 16000,
+        // Answers are a few sentences plus navigation tools; a low ceiling bounds the cost per request
+        max_tokens: 2048,
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
         output_config: { effort: 'low' },

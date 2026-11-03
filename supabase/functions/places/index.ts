@@ -3,6 +3,7 @@
 // OpenStreetMap Overpass with a shared 24-hour cache, and Nominatim as the quick answer while Overpass is busy.
 // Note: on 2026-10-26 both OSM services refused requests from Supabase Edge Functions (406 / 403), so in
 // practice the OSM branch only serves stale cache; the app's own on-device OSM requests are the free path.
+// PLACES_DAILY_LIMIT (optional, default 50): Google requests per user per day (needs migration 010).
 // Deploy: supabase functions deploy places
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0';
 
@@ -201,7 +202,11 @@ Deno.serve(async (req) => {
   const lat = Number(body.latitude);
   const lon = Number(body.longitude);
   const type = (TYPES.includes(body.type as PlaceType) ? body.type : 'mosque') as PlaceType;
-  const radius = Math.min(Math.max(Number(body.radius) || 5000, 500), 20000);
+  // Snapped to the app's choices: arbitrary values (5000.0001, 5000.0002…) skipped the cache and
+  // sent a new Overpass query and cache row each time
+  const RADII = [2000, 5000, 10000, 20000];
+  const asked = Number(body.radius) || 5000;
+  const radius = RADII.reduce((best, r) => (Math.abs(r - asked) < Math.abs(best - asked) ? r : best), 5000);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return json({ error: 'bad_request' }, 400);
 
   const url = Deno.env.get('SUPABASE_URL')!;
@@ -230,7 +235,13 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
     });
     const { data } = await userClient.auth.getUser();
-    if (data?.user) {
+    // Google is billed per request: a daily limit per user (PLACES_DAILY_LIMIT, default 50), then OSM
+    const placesLimit = Number(Deno.env.get('PLACES_DAILY_LIMIT') ?? 50);
+    const quotaClient = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const withinQuota = data?.user
+      ? (await quotaClient.rpc('consume_feature_quota', { p_scope: `places:${data.user.id}`, p_limit: placesLimit })).data === true
+      : false;
+    if (data?.user && withinQuota) {
       try {
         return finish(await googlePlaces(googleKey, lat, lon, type, radius), 'google');
       } catch (e) {
