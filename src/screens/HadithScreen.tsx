@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, BackHandler, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
@@ -33,6 +34,17 @@ export function HadithScreen() {
   const collectionName = hadithCollectionName(collection, lang);
   // Single-chapter collections (the forty-hadith books) open straight into their text
   const [section, setSection] = useState<HadithSection | null>(null);
+  // Android's back button inside a chapter returns to the chapter list instead of leaving the screen
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (!section) return false;
+        setSection(null);
+        return true;
+      });
+      return () => sub.remove();
+    }, [section])
+  );
   const [query, setQuery] = useState('');
   const [showArabic, setShowArabic] = useState(false);
   const [items, setItems] = useState<HadithItem[]>([]);
