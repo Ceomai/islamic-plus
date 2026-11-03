@@ -557,7 +557,7 @@ export const en = {
     advance: 'When?',
     onTime: 'On time',
     minutesBefore: '{{n}} min before',
-    disableDays: "Don't notify on",
+    disableDays: 'Days with a notification (tap a day to turn it off)',
     footnote: "The adhan sound plays in the installed app build; while testing in Expo Go you will hear the default sound. Opening the app every few days keeps notifications scheduled.",
     body: 'It is time for {{prayer}}. May Allah accept your prayer.',
     title: '{{prayer}} prayer',

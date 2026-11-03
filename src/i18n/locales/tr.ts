@@ -557,7 +557,7 @@ export const tr = {
     advance: 'Ne zaman?',
     onTime: 'Vaktinde',
     minutesBefore: '{{n}} dk önce',
-    disableDays: 'Şu günlerde bildirme',
+    disableDays: 'Bildirim gelen günler (kapatmak için güne dokunun)',
     footnote: "Ezan sesi telefonun uygulama derlemesinde çalar; Expo Go ile denerken varsayılan ses duyulur. Bildirimlerin kesintisiz gelmesi için uygulamayı birkaç günde bir açmanız yeterli.",
     body: '{{prayer}} vakti geldi. Allah ibadetinizi kabul etsin.',
     title: '{{prayer}} namazı',

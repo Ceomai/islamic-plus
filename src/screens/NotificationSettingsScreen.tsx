@@ -221,8 +221,9 @@ export function NotificationSettingsScreen({ navigation }: Props) {
                       {t('notifications.disableDays')}
                     </AppText>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+                      {/* Highlighted = a notification comes that day; it used to highlight the days that were off */}
                       {dayNames.map((d, i) => (
-                        <Chip key={d} label={d} selected={isDayOff(p, i)} onPress={() => toggleDayOff(p, i)} />
+                        <Chip key={d} label={d} selected={!isDayOff(p, i)} onPress={() => toggleDayOff(p, i)} />
                       ))}
                     </View>
                   </>
