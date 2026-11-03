@@ -205,7 +205,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const syncAppDataFromCloud = useCallback(async () => {
     const s = stateRef.current;
-    const merged = await syncUserDataFromCloud(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
+    const { payload: merged, ok } = await syncUserDataFromCloud(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
     setSettings(merged.settings);
     setDarkMode(merged.darkMode);
     setHabits(merged.habits);
@@ -222,6 +222,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     await refreshTodayPrayers();
     await refreshStats();
+    return ok;
   }, [refreshStats, refreshTodayPrayers]);
 
   // Pull from cloud once per mount (AppProvider is remounted per account), after local data has loaded
@@ -245,9 +246,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (lastMemberId.current === memberId) return;
     lastMemberId.current = memberId;
     if (!session || session.isGuest) return;
+    // Only reading progress is per member; app data is shared on the device and synced once
     void syncReadingFromCloud();
-    void syncAppDataFromCloud();
-  }, [loading, settings.activeFamilyMemberId, session, syncReadingFromCloud, syncAppDataFromCloud]);
+  }, [loading, settings.activeFamilyMemberId, session, syncReadingFromCloud]);
 
   useEffect(() => {
     return onReadingProgressChanged((memberId) => {
@@ -485,7 +486,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   /** Pulls the account's cloud copy, merges it with this device and pushes the result back. */
   const syncNow = useCallback(async () => {
     if (!(await isCloudUserActive())) throw new Error('cloud_unavailable');
-    await syncAppDataFromCloud();
+    // Report a failed sync instead of showing success (offline, server error)
+    if (!(await syncAppDataFromCloud())) throw new Error('sync_failed');
     await syncReadingFromCloud();
     const mergedAt = new Date().toISOString();
     await updateSettings({

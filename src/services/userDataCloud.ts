@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { getSupabase } from '../config/supabase';
-import { isCloudUserActive, profileScope } from './cloudUser';
+import { isCloudUserActive } from './cloudUser';
 import {
   buildSyncPayload,
   importSyncPayloadToStorage,
@@ -17,6 +17,13 @@ import type { StoredLocation } from './location';
 import { getJson, storageKeys } from './storage';
 
 const SYNC_DEBOUNCE_MS = 3000;
+/**
+ * App data (settings, habits, prayers, tasbih, kaza…) is stored once per account on the device, not
+ * per family member, so it is synced under one scope. Syncing it per member mixed one member's
+ * cloud copy into everyone's data and brought deleted items back when switching members.
+ * Reading progress is per member and keeps its own scopes (readingProgressCloud.ts).
+ */
+const APP_DATA_SCOPE = 'default';
 const DEFAULT_STATS: ActivityStats = {
   tasbihTotal: 0,
   habitsCompletedTotal: 0,
@@ -60,22 +67,27 @@ async function buildCurrentPayload(): Promise<SyncPayload | null> {
   return payloadBuilder();
 }
 
-export async function pushUserDataNow(): Promise<void> {
-  if (!(await isCloudUserActive())) return;
-  const payload = await buildCurrentPayload();
-  if (!payload) return;
+/** Sends the given payload, or the app's current data. Returns false when it did not reach the server. */
+export async function pushUserDataNow(payload?: SyncPayload): Promise<boolean> {
+  if (!(await isCloudUserActive())) return false;
+  const body = payload ?? (await buildCurrentPayload());
+  if (!body) return false;
 
   const supabase = getSupabase();
-  if (!supabase) return;
+  if (!supabase) return false;
 
-  const scope = profileScope(payload.settings.activeFamilyMemberId);
   const { error } = await supabase.rpc('sync_user_app_data', {
-    p_profile_scope: scope,
-    p_payload: payload,
+    p_profile_scope: APP_DATA_SCOPE,
+    p_payload: { ...body, profileScope: APP_DATA_SCOPE },
   });
   if (error) console.warn('[user-data-cloud] push failed:', error.message);
+  return !error;
 }
 
+/**
+ * Pulls the account's cloud copy, merges it with this device and pushes the result back.
+ * `ok` is false when the server could not be reached (the payload is then the local data).
+ */
 export async function syncUserDataFromCloud(
   settings: UserSettings,
   habits: SpiritualHabit[],
@@ -83,35 +95,31 @@ export async function syncUserDataFromCloud(
   stats: ActivityStats,
   darkMode: boolean,
   location: StoredLocation | null
-): Promise<SyncPayload> {
-  const local = await buildSyncPayload(settings, habits, family, stats, darkMode, location);
-
-  if (!(await isCloudUserActive())) return local;
+): Promise<{ payload: SyncPayload; ok: boolean }> {
+  // Built after the network answer, so changes made while the request was in flight are included
+  const localNow = async () => (await buildCurrentPayload()) ?? buildSyncPayload(settings, habits, family, stats, darkMode, location);
 
   const supabase = getSupabase();
-  if (!supabase) return local;
+  if (!supabase || !(await isCloudUserActive())) return { payload: await localNow(), ok: false };
 
-  const scope = profileScope(settings.activeFamilyMemberId);
-  const { data, error } = await supabase.rpc('get_user_app_data', { p_profile_scope: scope });
-
+  const { data, error } = await supabase.rpc('get_user_app_data', { p_profile_scope: APP_DATA_SCOPE });
   if (error) {
     console.warn('[user-data-cloud] pull failed:', error.message);
-    await pushUserDataNow();
-    return local;
+    return { payload: await localNow(), ok: false };
   }
 
+  const local = await localNow();
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.payload) {
-    await pushUserDataNow();
-    return local;
+    return { payload: local, ok: await pushUserDataNow(local) };
   }
 
   const remote = row.payload as SyncPayload;
-  const merged = mergeSyncPayloads({ ...remote, version: 2, profileScope: scope }, local);
+  const merged = mergeSyncPayloads({ ...remote, version: 2, profileScope: APP_DATA_SCOPE }, local);
 
   await importSyncPayloadToStorage(merged);
-  await pushUserDataNow();
-  return merged;
+  // Push the merged result itself: the app's state still holds the pre-merge values at this point
+  return { payload: merged, ok: await pushUserDataNow(merged) };
 }
 
 /** Drop a pending push without sending it (account deleted). */
