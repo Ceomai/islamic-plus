@@ -14,7 +14,7 @@ import {
   type HadithItem,
   type HadithSection,
 } from '../services/hadithApi';
-import { addHadithBookmark, updateHadithLastRead } from '../services/readingProgress';
+import { addHadithBookmark, removeHadithBookmark, updateHadithLastRead } from '../services/readingProgress';
 import { AppText, Button, Chip, IconBadge, Screen, Surface } from '../ui';
 
 const fold = (s: string) => s.toLocaleLowerCase('tr').replace(/ı/g, 'i');
@@ -102,8 +102,10 @@ export function HadithScreen() {
     await updateHadithLastRead(memberId, collection.id, collectionName, number);
     await refreshReadingProgress();
   };
+  // The bookmark button toggles: a second tap removes the bookmark
   const bookmark = async (number: number, text: string) => {
-    await addHadithBookmark(memberId, collection.id, collectionName, number, text.slice(0, 40));
+    if (bookmarked.has(number)) await removeHadithBookmark(memberId, collection.id, number);
+    else await addHadithBookmark(memberId, collection.id, collectionName, number, text.slice(0, 40));
     await refreshReadingProgress();
   };
 

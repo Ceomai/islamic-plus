@@ -8,7 +8,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { fetchSurahList, type SurahListItem } from '../services/quranApi';
-import { startNewKhatm } from '../services/readingProgress';
+import { removeQuranBookmark, startNewKhatm } from '../services/readingProgress';
 import { AppText, Button, IconBadge, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quran'>;
@@ -98,6 +98,41 @@ export function QuranScreen({ navigation }: Props) {
           <Button label={t('quran.newKhatm')} icon="refresh" variant="secondary" onPress={newKhatm} style={{ marginTop: space[3] }} />
         )}
       </Surface>
+
+      {/* Bookmarks saved in the reader: open one, or remove it */}
+      {quranProgress.bookmarks.length > 0 && (
+        <Surface padding={space[1]} style={{ marginBottom: space[4], paddingHorizontal: space[3] }}>
+          <AppText variant="bodyStrong" style={{ paddingVertical: space[2] }}>
+            {t('reading.bookmarks')} ({quranProgress.bookmarks.length})
+          </AppText>
+          {quranProgress.bookmarks.map((b) => (
+            <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border }}>
+              <Pressable
+                onPress={() => navigation.navigate('QuranReader', { surahNumber: b.surahNumber, edition: b.edition, surahName: b.surahName, startAyah: b.ayahNumber })}
+                accessibilityRole="button"
+                accessibilityLabel={`${b.surahName}, ${t('reading.ayah')} ${b.ayahNumber}`}
+                style={{ flex: 1, minHeight: 48, justifyContent: 'center' }}
+              >
+                <AppText variant="body">
+                  {b.surahName} · {t('reading.ayah')} {b.ayahNumber}
+                </AppText>
+              </Pressable>
+              <Pressable
+                onPress={async () => {
+                  await removeQuranBookmark(settings.activeFamilyMemberId, b.surahNumber, b.ayahNumber);
+                  await refreshReadingProgress();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('reading.removeBookmark')}: ${b.surahName} ${b.ayahNumber}`}
+                hitSlop={8}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          ))}
+        </Surface>
+      )}
 
       <View
         style={{

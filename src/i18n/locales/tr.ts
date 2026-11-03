@@ -180,6 +180,8 @@ export const tr = {
     ayah: 'Ayet',
     bookmark: 'Yer imi',
     bookmarked: 'Yer imi kaydedildi',
+    bookmarks: 'Yer imlerim',
+    removeBookmark: 'Yer imini kaldır',
     progress: 'Okuma ilerlemesi',
   },
   duas: {

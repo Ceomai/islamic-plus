@@ -180,6 +180,8 @@ export const en = {
     ayah: 'Ayah',
     bookmark: 'Bookmark',
     bookmarked: 'Saved bookmark',
+    bookmarks: 'My bookmarks',
+    removeBookmark: 'Remove bookmark',
     progress: 'Reading progress',
   },
   duas: {

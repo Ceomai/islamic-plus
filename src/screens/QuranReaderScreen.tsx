@@ -9,7 +9,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { playRemoteAudio, stopAudio } from '../services/audio';
 import { fetchSurahReading, type ReaderAyah } from '../services/quranApi';
-import { addQuranBookmark, updateQuranLastRead } from '../services/readingProgress';
+import { addQuranBookmark, removeQuranBookmark, updateQuranLastRead } from '../services/readingProgress';
 import type { QuranView } from '../types';
 import { AppText, Button, Chip, IconBadge, Surface } from '../ui';
 
@@ -129,8 +129,14 @@ export function QuranReaderScreen({ route }: Props) {
     void Share.share({ message: text });
   };
 
+  // The bookmark button toggles: a second tap removes the bookmark
   const bookmarkAyah = async (ayahNumber: number) => {
     lastAyahRef.current = ayahNumber;
+    if (bookmarked.has(ayahNumber)) {
+      await removeQuranBookmark(settings.activeFamilyMemberId, surahNumber, ayahNumber);
+      await refreshReadingProgress();
+      return;
+    }
     await addQuranBookmark(settings.activeFamilyMemberId, {
       surahNumber,
       surahName,
@@ -241,7 +247,7 @@ export function QuranReaderScreen({ route }: Props) {
             onPress={() => bookmarkAyah(a.numberInSurah)}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={`${t('reading.bookmark')} ${a.numberInSurah}`}
+            accessibilityLabel={`${marked ? t('reading.removeBookmark') : t('reading.bookmark')} ${a.numberInSurah}`}
             accessibilityState={{ selected: marked }}
           >
             <Ionicons name={marked ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.primary} />
