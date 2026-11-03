@@ -49,12 +49,15 @@ export function changeKaza(prayer: KazaPrayer, delta: 1 | -1): Promise<KazaData>
   return serial(async () => save(applyKazaChange(await loadKaza(), prayer, delta)));
 }
 
+export const KAZA_MAX_YEARS = 80;
+export const KAZA_MAX_DAYS = 30000;
+
 /**
  * Rough estimate for "I didn't pray for N years / days": one of each prayer per day.
  * Adds to what is already recorded.
  */
 export function estimateKaza(data: KazaData, years: number, days: number, includeWitr: boolean): KazaData {
-  const total = Math.max(0, Math.round(years * 365 + days));
+  const total = Math.max(0, Math.round(Math.min(years, KAZA_MAX_YEARS) * 365 + Math.min(days, KAZA_MAX_DAYS)));
   const counts = { ...data.counts };
   for (const p of KAZA_PRAYERS) {
     if (p === 'witr' && !includeWitr) continue;

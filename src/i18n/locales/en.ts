@@ -635,6 +635,8 @@ export const en = {
     days: "Days",
     includeWitr: "Include witr",
     estimateAdd: "Add",
+    estimateInvalid: "Please enter a number of up to {{years}} years or {{days}} days.",
+    estimateEmpty: "Enter a number of years or days.",
     reset: "Reset all",
     resetTitle: "Reset missed prayers?",
     resetBody: "All counts go back to zero. This can’t be undone.",

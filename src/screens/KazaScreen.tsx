@@ -5,7 +5,7 @@ import { Alert, Platform, Pressable, Switch, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { getPrayerLabel } from '../i18n';
-import { KAZA_PRAYERS, addKazaEstimate, changeKaza, kazaRemaining, loadKaza, resetKaza, type KazaData, type KazaPrayer } from '../services/kaza';
+import { KAZA_PRAYERS, KAZA_MAX_DAYS, KAZA_MAX_YEARS, addKazaEstimate, changeKaza, kazaRemaining, loadKaza, resetKaza, type KazaData, type KazaPrayer } from '../services/kaza';
 import { AppText, Button, Screen, SectionHeader, Surface, TextField } from '../ui';
 
 export function KazaScreen() {
@@ -15,6 +15,7 @@ export function KazaScreen() {
   const [showEstimate, setShowEstimate] = useState(false);
   const [years, setYears] = useState('');
   const [days, setDays] = useState('');
+  const [estimateError, setEstimateError] = useState<string | null>(null);
   const [withWitr, setWithWitr] = useState(true);
 
   useEffect(() => {
@@ -32,9 +33,19 @@ export function KazaScreen() {
   };
 
   const addEstimate = async () => {
-    const y = Number(years.replace(',', '.')) || 0;
-    const d = Number(days) || 0;
-    if (y <= 0 && d <= 0) return;
+    const parse = (s: string) => (/^\s*\d*([.,]\d+)?\s*$/.test(s) ? Number(s.trim().replace(',', '.')) || 0 : NaN);
+    const y = parse(years);
+    const d = parse(days);
+    // Whole numbers only, at most a lifetime (80 years / 30,000 days); "-3" or "1e9" used to slip through
+    if (Number.isNaN(y) || Number.isNaN(d) || y > KAZA_MAX_YEARS || d > KAZA_MAX_DAYS) {
+      setEstimateError(t('kaza.estimateInvalid', { years: String(KAZA_MAX_YEARS), days: String(KAZA_MAX_DAYS) }));
+      return;
+    }
+    if (y <= 0 && d <= 0) {
+      setEstimateError(t('kaza.estimateEmpty'));
+      return;
+    }
+    setEstimateError(null);
     setData(await addKazaEstimate(y, d, withWitr));
     setYears('');
     setDays('');
@@ -142,16 +153,21 @@ export function KazaScreen() {
           </AppText>
           <View style={{ flexDirection: 'row', gap: space[3] }}>
             <View style={{ flex: 1 }}>
-              <TextField label={t('kaza.years')} value={years} onChangeText={setYears} keyboardType="decimal-pad" placeholder="0" />
+              <TextField label={t('kaza.years')} value={years} onChangeText={setYears} keyboardType="decimal-pad" placeholder="0" maxLength={5} />
             </View>
             <View style={{ flex: 1 }}>
-              <TextField label={t('kaza.days')} value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="0" />
+              <TextField label={t('kaza.days')} value={days} onChangeText={setDays} keyboardType="number-pad" placeholder="0" maxLength={5} />
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] }}>
             <AppText variant="callout">{t('kaza.includeWitr')}</AppText>
             <Switch value={withWitr} onValueChange={setWithWitr} trackColor={{ true: colors.primary, false: colors.borderStrong }} />
           </View>
+          {estimateError && (
+            <AppText variant="caption" tone="danger" style={{ marginBottom: space[2] }} accessibilityLiveRegion="polite">
+              {estimateError}
+            </AppText>
+          )}
           <Button label={t('kaza.estimateAdd')} icon="add" onPress={addEstimate} />
         </Surface>
       )}

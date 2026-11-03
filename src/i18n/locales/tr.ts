@@ -635,6 +635,8 @@ export const tr = {
     days: "Gün",
     includeWitr: "Vitri de ekle",
     estimateAdd: "Ekle",
+    estimateInvalid: "Lütfen en fazla {{years}} yıl ya da {{days}} gün olacak şekilde bir sayı girin.",
+    estimateEmpty: "Yıl ya da gün sayısı girin.",
     reset: "Tümünü sıfırla",
     resetTitle: "Kaza kayıtları sıfırlansın mı?",
     resetBody: "Tüm sayılar sıfırlanır. Bu işlem geri alınamaz.",
