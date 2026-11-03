@@ -31,3 +31,17 @@ describe('restoring the session at start-up (Y4)', () => {
     expect(await getAuthSession()).toBeNull();
   });
 });
+
+describe('guest data after creating an account (Y3)', () => {
+  it('copies the guest bucket into the new account without overwriting anything', async () => {
+    const { copyScopeIfMissing } = require('../services/storage') as typeof import('../services/storage');
+    await AsyncStorage.clear();
+    await AsyncStorage.setItem('@islamic/kaza@@guest', '{"fajr":3}');
+    await AsyncStorage.setItem('@islamic/tasbih@@guest', '{"count":5}');
+    await AsyncStorage.setItem('@islamic/tasbih@@new-user', '{"count":9}');
+    expect(await copyScopeIfMissing('guest', 'new-user')).toBe(1);
+    expect(await AsyncStorage.getItem('@islamic/kaza@@new-user')).toBe('{"fajr":3}');
+    expect(await AsyncStorage.getItem('@islamic/tasbih@@new-user')).toBe('{"count":9}');
+    expect(await AsyncStorage.getItem('@islamic/kaza@@guest')).toBe('{"fajr":3}');
+  });
+});

@@ -65,6 +65,26 @@ export async function migrateLegacyStorage(scope: string): Promise<void> {
   await AsyncStorage.setItem(LEGACY_MIGRATED_KEY, scope);
 }
 
+/**
+ * Copies one bucket's values into another that does not have them yet. Used when a guest creates
+ * an account on this device: without it everything recorded as a guest disappeared from view.
+ * Returns how many values were copied.
+ */
+export async function copyScopeIfMissing(from: string, to: string): Promise<number> {
+  const all = await AsyncStorage.getAllKeys();
+  const source = all.filter((k) => k.endsWith(`@@${from}`));
+  let copied = 0;
+  for (const key of source) {
+    const target = `${key.slice(0, -from.length)}${to}`;
+    if (all.includes(target)) continue;
+    const raw = await AsyncStorage.getItem(key);
+    if (raw == null) continue;
+    await AsyncStorage.setItem(target, raw);
+    copied++;
+  }
+  return copied;
+}
+
 /** Remove every locally stored value that belongs to one account (used on account deletion). */
 export async function clearScopedStorage(scope: string): Promise<void> {
   const all = await AsyncStorage.getAllKeys();

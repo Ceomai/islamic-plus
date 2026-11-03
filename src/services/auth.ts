@@ -16,6 +16,7 @@ import { cancelReadingProgressCloudSync, flushReadingProgressCloudSync } from '.
 import { cancelUserDataCloudSync, flushUserDataCloudSync } from './userDataCloud';
 import {
   clearScopedStorage,
+  copyScopeIfMissing,
   getJson,
   migrateLegacyStorage,
   setStorageUser,
@@ -75,8 +76,10 @@ export async function setAuthSession(session: AuthSession | null): Promise<void>
 }
 
 export async function registerUser(email: string, password: string): Promise<AuthResult> {
-  if (isSupabaseConfigured) return activateResult(await registerSupabaseUser(email, password));
-  return activateResult(await registerLocalUser(email, password));
+  const result = isSupabaseConfigured ? await registerSupabaseUser(email, password) : await registerLocalUser(email, password);
+  // A new account starts with what was recorded as a guest on this device (prayers, tasbih, kaza…)
+  if (result.ok) await copyScopeIfMissing('guest', result.session.userId).catch(() => 0);
+  return activateResult(result);
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResult> {
