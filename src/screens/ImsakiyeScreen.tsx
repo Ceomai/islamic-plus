@@ -25,7 +25,10 @@ export function ImsakiyeScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const ramadan = useMemo(() => ramadanWindow(now), [localDateKey(now)]);
+  const dayKey = localDateKey(now);
+  // Recomputed once a day, not on every minute tick
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const ramadan = useMemo(() => ramadanWindow(now), [dayKey]);
   const days = useMemo(
     () => (location ? buildImsakiye(location.latitude, location.longitude, settings.calculationMethod, settings.madhab, ramadan) : []),
     [location?.latitude, location?.longitude, settings.calculationMethod, settings.madhab, ramadan]

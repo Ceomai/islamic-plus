@@ -18,23 +18,15 @@ export function QuranScreen({ navigation }: Props) {
   const { settings, quranProgress, refreshReadingProgress } = useApp();
   const { colors, radius, space, type } = useTheme();
   const { t, lang } = useTranslation();
-  const [surahs, setSurahs] = useState<SurahListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState('');
   const edition = settings.quranEditionId;
   const editionMeta = QURAN_EDITIONS.find((e) => e.id === edition);
 
   // The surah list ships with the app, so it opens instantly and offline (it used to need the API)
-  const load = useCallback(() => {
-    setSurahs(
-      SURAHS.map((s) => ({ number: s.number, name: s.ar, englishName: lang === 'tr' ? s.tr : s.en, numberOfAyahs: s.ayahs }))
-    );
-    setFailed(false);
-    setLoading(false);
-  }, [lang]);
-
-  useEffect(load, [load]);
+  const surahs = useMemo<SurahListItem[]>(
+    () => SURAHS.map((s) => ({ number: s.number, name: s.ar, englishName: lang === 'tr' ? s.tr : s.en, numberOfAyahs: s.ayahs })),
+    [lang]
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -164,26 +156,6 @@ export function QuranScreen({ navigation }: Props) {
       </AppText>
     </View>
   );
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
-
-  if (failed) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6], backgroundColor: colors.background }}>
-        <IconBadge name="cloud-offline-outline" size="lg" tone="neutral" />
-        <AppText variant="body" tone="secondary" align="center" style={{ marginVertical: space[4] }}>
-          {t('quran.loadError')}
-        </AppText>
-        <Button label={t('common.retry')} onPress={load} variant="secondary" icon="refresh" />
-      </View>
-    );
-  }
 
   return (
     <FlatList

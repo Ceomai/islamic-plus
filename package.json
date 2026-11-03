@@ -8,7 +8,7 @@
     "start:clear": "expo start --lan --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "lint": "expo lint",
+    "lint": "eslint src App.tsx",
     "test": "jest",
     "i18n:check": "node scripts/check-i18n.js",
     "check": "tsc --noEmit && node scripts/check-i18n.js && jest --ci",
@@ -66,6 +66,8 @@
     "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
     "babel-preset-expo": "~58.0.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~58.0.4",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.12",
     "typescript": "~6.0.3"
