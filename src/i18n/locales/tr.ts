@@ -283,7 +283,7 @@ export const tr = {
     dailyDua: 'Günün duası',
     compact: 'Kompakt görünüm',
     allHidden: "Widget'ta gösterilecek bir şey seçilmedi. Ayarlar → Widget'lar bölümünden açabilirsiniz.",
-    nativeNote: 'Telefonun kendi ana ekranına eklenen widget henüz yok; bu modül uygulamanın ana ekranında görünür.',
+    nativeNote: 'Bu ayarlar uygulamanın ana sayfasındaki modülü değiştirir. Telefonun ana ekranına da "Namaz Vakitleri" widget’ını ekleyebilirsiniz: ana ekrana uzun basın › Widget’lar › Islamic+.',
   },
   sync: {
     autoTitle: 'Otomatik bulut senkronu açık',

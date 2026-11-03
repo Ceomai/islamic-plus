@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Platform, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
@@ -57,17 +57,22 @@ export function PlacesScreen({ route, navigation }: Props) {
     if (!location) void refreshLocation();
   }, []);
 
+  // Each search gets a number; an answer for an older radius that arrives late is ignored
+  const searchId = useRef(0);
   const search = useCallback(async () => {
     if (!location) {
       setStatus('noLocation');
       return;
     }
+    const id = ++searchId.current;
     setStatus('loading');
     try {
-      setPlaces(await fetchNearbyPlaces(location.latitude, location.longitude, type, radius, lang));
+      const found = await fetchNearbyPlaces(location.latitude, location.longitude, type, radius, lang);
+      if (id !== searchId.current) return;
+      setPlaces(found);
       setStatus('ready');
     } catch {
-      setStatus('error');
+      if (id === searchId.current) setStatus('error');
     }
   }, [location?.latitude, location?.longitude, type, radius, lang]);
 

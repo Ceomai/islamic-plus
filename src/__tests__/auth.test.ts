@@ -45,3 +45,14 @@ describe('guest data after creating an account (Y3)', () => {
     expect(await AsyncStorage.getItem('@islamic/kaza@@guest')).toBe('{"fajr":3}');
   });
 });
+
+describe('e-mail validation (D13)', () => {
+  it('accepts normal addresses and rejects markup', () => {
+    const { isValidEmail } = require('../services/authValidation') as { isValidEmail: (e: string) => boolean };
+    expect(isValidEmail('ali.veli+test@gmail.com')).toBe(true);
+    expect(isValidEmail('a@mail.co.uk')).toBe(true);
+    expect(isValidEmail('<script>alert(1)</script>@x.com')).toBe(false);
+    expect(isValidEmail("' OR 1=1 --")).toBe(false);
+    expect(isValidEmail('a@b')).toBe(false);
+  });
+});

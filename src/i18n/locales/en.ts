@@ -283,7 +283,7 @@ export const en = {
     dailyDua: 'Dua of the day',
     compact: 'Compact layout',
     allHidden: 'Nothing is selected for the widget. Turn items on in Settings → Widgets.',
-    nativeNote: 'A widget for your phone\'s own home screen is not available yet; this module appears on the app\'s home screen.',
+    nativeNote: 'These settings change the module on the app’s home page. You can also add the "Prayer Times" widget to your phone’s home screen: long-press the home screen › Widgets › Islamic+.',
   },
   sync: {
     autoTitle: 'Automatic cloud sync is on',

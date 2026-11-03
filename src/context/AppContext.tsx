@@ -90,6 +90,9 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
+/** Messages kept in the assistant chat (oldest dropped first) */
+const AI_CHAT_MAX = 200;
+
 const widgetInput = (loc: StoredLocation, s: UserSettings): WidgetInput => ({
   latitude: loc.latitude,
   longitude: loc.longitude,
@@ -445,8 +448,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (assistantText) {
         next.push({ id: `${now}-a`, role: 'assistant', content: assistantText, timestamp: now, ...(actions?.length ? { actions } : {}) });
       }
-      void setJson(storageKeys.aiChat, next);
-      return next;
+      // Keep the chat bounded (it grew without limit and was rendered in full)
+      const kept = next.slice(-AI_CHAT_MAX);
+      void setJson(storageKeys.aiChat, kept);
+      return kept;
     });
 
     if (userText || assistantText) {
