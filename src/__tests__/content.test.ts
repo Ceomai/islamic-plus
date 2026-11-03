@@ -75,3 +75,26 @@ describe('surahs and dhikr', () => {
     expect(new Set(DHIKR.map((d) => d.id)).size).toBe(DHIKR.length);
   });
 });
+
+describe('city list for choosing a location by hand (Y5)', () => {
+  const { CITIES, searchCities } = require('../data/cities') as typeof import('../data/cities');
+  it('has all 81 provinces of Türkiye and unique ids', () => {
+    expect(CITIES.filter((c) => c.country === 'TR')).toHaveLength(81);
+    expect(new Set(CITIES.map((c) => c.id)).size).toBe(CITIES.length);
+  });
+  it('coordinates are plausible', () => {
+    for (const c of CITIES.filter((x) => x.country === 'TR')) {
+      expect(c.latitude).toBeGreaterThan(35.8);
+      expect(c.latitude).toBeLessThan(42.2);
+      expect(c.longitude).toBeGreaterThan(25.9);
+      expect(c.longitude).toBeLessThan(44.9);
+    }
+  });
+  it('search ignores case and Turkish letters', () => {
+    expect(searchCities('istanbul')[0].tr).toBe('İstanbul');
+    expect(searchCities('SANLIURFA')[0].tr).toBe('Şanlıurfa');
+    expect(searchCities('köln')[0].en).toBe('Cologne');
+    expect(searchCities('cologne')[0].tr).toBe('Köln');
+    expect(searchCities('xyz')).toHaveLength(0);
+  });
+});

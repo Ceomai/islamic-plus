@@ -11,6 +11,7 @@ import { withGuestGate } from '../components/GuestGate';
 import { AdvancedRemindersScreen as AdvancedRemindersScreenBase } from '../screens/AdvancedRemindersScreen';
 import { AIAssistantScreen as AIAssistantScreenBase } from '../screens/AIAssistantScreen';
 import { CalendarScreen } from '../screens/CalendarScreen';
+import { CityPickerScreen } from '../screens/CityPickerScreen';
 import { DeleteAccountScreen } from '../screens/DeleteAccountScreen';
 import { CloudSyncScreen as CloudSyncScreenBase } from '../screens/CloudSyncScreen';
 import { DutiesScreen } from '../screens/DutiesScreen';
@@ -118,6 +119,7 @@ function HomeStack() {
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
       <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ title: t('nav.feedback') }} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: t('account.deleteTitle') }} />
+      <Stack.Screen name="CityPicker" component={CityPickerScreen} options={{ title: t('city.title') }} />
     </Stack.Navigator>
   );
 }
@@ -139,6 +141,7 @@ function MoreStack() {
       <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ title: t('nav.stats') }} />
       <Stack.Screen name="TasbihStats" component={TasbihStatsScreen} options={{ title: t('tasbih.statsTitle') }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: t('nav.notifications') }} />
+      <Stack.Screen name="CityPicker" component={CityPickerScreen} options={{ title: t('city.title') }} />
     </Stack.Navigator>
   );
 }

@@ -10,6 +10,7 @@ import { initAudio } from '../services/audio';
 import { buildSyncPayload, importSyncPayloadToStorage, type SyncPayload } from '../services/cloudSync';
 import { isCloudUserActive } from '../services/cloudUser';
 import { getCachedLocation, getCurrentLocation, type StoredLocation } from '../services/location';
+import type { City } from '../data/cities';
 import { getTodayCompletions, loadPrayerCompletions, togglePrayerCompletion } from '../services/prayerTracking';
 import {
   notifyAppDataChanged,
@@ -47,7 +48,10 @@ interface AppContextValue {
   settings: UserSettings;
   updateSettings: (patch: Partial<UserSettings>) => Promise<void>;
   location: StoredLocation | null;
-  refreshLocation: () => Promise<void>;
+  /** Asks for the phone's location; false when it could not be read (refused, no fix) */
+  refreshLocation: () => Promise<boolean>;
+  /** Uses a city chosen from the list instead of GPS */
+  setManualLocation: (city: City) => Promise<void>;
   habits: SpiritualHabit[];
   addHabit: (habit: Omit<SpiritualHabit, 'id' | 'completedDates'>) => Promise<void>;
   toggleHabitToday: (id: string) => Promise<void>;
@@ -253,14 +257,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [session?.userId, session?.isGuest]);
 
+  // Prayer notifications follow the location/settings effect below, so only state is set here
   const refreshLocation = useCallback(async () => {
     const loc = await getCurrentLocation();
+    if (!loc) return false;
     setLocation(loc);
-    if (loc) {
-      await schedulePrayerNotifications(loc.latitude, loc.longitude, settings);
-      notifyAppDataChanged();
-    }
-  }, [settings]);
+    notifyAppDataChanged();
+    return true;
+  }, []);
+
+  const setManualLocation = useCallback(async (city: City) => {
+    const loc: StoredLocation = {
+      latitude: city.latitude,
+      longitude: city.longitude,
+      city: stateRef.current.settings.appLanguage === 'tr' ? city.tr : city.en,
+      country: city.country,
+      cityId: city.id,
+      updatedAt: new Date().toISOString(),
+    };
+    await setJson(storageKeys.lastLocation, loc);
+    setLocation(loc);
+    notifyAppDataChanged();
+  }, []);
 
   // Always call: with notifications switched off it cancels what was scheduled before
   const lastScheduleRef = useRef(0);
@@ -523,6 +541,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateSettings,
         location,
         refreshLocation,
+        setManualLocation,
         habits,
         addHabit,
         toggleHabitToday,

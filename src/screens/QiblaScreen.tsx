@@ -32,7 +32,8 @@ export function QiblaScreen() {
   const wasAligned = useRef(false);
 
   useEffect(() => {
-    refreshLocation();
+    // Keep a city chosen by hand; the list's coordinates are close enough for the Qibla bearing
+    if (!location?.cityId) void refreshLocation();
   }, []);
 
   // OS heading is tilt-compensated and, when location is known, referenced to true north

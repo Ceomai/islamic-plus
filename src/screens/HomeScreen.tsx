@@ -16,7 +16,7 @@ import { fastCountdown, formatDuration, ramadanWindow } from '../services/ramada
 import { addDays } from '../utils/date';
 import { formatClock, getNextPrayer, getPrayerDates } from '../services/prayerTimes';
 import type { HomeFeatureId, PrayerName } from '../types';
-import { AppText, ListRow, SectionHeader, Surface } from '../ui';
+import { AppText, Button, ListRow, SectionHeader, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -42,7 +42,8 @@ export function HomeScreen({ navigation }: Props) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    refreshLocation();
+    // A city chosen by hand stays until the user picks "use my location" again
+    if (!location?.cityId) void refreshLocation();
     void refreshTodayPrayers();
   }, []);
 
@@ -114,6 +115,17 @@ export function HomeScreen({ navigation }: Props) {
 
   const renderPrayerModule = () => (
     <View key="module_prayer_times">
+      {!location && (
+        <Surface variant="soft" style={{ marginBottom: space[3], gap: space[3] }}>
+          <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
+            {t('home.noLocationTitle')}
+          </AppText>
+          <AppText variant="callout" color={colors.onPrimarySoft}>
+            {t('home.noLocationBody')}
+          </AppText>
+          <Button label={t('city.choose')} icon="list" onPress={() => navigation.navigate('CityPicker')} />
+        </Surface>
+      )}
       {nextPrayer && (
         <Surface variant="hero" padding={space[5]} style={{ marginBottom: space[3] }}>
           <AppText variant="overline" color={colors.onHeroMuted}>
@@ -202,17 +214,17 @@ export function HomeScreen({ navigation }: Props) {
             <AppText variant="callout" tone="secondary">
               {t('home.greeting')}
             </AppText>
-            {location ? (
-              <AppText variant="title" numberOfLines={1}>
-                {location.city ?? t('home.yourLocation')}
+            <Pressable
+              onPress={() => navigation.navigate('CityPicker')}
+              accessibilityRole="button"
+              accessibilityHint={t('city.title')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space[1] }}
+            >
+              <AppText variant="title" numberOfLines={1} tone={location ? 'default' : 'brand'} style={{ flexShrink: 1 }}>
+                {location ? location.city ?? t('home.yourLocation') : t('home.tapLocation')}
               </AppText>
-            ) : (
-              <Pressable onPress={refreshLocation} accessibilityRole="button">
-                <AppText variant="title" tone="brand">
-                  {t('home.tapLocation')}
-                </AppText>
-              </Pressable>
-            )}
+              <Ionicons name="chevron-down" size={18} color={location ? colors.textSecondary : colors.primary} />
+            </Pressable>
             <AppText variant="caption" tone="secondary">
               {hijri.formatted}
             </AppText>

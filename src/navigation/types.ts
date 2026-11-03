@@ -29,4 +29,5 @@ export type RootStackParamList = {
   CloudSync: undefined;
   AdvancedReminders: undefined;
   DeleteAccount: undefined;
+  CityPicker: undefined;
 };

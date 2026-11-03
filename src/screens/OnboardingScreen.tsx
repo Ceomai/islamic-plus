@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, CALCULATION_METHODS, MADHABS } from '../constants/defaults';
+import { searchCities } from '../data/cities';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { requestNotificationPermissions } from '../services/notifications';
 import type { CalculationMethodId, Madhab } from '../types';
-import { AppText, Button, Chip, IconBadge, Surface } from '../ui';
+import { AppText, Button, Chip, IconBadge, Surface, TextField } from '../ui';
 
 type Step = 'welcome' | 'prayer' | 'location' | 'notifications';
 const STEPS: Step[] = ['welcome', 'prayer', 'location', 'notifications'];
@@ -20,7 +21,9 @@ type Permission = 'unknown' | 'granted' | 'denied';
  * location and notifications. Every step can be skipped and changed later in Settings.
  */
 export function OnboardingScreen() {
-  const { settings, updateSettings, refreshLocation, location } = useApp();
+  const { settings, updateSettings, refreshLocation, setManualLocation, location } = useApp();
+  const [cityQuery, setCityQuery] = useState('');
+  const [showCities, setShowCities] = useState(false);
   const { colors, space } = useTheme();
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('welcome');
@@ -36,11 +39,16 @@ export function OnboardingScreen() {
 
   const askLocation = async () => {
     setBusy(true);
-    await refreshLocation();
-    // refreshLocation falls back to the last saved place when refused, so read the real answer
-    const { status } = await Location.getForegroundPermissionsAsync();
-    setBusy(false);
-    setLocationState(status === 'granted' ? 'granted' : 'denied');
+    try {
+      const ok = await refreshLocation();
+      // Permission can be granted while no position arrives (location services off): offer the list
+      const { status } = await Location.getForegroundPermissionsAsync();
+      setLocationState(ok && status === 'granted' ? 'granted' : 'denied');
+    } catch {
+      setLocationState('denied');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const askNotifications = async () => {
@@ -159,6 +167,47 @@ export function OnboardingScreen() {
             </Surface>
             <Button label={t('onboarding.allowLocation')} icon="navigate" onPress={askLocation} loading={busy} style={{ marginTop: space[5] }} />
             {permissionNote(locationState, 'onboarding.locationDenied')}
+            {location?.city && locationState === 'granted' && (
+              <AppText variant="callout" tone="brand" style={{ marginTop: space[2] }}>
+                {location.city}
+              </AppText>
+            )}
+            {/* No GPS or no permission: pick the city from a list that works offline */}
+            <Button label={t('city.choose')} icon="list" variant="ghost" onPress={() => setShowCities((v) => !v)} style={{ marginTop: space[3] }} />
+            {showCities && (
+              <View style={{ marginTop: space[2] }}>
+                <TextField
+                  label={t('city.search')}
+                  value={cityQuery}
+                  onChangeText={setCityQuery}
+                  placeholder={t('city.searchPlaceholder')}
+                  autoCorrect={false}
+                  maxLength={40}
+                />
+                {searchCities(cityQuery).slice(0, 8).map((c) => (
+                  <Pressable
+                    key={c.id}
+                    onPress={async () => {
+                      await setManualLocation(c);
+                      setLocationState('granted');
+                      setShowCities(false);
+                      setCityQuery('');
+                    }}
+                    accessibilityRole="button"
+                    style={({ pressed }) => ({
+                      minHeight: 48,
+                      justifyContent: 'center',
+                      paddingHorizontal: space[3],
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                      backgroundColor: pressed ? colors.surfaceMuted : 'transparent',
+                    })}
+                  >
+                    <AppText variant="body">{settings.appLanguage === 'tr' ? c.tr : c.en}</AppText>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
