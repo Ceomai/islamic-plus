@@ -1,3 +1,4 @@
+import { createSerialQueue } from '../utils/serial';
 import { getJson, setJson, storageKeys } from './storage';
 import { notifyAppDataChanged } from './userDataCloud';
 
@@ -41,8 +42,11 @@ export function applyKazaChange(data: KazaData, prayer: KazaPrayer, delta: 1 | -
   };
 }
 
-export async function changeKaza(prayer: KazaPrayer, delta: 1 | -1): Promise<KazaData> {
-  return save(applyKazaChange(await loadKaza(), prayer, delta));
+// Fast taps on +/- are applied one after another (they used to read the same old counts)
+const serial = createSerialQueue();
+
+export function changeKaza(prayer: KazaPrayer, delta: 1 | -1): Promise<KazaData> {
+  return serial(async () => save(applyKazaChange(await loadKaza(), prayer, delta)));
 }
 
 /**
@@ -59,12 +63,12 @@ export function estimateKaza(data: KazaData, years: number, days: number, includ
   return { ...data, counts };
 }
 
-export async function addKazaEstimate(years: number, days: number, includeWitr: boolean): Promise<KazaData> {
-  return save(estimateKaza(await loadKaza(), years, days, includeWitr));
+export function addKazaEstimate(years: number, days: number, includeWitr: boolean): Promise<KazaData> {
+  return serial(async () => save(estimateKaza(await loadKaza(), years, days, includeWitr)));
 }
 
-export async function resetKaza(): Promise<KazaData> {
-  return save({ ...EMPTY_KAZA });
+export function resetKaza(): Promise<KazaData> {
+  return serial(() => save({ ...EMPTY_KAZA }));
 }
 
 export const kazaRemaining = (data: KazaData) => KAZA_PRAYERS.reduce((sum, p) => sum + data.counts[p], 0);
