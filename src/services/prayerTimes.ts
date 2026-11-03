@@ -1,4 +1,12 @@
-import { CalculationMethod, Coordinates, Madhab as AdhanMadhab, PrayerTimes as AdhanPrayerTimes, Rounding } from 'adhan';
+import {
+  CalculationMethod,
+  Coordinates,
+  HighLatitudeRule,
+  Madhab as AdhanMadhab,
+  PolarCircleResolution,
+  PrayerTimes as AdhanPrayerTimes,
+  Rounding,
+} from 'adhan';
 import type { CalculationMethodId, Madhab, PrayerName } from '../types';
 
 const methodMap: Record<CalculationMethodId, () => ReturnType<typeof CalculationMethod.MuslimWorldLeague>> = {
@@ -27,7 +35,13 @@ function calculate(latitude: number, longitude: number, date: Date, method: Calc
     params.rounding = Rounding.None;
     params.adjustments.asr += 1;
   }
-  return new AdhanPrayerTimes(new Coordinates(latitude, longitude), date, params);
+  const coordinates = new Coordinates(latitude, longitude);
+  // Far north/south the sun may not set (or rise), or twilight never ends: without these rules
+  // adhan returns Invalid Date and the app showed "NaN:NaN". Fajr/Isha use the recommended
+  // night-fraction rule; days with no sunrise or sunset borrow the nearest latitude that has them.
+  params.highLatitudeRule = HighLatitudeRule.recommended(coordinates);
+  params.polarCircleResolution = PolarCircleResolution.AqrabBalad;
+  return new AdhanPrayerTimes(coordinates, date, params);
 }
 
 const MINUTE = 60000;
@@ -72,6 +86,7 @@ export function getPrayerDates(
 
 /** 24-hour clock for Turkish, 12-hour for English. */
 export function formatClock(date: Date, lang: 'en' | 'tr'): string {
+  if (Number.isNaN(date.getTime())) return '--:--';
   const h = date.getHours();
   const m = String(date.getMinutes()).padStart(2, '0');
   if (lang === 'tr') return `${String(h).padStart(2, '0')}:${m}`;

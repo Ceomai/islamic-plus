@@ -126,3 +126,27 @@ describe('zakat amount input (Y1)', () => {
     expect(parseAmount('1e9')).toBe(0);
   });
 });
+
+describe('prayer times far north and south (Y6)', () => {
+  const { getPrayerDates, formatClock } = require('../services/prayerTimes') as typeof import('../services/prayerTimes');
+  const ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+  const cases: [string, number, number, Date][] = [
+    ['Svalbard, polar night', 78.2232, 15.6267, new Date(2026, 10, 3, 12)],
+    ['Svalbard, midnight sun', 78.2232, 15.6267, new Date(2026, 5, 21, 12)],
+    ['Tromsø, December', 69.6492, 18.9553, new Date(2026, 11, 21, 12)],
+    ['Oslo, midsummer', 59.9139, 10.7522, new Date(2026, 5, 21, 12)],
+    ['Antarctic station', -77.85, 166.67, new Date(2026, 5, 21, 12)],
+  ];
+  for (const [name, lat, lon, date] of cases) {
+    for (const method of ['turkey', 'muslimWorldLeague'] as const) {
+      it(`${name} (${method}): every time is a real time`, () => {
+        const t = getPrayerDates(lat, lon, date, method, 'hanafi');
+        for (const p of ORDER) expect(Number.isNaN(t[p].getTime())).toBe(false);
+        for (const p of ORDER) expect(formatClock(t[p], 'tr')).not.toContain('NaN');
+      });
+    }
+  }
+  it('formatClock never prints NaN', () => {
+    expect(formatClock(new Date(NaN), 'tr')).toBe('--:--');
+  });
+});
