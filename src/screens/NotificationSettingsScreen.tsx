@@ -112,6 +112,7 @@ export function NotificationSettingsScreen({ navigation }: Props) {
           trailing={
             <Switch
               value={settings.globalNotificationsEnabled}
+              accessibilityLabel={t('notifications.all')}
               onValueChange={(v) => updateSettings({ globalNotificationsEnabled: v })}
               trackColor={track}
             />
@@ -178,7 +179,12 @@ export function NotificationSettingsScreen({ navigation }: Props) {
               <Surface>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <AppText variant="bodyStrong">{t('notifications.enabled')}</AppText>
-                  <Switch value={enabled} onValueChange={(v) => patchPrayer(p, { enabled: v })} trackColor={track} />
+                  <Switch
+                    value={enabled}
+                    onValueChange={(v) => patchPrayer(p, { enabled: v })}
+                    trackColor={track}
+                    accessibilityLabel={`${prayer(p)}: ${t('notifications.enabled')}`}
+                  />
                 </View>
 
                 {enabled && (

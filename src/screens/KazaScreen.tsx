@@ -155,7 +155,7 @@ export function KazaScreen() {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space[3] }}>
             <AppText variant="callout">{t('kaza.includeWitr')}</AppText>
-            <Switch value={withWitr} onValueChange={setWithWitr} trackColor={{ true: colors.primary, false: colors.borderStrong }} />
+            <Switch value={withWitr} onValueChange={setWithWitr} accessibilityLabel={t('kaza.includeWitr')} trackColor={{ true: colors.primary, false: colors.borderStrong }} />
           </View>
           {estimateError && (
             <AppText variant="caption" tone="danger" style={{ marginBottom: space[2] }} accessibilityLiveRegion="polite">

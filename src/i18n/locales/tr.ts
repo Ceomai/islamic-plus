@@ -592,7 +592,7 @@ export const tr = {
     madhabHint: "Hanefî mezhebinde ikindi (asr-ı sânî) daha geç girer. Diyanet yöntemi seçiliyken ikindi, Diyanet takvimindeki gibi asr-ı evvel’e göre gösterilir.",
     locationTitle: "Konumunuz",
     locationBody: "Doğru namaz vakitleri, kıble yönü ve yakındaki camiler için konumunuza ihtiyaç var.",
-    locationPrivacy: "Konum cihazınızda kullanılır. Yalnızca yakındaki yerleri ararken haritası kullanılan servise (OpenStreetMap) gönderilir.",
+    locationPrivacy: "Konum cihazınızda kullanılır. Yalnızca yakındaki camileri ararken harita servisine (OpenStreetMap) gönderilir.",
     allowLocation: "Konumu paylaş",
     locationDenied: "İzin verilmedi. Şehir bilgisi olmadan vakitler hesaplanamaz; daha sonra Ayarlar’dan açabilirsiniz.",
     notifTitle: "Vakit bildirimleri",

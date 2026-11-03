@@ -24,6 +24,9 @@ export function TextField({ label, hint, error, style, onFocus, onBlur, ...rest 
       ) : null}
       <TextInput
         placeholderTextColor={colors.textMuted}
+        // Without this the label was only visual: screen readers announced an unnamed field
+        accessibilityLabel={label}
+        accessibilityHint={error ?? hint}
         {...rest}
         onFocus={(e) => {
           setFocused(true);

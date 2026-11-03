@@ -44,6 +44,7 @@ export function FamilyModeScreen() {
           trailing={
             <Switch
               value={settings.familyModeEnabled}
+              accessibilityLabel={t('family.enable')}
               onValueChange={(v) => updateSettings({ familyModeEnabled: v })}
               trackColor={{ true: colors.primary, false: colors.borderStrong }}
             />

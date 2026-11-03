@@ -20,6 +20,8 @@ export function Chip({ label, selected, icon, onPress }: Props) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected }}
+      // Chips are ~36pt tall; the touch area is extended to the 44pt minimum without changing the look
+      hitSlop={{ top: 4, bottom: 4 }}
       style={({ pressed }) => ({
         borderRadius: radius.pill,
         paddingHorizontal: space[4],

@@ -33,7 +33,7 @@ export const APP_THEMES: Record<ThemeId, AppTheme> = {
     id: 'emerald',
     nameKey: 'themes.emerald',
     light: { primary: '#0F5C4A', primaryPressed: '#0B4839', primarySoft: '#E3EFEA', onPrimarySoft: '#0F5C4A', hero: '#0F5C4A', ...goldLight },
-    dark: { primary: '#2E8F72', primaryPressed: '#267A61', primarySoft: '#163A30', onPrimarySoft: '#8FD6BF', hero: '#123A30', ...goldDark },
+    dark: { primary: '#237A61', primaryPressed: '#1D6853', primarySoft: '#163A30', onPrimarySoft: '#8FD6BF', hero: '#123A30', ...goldDark },
   },
   midnight: {
     id: 'midnight',
@@ -45,7 +45,7 @@ export const APP_THEMES: Record<ThemeId, AppTheme> = {
     id: 'desert',
     nameKey: 'themes.desert',
     light: { primary: '#8A4B2A', primaryPressed: '#723D21', primarySoft: '#F4E7DE', onPrimarySoft: '#7A3F21', hero: '#8A4B2A', ...goldLight },
-    dark: { primary: '#B26B43', primaryPressed: '#9A5B37', primarySoft: '#3A251A', onPrimarySoft: '#EBC2A8', hero: '#3A2316', ...goldDark },
+    dark: { primary: '#985A37', primaryPressed: '#844D2F', primarySoft: '#3A251A', onPrimarySoft: '#EBC2A8', hero: '#3A2316', ...goldDark },
   },
   ocean: {
     id: 'ocean',
@@ -55,7 +55,7 @@ export const APP_THEMES: Record<ThemeId, AppTheme> = {
       accent: '#2E9E8A', accentSoft: '#DDF2EE', onAccentSoft: '#1C6B5D',
     },
     dark: {
-      primary: '#2A87A3', primaryPressed: '#23748C', primarySoft: '#133442', onPrimarySoft: '#9DD5E4', hero: '#0F3240',
+      primary: '#22738C', primaryPressed: '#1C6278', primarySoft: '#133442', onPrimarySoft: '#9DD5E4', hero: '#0F3240',
       accent: '#5FCBB6', accentSoft: '#15362F', onAccentSoft: '#A6E5D8',
     },
   },

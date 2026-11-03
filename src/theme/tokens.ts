@@ -77,7 +77,8 @@ export const neutralLight: NeutralPalette = {
   borderStrong: '#D6CEC0',
   text: '#17231F',
   textSecondary: '#5E6B66',
-  textMuted: '#8B9590',
+  // 4.6–5.4:1 on background/surface (was 2.6–3.1)
+  textMuted: '#626C67',
   success: '#2E7D5A',
   successSoft: '#E3F1E9',
   warning: '#A86A12',
@@ -95,7 +96,8 @@ export const neutralDark: NeutralPalette = {
   borderStrong: '#34403B',
   text: '#ECF1EE',
   textSecondary: '#A4B1AB',
-  textMuted: '#75817C',
+  // 5.5–6.1:1 on dark background/surface (was 4.2–4.6)
+  textMuted: '#8A9691',
   success: '#5CC08F',
   successSoft: '#17301F',
   warning: '#E0A54A',

@@ -42,6 +42,7 @@ export function WidgetsScreen() {
             trailing={
               <Switch
                 value={prefs[row.key]}
+                accessibilityLabel={t(row.label)}
                 onValueChange={(v) => updateSettings({ widgetPrefs: { ...prefs, [row.key]: v } })}
                 trackColor={{ true: colors.primary, false: colors.borderStrong }}
               />

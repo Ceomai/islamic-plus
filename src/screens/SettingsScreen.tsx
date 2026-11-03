@@ -85,7 +85,7 @@ export function SettingsScreen({ navigation }: Props) {
           icon="moon-outline"
           title={t('settings.darkMode')}
           divider
-          trailing={<Switch value={darkMode} onValueChange={toggleDarkMode} trackColor={switchTrack} />}
+          trailing={<Switch value={darkMode} onValueChange={toggleDarkMode} trackColor={switchTrack} accessibilityLabel={t('settings.darkMode')} />}
         />
         <ListRow
           icon="color-palette-outline"
@@ -180,6 +180,7 @@ export function SettingsScreen({ navigation }: Props) {
           trailing={
             <Switch
               value={settings.offlineAudioEnabled}
+              accessibilityLabel={t('settings.offlineAudio')}
               onValueChange={(v) => updateSettings({ offlineAudioEnabled: v })}
               trackColor={switchTrack}
             />

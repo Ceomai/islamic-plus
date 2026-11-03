@@ -11,12 +11,13 @@ import { AppText, Button, Screen, Surface } from '../ui';
 
 const DIAL = 260;
 const ALIGN_TOLERANCE_DEG = 5;
+// Compass letters in the app language (Kuzey/Doğu/Güney/Batı in Turkish)
 const CARDINALS = [
-  { label: 'N', deg: 0 },
-  { label: 'E', deg: 90 },
-  { label: 'S', deg: 180 },
-  { label: 'W', deg: 270 },
-];
+  { key: 'n', tr: 'K', en: 'N', deg: 0 },
+  { key: 'e', tr: 'D', en: 'E', deg: 90 },
+  { key: 's', tr: 'G', en: 'S', deg: 180 },
+  { key: 'w', tr: 'B', en: 'W', deg: 270 },
+] as const;
 
 /** Signed shortest turn from `from` to `to`, in degrees (-180..180). Positive = turn right. */
 function turnDelta(from: number, to: number): number {
@@ -26,7 +27,7 @@ function turnDelta(from: number, to: number): number {
 export function QiblaScreen() {
   const { location, refreshLocation } = useApp();
   const { colors, space } = useTheme();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [heading, setHeading] = useState<number | null>(null);
   const [compassUnavailable, setCompassUnavailable] = useState(false);
   const wasAligned = useRef(false);
@@ -130,15 +131,15 @@ export function QiblaScreen() {
         >
           {CARDINALS.map((c) => (
             <View
-              key={c.label}
+              key={c.key}
               style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', transform: [{ rotate: `${c.deg}deg` }] }}
             >
               <AppText
                 variant="caption"
-                tone={c.label === 'N' ? 'danger' : 'secondary'}
+                tone={c.key === 'n' ? 'danger' : 'secondary'}
                 style={{ marginTop: space[2], fontWeight: '700', transform: [{ rotate: `${-c.deg - dialRotation}deg` }] }}
               >
-                {c.label}
+                {lang === 'tr' ? c.tr : c.en}
               </AppText>
             </View>
           ))}

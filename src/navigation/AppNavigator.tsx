@@ -92,7 +92,8 @@ function HomeStack() {
   const screenOpts = useStackScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOpts}>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      {/* The title names the back button ("Ana Sayfa, geri" instead of the route name "Home") */}
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false, title: t('tabs.home') }} />
       <Stack.Screen name="HomeLauncherEdit" component={HomeLauncherEditScreen} options={{ title: t('home.editLauncher') }} />
       <Stack.Screen name="Quran" component={QuranScreen} options={{ title: t('nav.quran') }} />
       <Stack.Screen name="QuranReader" component={QuranReaderScreen} options={{ title: t('nav.surah') }} />
