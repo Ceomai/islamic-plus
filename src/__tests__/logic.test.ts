@@ -139,9 +139,10 @@ describe('prayer times far north and south (Y6)', () => {
   ];
   for (const [name, lat, lon, date] of cases) {
     for (const method of ['turkey', 'muslimWorldLeague'] as const) {
-      it(`${name} (${method}): every time is a real time`, () => {
+      it(`${name} (${method}): every time is real and in the day's order`, () => {
         const t = getPrayerDates(lat, lon, date, method, 'hanafi');
         for (const p of ORDER) expect(Number.isNaN(t[p].getTime())).toBe(false);
+        for (let i = 1; i < ORDER.length; i++) expect(t[ORDER[i]].getTime()).toBeGreaterThan(t[ORDER[i - 1]].getTime());
         for (const p of ORDER) expect(formatClock(t[p], 'tr')).not.toContain('NaN');
       });
     }

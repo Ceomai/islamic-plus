@@ -3,7 +3,6 @@ import {
   Coordinates,
   HighLatitudeRule,
   Madhab as AdhanMadhab,
-  PolarCircleResolution,
   PrayerTimes as AdhanPrayerTimes,
   Rounding,
 } from 'adhan';
@@ -36,12 +35,19 @@ function calculate(latitude: number, longitude: number, date: Date, method: Calc
     params.adjustments.asr += 1;
   }
   const coordinates = new Coordinates(latitude, longitude);
-  // Far north/south the sun may not set (or rise), or twilight never ends: without these rules
-  // adhan returns Invalid Date and the app showed "NaN:NaN". Fajr/Isha use the recommended
-  // night-fraction rule; days with no sunrise or sunset borrow the nearest latitude that has them.
+  // Fajr/Isha where twilight never ends (summer at high latitudes): recommended night-fraction rule
   params.highLatitudeRule = HighLatitudeRule.recommended(coordinates);
-  params.polarCircleResolution = PolarCircleResolution.AqrabBalad;
   return new AdhanPrayerTimes(coordinates, date, params);
+}
+
+/** Latitude used when the real one has no usable times (the common "nearest latitude" rule) */
+const FALLBACK_LATITUDE = 48.5;
+
+const ORDER: PrayerName[] = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+/** Every time is a real date and they follow each other in the day's order */
+function usable(t: Record<PrayerName, Date>): boolean {
+  return ORDER.every((p, i) => !Number.isNaN(t[p].getTime()) && (i === 0 || t[p] > t[ORDER[i - 1]]));
 }
 
 const MINUTE = 60000;
@@ -72,15 +78,14 @@ export function getPrayerDates(
   calculationMethod: CalculationMethodId,
   madhab: Madhab
 ): Record<PrayerName, Date> {
-  const times = calculate(latitude, longitude, date, calculationMethod, madhab);
-  const out = {
-    fajr: times.fajr,
-    sunrise: times.sunrise,
-    dhuhr: times.dhuhr,
-    asr: times.asr,
-    maghrib: times.maghrib,
-    isha: times.isha,
+  const pick = (lat: number) => {
+    const times = calculate(lat, longitude, date, calculationMethod, madhab);
+    return { fajr: times.fajr, sunrise: times.sunrise, dhuhr: times.dhuhr, asr: times.asr, maghrib: times.maghrib, isha: times.isha };
   };
+  let out = pick(latitude);
+  // Near the poles the sun may not rise or set at all: adhan then returns Invalid Date ("NaN:NaN"
+  // on the home screen) or times out of order. Use the same longitude at 48.5° instead.
+  if (!usable(out) && Math.abs(latitude) > FALLBACK_LATITUDE) out = pick(Math.sign(latitude) * FALLBACK_LATITUDE);
   return calculationMethod === 'turkey' ? diyanetRounding(out) : out;
 }
 
