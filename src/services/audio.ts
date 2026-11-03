@@ -66,6 +66,13 @@ export async function downloadAudioForOffline(duaId: string, url: string): Promi
   if (!info.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
   const dest = `${dir}${duaId}.mp3`;
   const download = await FileSystem.downloadAsync(url, dest);
+  // downloadAsync also "succeeds" on 404/500 and saves the error page as the mp3, which then played
+  // as silence; keep only real audio
+  const saved = await FileSystem.getInfoAsync(dest);
+  if (download.status !== 200 || !saved.exists || (saved.size ?? 0) < 1024) {
+    await FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => undefined);
+    throw new Error(`audio download failed (HTTP ${download.status})`);
+  }
   const map = await getJson<Record<string, string>>(storageKeys.offlineAudio, {});
   map[duaId] = download.uri;
   await setJson(storageKeys.offlineAudio, map);
