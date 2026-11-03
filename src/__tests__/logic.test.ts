@@ -101,3 +101,28 @@ describe('tasbih statistics', () => {
     expect(s.byDay.at(-1)).toEqual({ key: today, count: 33 });
   });
 });
+
+describe('zakat amount input (Y1)', () => {
+  const { parseAmount } = require('../services/zakat') as typeof import('../services/zakat');
+  it('reads Turkish thousands separators as thousands', () => {
+    expect(parseAmount('1.500')).toBe(1500);
+    expect(parseAmount('100.000')).toBe(100000);
+    expect(parseAmount('1.250.000')).toBe(1250000);
+    expect(parseAmount('1.250,50')).toBe(1250.5);
+  });
+  it('still reads decimals and English formats', () => {
+    expect(parseAmount('80.18')).toBe(80.18);
+    expect(parseAmount('1250,5')).toBe(1250.5);
+    expect(parseAmount('1,250.50')).toBe(1250.5);
+    expect(parseAmount('1,250,000')).toBe(1250000);
+    expect(parseAmount('1,500', 'en')).toBe(1500);
+    expect(parseAmount('1.5', 'en')).toBe(1.5);
+    expect(parseAmount(' 2 500 ')).toBe(2500);
+  });
+  it('rejects negative, empty and non-numeric input', () => {
+    expect(parseAmount('-500')).toBe(0);
+    expect(parseAmount('')).toBe(0);
+    expect(parseAmount('abc')).toBe(0);
+    expect(parseAmount('1e9')).toBe(0);
+  });
+});
