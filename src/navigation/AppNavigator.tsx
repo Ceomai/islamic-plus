@@ -142,6 +142,8 @@ function MoreStack() {
       <Stack.Screen name="TasbihStats" component={TasbihStatsScreen} options={{ title: t('tasbih.statsTitle') }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: t('nav.notifications') }} />
       <Stack.Screen name="CityPicker" component={CityPickerScreen} options={{ title: t('city.title') }} />
+      {/* Settings links here: without it "Edit home screen" did nothing in the More tab */}
+      <Stack.Screen name="HomeLauncherEdit" component={HomeLauncherEditScreen} options={{ title: t('home.editLauncher') }} />
     </Stack.Navigator>
   );
 }

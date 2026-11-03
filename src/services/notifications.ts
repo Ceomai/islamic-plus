@@ -50,6 +50,16 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   return status === 'granted';
 }
 
+/** Whether the system lets the app show notifications (no prompt) */
+export async function notificationsAllowed(): Promise<boolean> {
+  if (!notificationsSupported) return true;
+  try {
+    return (await Notifications.getPermissionsAsync()).granted;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Android 12+ needs the "Alarms & reminders" permission for on-the-minute notifications; on
  * Android 14+ it starts off for new installs, and without it prayer alerts can arrive minutes late.

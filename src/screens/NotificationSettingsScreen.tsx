@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AppState, Switch, View } from 'react-native';
+import { AppState, Linking, Switch, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
@@ -8,7 +8,7 @@ import { getDayNames } from '../i18n';
 import type { RootStackParamList } from '../navigation/types';
 import { playAdhan, stopAudio } from '../services/audio';
 import { scheduleCustomReminders } from '../services/advancedReminders';
-import { exactAlarmsAllowed, requestExactAlarms, schedulePrayerNotifications } from '../services/notifications';
+import { exactAlarmsAllowed, notificationsAllowed, requestExactAlarms, requestNotificationPermissions, schedulePrayerNotifications } from '../services/notifications';
 import type { PrayerName, PrayerNotificationSettings } from '../types';
 import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
@@ -58,14 +58,31 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     exactRef.current = ok;
     setExactOk(ok);
   };
+  // Notifications switched on in the app but refused by the system: nothing would ever arrive
+  const [notifAllowed, setNotifAllowed] = useState(true);
+  const allowNotifications = async () => {
+    if (await requestNotificationPermissions()) {
+      setNotifAllowed(true);
+      if (location) void schedulePrayerNotifications(location.latitude, location.longitude, settings);
+    } else {
+      void Linking.openSettings();
+    }
+  };
+
   // Checked again on return to the app: the permission may have been changed in system settings
   useEffect(() => {
     void exactAlarmsAllowed().then((ok) => {
       exactRef.current = ok;
       setExactOk(ok);
     });
+    void notificationsAllowed().then(setNotifAllowed);
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void exactAlarmsAllowed().then(onExactChange);
+      if (state !== 'active') return;
+      void exactAlarmsAllowed().then(onExactChange);
+      void notificationsAllowed().then((ok) => {
+        setNotifAllowed(ok);
+        if (ok && location) void schedulePrayerNotifications(location.latitude, location.longitude, settings);
+      });
     });
     return () => sub.remove();
   }, [location, settings]);
@@ -109,7 +126,19 @@ export function NotificationSettingsScreen({ navigation }: Props) {
         />
       </Surface>
 
-      {settings.globalNotificationsEnabled && !exactOk && (
+      {settings.globalNotificationsEnabled && !notifAllowed && (
+        <Surface variant="soft" style={{ marginTop: space[3] }}>
+          <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
+            {t('notifications.blockedTitle')}
+          </AppText>
+          <AppText variant="callout" color={colors.onPrimarySoft} style={{ marginTop: space[1], marginBottom: space[3] }}>
+            {t('notifications.blockedBody')}
+          </AppText>
+          <Button label={t('notifications.blockedAllow')} icon="notifications-outline" onPress={allowNotifications} variant="secondary" />
+        </Surface>
+      )}
+
+      {settings.globalNotificationsEnabled && notifAllowed && !exactOk && (
         <Surface variant="soft" style={{ marginTop: space[3] }}>
           <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
             {t('notifications.exactTitle')}
