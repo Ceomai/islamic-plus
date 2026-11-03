@@ -67,6 +67,9 @@ describe('surahs and dhikr', () => {
     expect(SURAHS).toHaveLength(114);
     expect(SURAHS[35]).toMatchObject({ number: 36, tr: 'Yâsîn' });
     expect(SURAHS[113].number).toBe(114);
+    // Bundled list replaces the API list offline (O4); the ayah counts must add up to the Quran's 6236
+    expect(SURAHS.reduce((n, s) => n + s.ayahs, 0)).toBe(6236);
+    expect(SURAHS[1].ayahs).toBe(286);
   });
 
   it('runs the after-prayer tesbihat in the usual order', () => {

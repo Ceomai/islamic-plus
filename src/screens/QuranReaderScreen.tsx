@@ -98,6 +98,8 @@ export function QuranReaderScreen({ route }: Props) {
   useEffect(() => {
     return () => {
       void stopAudio();
+      // A surah that never loaded (offline, error) must not overwrite "continue reading" with ayah 1
+      if (ayahCountRef.current === 0) return;
       void updateQuranLastRead(
         settings.activeFamilyMemberId,
         surahNumber,

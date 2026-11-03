@@ -30,18 +30,36 @@ export interface ReaderAyah {
   translation?: string;
 }
 
-async function getJsonWithCache<T>(url: string, cacheKey: string): Promise<T> {
+const TIMEOUT_MS = 12000;
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = (await res.json()) as T;
-    void AsyncStorage.setItem(CACHE_PREFIX + cacheKey, JSON.stringify(json)).catch(() => undefined);
-    return json;
-  } catch (e) {
-    const cached = await AsyncStorage.getItem(CACHE_PREFIX + cacheKey).catch(() => null);
-    if (cached) return JSON.parse(cached) as T;
-    throw e;
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+/**
+ * Quran text does not change, so a surah opened once is served from the device first; on a weak
+ * connection it used to wait for the network (without a time limit) before falling back.
+ */
+async function getJsonWithCache<T>(url: string, cacheKey: string): Promise<T> {
+  const cached = await AsyncStorage.getItem(CACHE_PREFIX + cacheKey).catch(() => null);
+  if (cached) {
+    try {
+      return JSON.parse(cached) as T;
+    } catch {
+      // corrupt cache entry: fetch it again below
+    }
+  }
+  const json = await fetchJson<T>(url);
+  void AsyncStorage.setItem(CACHE_PREFIX + cacheKey, JSON.stringify(json)).catch(() => undefined);
+  return json;
 }
 
 export async function fetchSurahList(_edition = 'en'): Promise<SurahListItem[]> {
@@ -122,8 +140,7 @@ export async function fetchSurahReading(
 }
 
 export async function searchQuran(query: string, edition = 'en'): Promise<string[]> {
-  const res = await fetch(`${BASE}/search/${encodeURIComponent(query)}/all/${edition}`);
-  const json = await res.json();
+  const json = await fetchJson<{ data?: { matches?: { surah: { englishName: string }; numberInSurah: number }[] } }>(`${BASE}/search/${encodeURIComponent(query)}/all/${edition}`);
   return (json.data?.matches ?? []).slice(0, 20).map(
     (m: { surah: { englishName: string }; numberInSurah: number }) => `${m.surah.englishName} ${m.numberInSurah}`
   );

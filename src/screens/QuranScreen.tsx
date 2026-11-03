@@ -7,7 +7,8 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { fetchSurahList, type SurahListItem } from '../services/quranApi';
+import { SURAHS } from '../data/surahs';
+import type { SurahListItem } from '../services/quranApi';
 import { removeQuranBookmark, startNewKhatm } from '../services/readingProgress';
 import { AppText, Button, IconBadge, Surface } from '../ui';
 
@@ -16,7 +17,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Quran'>;
 export function QuranScreen({ navigation }: Props) {
   const { settings, quranProgress, refreshReadingProgress } = useApp();
   const { colors, radius, space, type } = useTheme();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [surahs, setSurahs] = useState<SurahListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -24,17 +25,14 @@ export function QuranScreen({ navigation }: Props) {
   const edition = settings.quranEditionId;
   const editionMeta = QURAN_EDITIONS.find((e) => e.id === edition);
 
+  // The surah list ships with the app, so it opens instantly and offline (it used to need the API)
   const load = useCallback(() => {
-    setLoading(true);
+    setSurahs(
+      SURAHS.map((s) => ({ number: s.number, name: s.ar, englishName: lang === 'tr' ? s.tr : s.en, numberOfAyahs: s.ayahs }))
+    );
     setFailed(false);
-    fetchSurahList(editionMeta?.language ?? 'en')
-      .then((list) => {
-        setSurahs(list);
-        if (list.length === 0) setFailed(true);
-      })
-      .catch(() => setFailed(true))
-      .finally(() => setLoading(false));
-  }, [editionMeta?.language]);
+    setLoading(false);
+  }, [lang]);
 
   useEffect(load, [load]);
 
