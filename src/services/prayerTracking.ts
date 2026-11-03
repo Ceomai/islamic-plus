@@ -1,7 +1,10 @@
 import { localDateKey } from '../utils/date';
 import type { PrayerCompletion, PrayerName } from '../types';
+import { trimPrayerHistory } from './prayerHistory';
 import { getJson, setJson, storageKeys } from './storage';
 import { notifyAppDataChanged } from './userDataCloud';
+
+export { mergePrayerCompletions } from './prayerHistory';
 
 function todayKey(): string {
   return localDateKey();
@@ -22,40 +25,37 @@ export async function isPrayerCompletedToday(prayer: PrayerName): Promise<boolea
   return list.some((p) => p.prayer === prayer && p.date === today);
 }
 
-export async function togglePrayerCompletion(prayer: PrayerName): Promise<boolean> {
+async function toggleNow(prayer: PrayerName): Promise<boolean> {
   const today = todayKey();
   const list = await loadPrayerCompletions();
   const existing = list.find((p) => p.prayer === prayer && p.date === today);
 
   if (existing) {
-    const next = list.filter((p) => p.id !== existing.id);
-    await savePrayerCompletions(next);
+    await savePrayerCompletions(list.filter((p) => !(p.prayer === prayer && p.date === today)));
     return false;
   }
 
   const entry: PrayerCompletion = {
-    id: `pr-${Date.now()}`,
+    // One mark per prayer and day, so the id is derived from them (Date.now() could repeat)
+    id: `pr-${today}-${prayer}`,
     prayer,
     date: today,
     completedAt: new Date().toISOString(),
   };
-  await savePrayerCompletions([entry, ...list].slice(0, 500));
+  await savePrayerCompletions(trimPrayerHistory([entry, ...list]));
   return true;
+}
+
+// Taps are applied one after another: two quick taps used to read the same list and lose one
+let queue: Promise<unknown> = Promise.resolve();
+
+export function togglePrayerCompletion(prayer: PrayerName): Promise<boolean> {
+  const run = queue.then(() => toggleNow(prayer));
+  queue = run.catch(() => undefined);
+  return run;
 }
 
 export async function getTodayCompletions(): Promise<PrayerCompletion[]> {
   const today = todayKey();
   return (await loadPrayerCompletions()).filter((p) => p.date === today);
-}
-
-export function mergePrayerCompletions(a: PrayerCompletion[], b: PrayerCompletion[]): PrayerCompletion[] {
-  const map = new Map<string, PrayerCompletion>();
-  for (const item of [...a, ...b]) {
-    const key = `${item.prayer}:${item.date}`;
-    const existing = map.get(key);
-    if (!existing || item.completedAt > existing.completedAt) {
-      map.set(key, item);
-    }
-  }
-  return [...map.values()].sort((x, y) => y.completedAt.localeCompare(x.completedAt)).slice(0, 500);
 }
