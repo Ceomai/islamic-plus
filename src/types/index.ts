@@ -205,6 +205,8 @@ export interface QuranProgress {
   completedSurahs?: number[];
   /** Completed khatms */
   khatmCount?: number;
+  /** Removed bookmarks ("surah:ayah" → when), so a sync does not bring them back */
+  removedBookmarks?: Record<string, string>;
   /** Local/cloud merge timestamp */
   updatedAt?: string;
 }
@@ -228,6 +230,8 @@ export interface HadithBookmark {
 export interface HadithProgress {
   lastRead: HadithLastRead | null;
   bookmarks: HadithBookmark[];
+  /** Removed bookmarks ("collection:index" → when), so a sync does not bring them back */
+  removedBookmarks?: Record<string, string>;
   /** Local/cloud merge timestamp */
   updatedAt?: string;
 }

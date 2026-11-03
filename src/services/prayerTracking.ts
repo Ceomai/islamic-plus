@@ -2,6 +2,7 @@ import { localDateKey } from '../utils/date';
 import type { PrayerCompletion, PrayerName } from '../types';
 import { trimPrayerHistory } from './prayerHistory';
 import { getJson, setJson, storageKeys } from './storage';
+import { prayerTombstoneKey, recordDeletion } from './tombstones';
 import { notifyAppDataChanged } from './userDataCloud';
 
 export { mergePrayerCompletions } from './prayerHistory';
@@ -31,6 +32,8 @@ async function toggleNow(prayer: PrayerName): Promise<boolean> {
   const existing = list.find((p) => p.prayer === prayer && p.date === today);
 
   if (existing) {
+    // Remembered so another device's copy of the mark does not bring it back in a sync
+    await recordDeletion('prayers', prayerTombstoneKey(existing));
     await savePrayerCompletions(list.filter((p) => !(p.prayer === prayer && p.date === today)));
     return false;
   }

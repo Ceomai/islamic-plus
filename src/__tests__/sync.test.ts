@@ -102,3 +102,46 @@ describe('marking a prayer (rapid taps)', () => {
     expect(new Set(ids).size).toBe(2);
   });
 });
+
+describe('deletions survive a sync (O1)', () => {
+  const habit = (id: string) => ({ id, title: id, targetPerWeek: 7, completedDates: [], category: 'other' as const });
+  it('a habit deleted on this device does not come back from the cloud', () => {
+    const cloud = payload({}, '2026-11-01T10:00:00.000Z', { habits: [habit('a'), habit('b')] });
+    const local = payload({}, '2026-11-03T10:00:00.000Z', {
+      habits: [habit('a')],
+      deleted: { habits: { b: '2026-11-02T10:00:00.000Z' }, family: {}, prayers: {} },
+    });
+    expect(mergeSyncPayloads(cloud, local).habits.map((h) => h.id)).toEqual(['a']);
+  });
+
+  it('an unmarked prayer stays unmarked, but marking it again later wins', () => {
+    const mark = (completedAt: string) => ({ id: 'pr-2026-11-03-fajr', prayer: 'fajr' as const, date: '2026-11-03', completedAt });
+    const unmarked = { habits: {}, family: {}, prayers: { 'fajr:2026-11-03': '2026-11-03T08:00:00.000Z' } };
+    const cloud = payload({}, '2026-11-03T07:00:00.000Z', { prayerCompletions: [mark('2026-11-03T06:00:00.000Z')] });
+    const local = payload({}, '2026-11-03T09:00:00.000Z', { deleted: unmarked });
+    expect(mergeSyncPayloads(cloud, local).prayerCompletions).toHaveLength(0);
+    const remarked = payload({}, '2026-11-03T09:30:00.000Z', { prayerCompletions: [mark('2026-11-03T09:10:00.000Z')], deleted: unmarked });
+    expect(mergeSyncPayloads(cloud, remarked).prayerCompletions).toHaveLength(1);
+  });
+
+  it('family members added on either device are kept', () => {
+    const m = (id: string) => ({ id, name: id, avatarEmoji: '🙂', role: 'child' as const, habitIds: [] });
+    const merged = mergeSyncPayloads(payload({}, 'x', { family: [m('a'), m('b')] }), payload({}, 'y', { family: [m('c')] }));
+    expect(merged.family.map((f) => f.id).sort()).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('reading progress sync (O1, O6)', () => {
+  const { mergeQuranProgress } = require('../services/readingProgressCloud') as typeof import('../services/readingProgressCloud');
+  const bm = (ayahNumber: number, createdAt: string) => ({ id: `bm-${ayahNumber}`, surahNumber: 36, surahName: 'Yâsîn', edition: 'tr', ayahNumber, label: '', createdAt });
+  it('keeps the place read last, not the copy synced last', () => {
+    const local = { lastRead: { surahNumber: 2, ayahNumber: 100, surahName: 'Bakara', edition: 'tr', updatedAt: '2026-11-03T10:00:00.000Z' }, bookmarks: [], updatedAt: '2026-11-03T10:00:00.000Z' };
+    const remote = { lastRead: { surahNumber: 2, ayahNumber: 20, surahName: 'Bakara', edition: 'tr', updatedAt: '2026-11-01T10:00:00.000Z' }, bookmarks: [], updatedAt: '2026-11-03T12:00:00.000Z' };
+    expect(mergeQuranProgress(local as never, remote as never).lastRead?.ayahNumber).toBe(100);
+  });
+  it('a removed bookmark does not come back', () => {
+    const local = { lastRead: null, bookmarks: [], removedBookmarks: { '36:5': '2026-11-03T10:00:00.000Z' } };
+    const remote = { lastRead: null, bookmarks: [bm(5, '2026-11-01T10:00:00.000Z'), bm(9, '2026-11-01T10:00:00.000Z')] };
+    expect(mergeQuranProgress(local as never, remote as never).bookmarks.map((b) => b.ayahNumber)).toEqual([9]);
+  });
+});

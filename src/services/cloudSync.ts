@@ -12,6 +12,7 @@ import type {
 import type { StoredLocation } from './location';
 import { mergePrayerCompletions } from './prayerHistory';
 import { getJson, setJson, storageKeys } from './storage';
+import { loadTombstones, mergeTombstones, prayerTombstoneKey, saveTombstones, type Tombstones } from './tombstones';
 // Type only: importing kaza.ts here would close the cloudSync ↔ userDataCloud import cycle
 import type { KazaData } from './kaza';
 
@@ -32,6 +33,8 @@ export interface SyncPayload {
   locationPref: LocationPref | null;
   /** Missed prayers still owed; optional so older payloads stay valid */
   kaza?: KazaData;
+  /** Deleted items, so a merge does not bring them back; optional for older payloads */
+  deleted?: Tombstones;
 }
 
 export async function buildSyncPayload(
@@ -42,13 +45,14 @@ export async function buildSyncPayload(
   darkMode: boolean,
   location: StoredLocation | null
 ): Promise<SyncPayload> {
-  const [tasbih, duaProgress, prayerCompletions, educationProgress, zakatHistory, kaza] = await Promise.all([
+  const [tasbih, duaProgress, prayerCompletions, educationProgress, zakatHistory, kaza, deleted] = await Promise.all([
     getJson<TasbihData>(storageKeys.tasbih, { count: 0, total: 0, sessions: [] }),
     getJson<Record<string, number>>(storageKeys.duaProgress, {}),
     getJson<PrayerCompletion[]>(storageKeys.prayerCompletions, []),
     getJson<EducationProgressEntry[]>(storageKeys.educationProgress, []),
     getJson<ZakatCalculationRecord[]>(storageKeys.zakatHistory, []),
     getJson<KazaData | undefined>(storageKeys.kaza, undefined),
+    loadTombstones(),
   ]);
 
   const locationPref: LocationPref | null = location
@@ -77,6 +81,7 @@ export async function buildSyncPayload(
     zakatHistory,
     locationPref,
     kaza,
+    deleted,
   };
 }
 
@@ -92,6 +97,7 @@ export async function importSyncPayloadToStorage(payload: SyncPayload): Promise<
     setJson(storageKeys.educationProgress, payload.educationProgress),
     setJson(storageKeys.zakatHistory, payload.zakatHistory),
     ...(payload.kaza ? [setJson(storageKeys.kaza, payload.kaza)] : []),
+    ...(payload.deleted ? [saveTombstones(payload.deleted)] : []),
   ]);
 
   if (payload.locationPref) {
@@ -158,6 +164,12 @@ export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): Sync
         ? local.settings.onboardingDone // unstamped copies: the one that went through setup is the real one
         : local.exportedAt >= remote.exportedAt;
 
+  const deleted = mergeTombstones(remote.deleted, local.deleted);
+  const prayerAlive = (p: PrayerCompletion) => {
+    const removedAt = deleted.prayers[prayerTombstoneKey(p)];
+    return !removedAt || p.completedAt > removedAt;
+  };
+
   return {
     version: 2,
     exportedAt: mergedAt,
@@ -166,17 +178,25 @@ export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): Sync
     settings: useLocalSettings
       ? { ...remote.settings, ...local.settings, cloudSync: local.settings.cloudSync }
       : { ...local.settings, ...remote.settings, cloudSync: local.settings.cloudSync },
-    habits: mergeHabits(remote.habits, local.habits),
-    family: local.family.length >= remote.family.length ? local.family : remote.family,
+    habits: mergeHabits(remote.habits, local.habits).filter((h) => !deleted.habits[h.id]),
+    family: mergeFamily(remote.family, local.family).filter((m) => !deleted.family[m.id]),
     stats: mergeStats(remote.stats, local.stats),
     tasbih: mergeTasbih(remote.tasbih, local.tasbih),
     duaProgress: mergeDuaProgress(remote.duaProgress, local.duaProgress),
-    prayerCompletions: mergePrayerCompletions(remote.prayerCompletions, local.prayerCompletions),
+    prayerCompletions: mergePrayerCompletions(remote.prayerCompletions, local.prayerCompletions).filter(prayerAlive),
     educationProgress: mergeEducationProgress(remote.educationProgress, local.educationProgress),
     zakatHistory: mergeZakatHistory(remote.zakatHistory, local.zakatHistory),
     locationPref: pickNewerLocation(remote.locationPref, local.locationPref),
     kaza: mergeKaza(remote.kaza, local.kaza),
+    deleted,
   };
+}
+
+/** Union by id (the larger list used to win, dropping a member added on the other device) */
+function mergeFamily(remote: FamilyMember[], local: FamilyMember[]): FamilyMember[] {
+  const map = new Map<string, FamilyMember>();
+  for (const m of [...remote, ...local]) map.set(m.id, m);
+  return [...map.values()];
 }
 
 function mergeHabits(remote: SpiritualHabit[], local: SpiritualHabit[]): SpiritualHabit[] {

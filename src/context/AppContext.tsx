@@ -11,6 +11,7 @@ import { buildSyncPayload, importSyncPayloadToStorage, type SyncPayload } from '
 import { isCloudUserActive } from '../services/cloudUser';
 import { getCachedLocation, getCurrentLocation, type StoredLocation } from '../services/location';
 import type { City } from '../data/cities';
+import { recordDeletion } from '../services/tombstones';
 import { getTodayCompletions, loadPrayerCompletions, togglePrayerCompletion } from '../services/prayerTracking';
 import {
   notifyAppDataChanged,
@@ -367,6 +368,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [refreshStats]);
 
   const removeHabit = useCallback(async (id: string) => {
+    await recordDeletion('habits', id);
     setHabits((prev) => {
       const next = prev.filter((h) => h.id !== id);
       void setJson(storageKeys.habits, next);
@@ -390,6 +392,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const removeFamilyMember = useCallback(async (id: string) => {
+    await recordDeletion('family', id);
     setFamily((prev) => {
       const next = prev.filter((m) => m.id !== id);
       void setJson(storageKeys.family, next);

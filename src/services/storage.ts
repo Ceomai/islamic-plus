@@ -19,6 +19,8 @@ const KEYS = {
   zakatHistory: '@islamic/zakatHistory',
   deviceLanguage: '@islamic/deviceLanguage',
   kaza: '@islamic/kaza',
+  /** Deleted habits, family members and prayer marks (see tombstones.ts) */
+  deleted: '@islamic/deleted',
 };
 
 /** Device-wide keys — everything else belongs to the signed-in account. */

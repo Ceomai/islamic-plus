@@ -11,15 +11,29 @@ import {
 const SYNC_DEBOUNCE_MS = 2500;
 const syncTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+/**
+ * When the user last read: the lastRead stamp. The progress object's own updatedAt is set on every
+ * merge, so comparing it made "last synced" win over "last read".
+ */
 function progressTimestamp(progress: { lastRead?: { updatedAt: string } | null; updatedAt?: string }): string {
-  return progress.updatedAt ?? progress.lastRead?.updatedAt ?? '1970-01-01T00:00:00.000Z';
+  return progress.lastRead?.updatedAt ?? '1970-01-01T00:00:00.000Z';
+}
+
+/** Union of removal stamps; a bookmark created after its removal is kept */
+function mergeRemoved(a: Record<string, string> = {}, b: Record<string, string> = {}): Record<string, string> {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) if (!out[k] || v > out[k]) out[k] = v;
+  return out;
 }
 
 function mergeQuranProgress(local: QuranProgress, remote: QuranProgress): QuranProgress {
+  const removed = mergeRemoved(remote.removedBookmarks, local.removedBookmarks);
   const useLocalLast = progressTimestamp(local) >= progressTimestamp(remote);
   const bookmarkMap = new Map<string, (typeof local.bookmarks)[0]>();
 
   for (const b of [...remote.bookmarks, ...local.bookmarks]) {
+    const removedAt = removed[`${b.surahNumber}:${b.ayahNumber}`];
+    if (removedAt && b.createdAt <= removedAt) continue;
     const key = `${b.surahNumber}:${b.ayahNumber}:${b.edition}`;
     const existing = bookmarkMap.get(key);
     if (!existing || b.createdAt > existing.createdAt) {
@@ -35,17 +49,20 @@ function mergeQuranProgress(local: QuranProgress, remote: QuranProgress): QuranP
     bookmarks: [...bookmarkMap.values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 50),
+    removedBookmarks: removed,
     updatedAt: new Date().toISOString(),
   };
   return merged;
 }
 
 function mergeHadithProgress(local: HadithProgress, remote: HadithProgress): HadithProgress {
+  const removed = mergeRemoved(remote.removedBookmarks, local.removedBookmarks);
   const useLocalLast = progressTimestamp(local) >= progressTimestamp(remote);
   const bookmarkMap = new Map<string, (typeof local.bookmarks)[0]>();
 
   for (const b of [...remote.bookmarks, ...local.bookmarks]) {
     const key = `${b.collectionId}:${b.itemIndex}`;
+    if (removed[key] && b.createdAt <= removed[key]) continue;
     const existing = bookmarkMap.get(key);
     if (!existing || b.createdAt > existing.createdAt) {
       bookmarkMap.set(key, b);
@@ -57,6 +74,7 @@ function mergeHadithProgress(local: HadithProgress, remote: HadithProgress): Had
     bookmarks: [...bookmarkMap.values()]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 50),
+    removedBookmarks: removed,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -171,3 +189,5 @@ export async function flushReadingProgressCloudSync(memberId: string | null): Pr
   }
   await pushReadingProgressNow(memberId);
 }
+
+export { mergeHadithProgress, mergeQuranProgress };

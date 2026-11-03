@@ -115,6 +115,7 @@ export async function removeQuranBookmark(memberId: string | null, surahNumber: 
   const next: QuranProgress = {
     ...current,
     bookmarks: current.bookmarks.filter((b) => b.surahNumber !== surahNumber || b.ayahNumber !== ayahNumber),
+    removedBookmarks: { ...current.removedBookmarks, [`${surahNumber}:${ayahNumber}`]: new Date().toISOString() },
   };
   await persistQuran(memberId, next);
   return next;
@@ -182,6 +183,7 @@ export async function removeHadithBookmark(memberId: string | null, collectionId
   const next: HadithProgress = {
     ...current,
     bookmarks: current.bookmarks.filter((b) => b.collectionId !== collectionId || b.itemIndex !== itemIndex),
+    removedBookmarks: { ...current.removedBookmarks, [`${collectionId}:${itemIndex}`]: new Date().toISOString() },
   };
   await persistHadith(memberId, next);
   return next;
