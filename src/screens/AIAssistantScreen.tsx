@@ -15,6 +15,7 @@ import { formatClock, getNextPrayer } from '../services/prayerTimes';
 import type { AssistantAction, AssistantTarget } from '../types';
 import { AppText, Chip } from '../ui';
 import { localDateKey } from '../utils/date';
+import { confirmDestructive } from '../utils/confirm';
 
 const SUGGESTIONS: Record<'tr' | 'en', string[]> = {
   tr: ['Yasin suresini aç', 'Yolculuk duasını açıkla', 'Sıradaki namaz ne zaman?', 'Orucu bozan şeyler nedir?', 'Kıbleyi göster', 'دعاء قبل النوم'],
@@ -35,6 +36,18 @@ export function AIAssistantScreen() {
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const pendingNav = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against a double tap sending the same question twice (busy is only set later)
+  const sending = useRef(false);
+
+  // Leaving the screen cancels a pending jump, so the user is not pulled to a page from elsewhere
+  useEffect(
+    () =>
+      navigation.addListener('blur', () => {
+        if (pendingNav.current) clearTimeout(pendingNav.current);
+        pendingNav.current = null;
+      }),
+    [navigation]
+  );
 
   useEffect(() => {
     if (aiMessages.length === 0) void sendAIMessage('', getAIWelcome(settings.appLanguage));
@@ -61,7 +74,16 @@ export function AIAssistantScreen() {
 
   const send = async (raw: string) => {
     const text = raw.trim();
-    if (!text || busy) return;
+    if (!text || busy || sending.current) return;
+    sending.current = true;
+    try {
+      await sendNow(text);
+    } finally {
+      sending.current = false;
+    }
+  };
+
+  const sendNow = async (text: string) => {
     setInput('');
     const next = location ? getNextPrayer(location.latitude, location.longitude, settings.calculationMethod, settings.madhab) : null;
     const nextPrayer = next ? { name: next.name, time: formatClock(next.time, lang) } : null;
@@ -99,7 +121,12 @@ export function AIAssistantScreen() {
     scrollDown();
     // Let the reply be read for a moment, then open the page; the chat stays when coming back
     const target = reply.autoNavigate;
-    if (target) pendingNav.current = setTimeout(() => open(target), AUTO_NAVIGATE_DELAY);
+    if (target && navigation.isFocused()) {
+      pendingNav.current = setTimeout(() => {
+        pendingNav.current = null;
+        if (navigation.isFocused()) open(target);
+      }, AUTO_NAVIGATE_DELAY);
+    }
   };
 
   if (!canAccess('ai_assistant')) {
@@ -208,7 +235,12 @@ export function AIAssistantScreen() {
           backgroundColor: colors.surface,
         }}
       >
-        <Pressable onPress={clearAIChat} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('ai.clear')} style={{ padding: space[2] }}>
+        <Pressable
+          onPress={async () => {
+            const ok = await confirmDestructive({ title: t('ai.clearTitle'), message: t('ai.clearBody'), confirm: t('ai.clear'), cancel: t('account.cancel') });
+            if (ok) await clearAIChat();
+          }}
+          hitSlop={8} accessibilityRole="button" accessibilityLabel={t('ai.clear')} style={{ padding: space[2] }}>
           <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
         </Pressable>
         <TextInput
@@ -217,6 +249,7 @@ export function AIAssistantScreen() {
           placeholder={t('ai.placeholder')}
           placeholderTextColor={colors.textMuted}
           multiline
+          maxLength={500}
           blurOnSubmit
           onSubmitEditing={() => send(input)}
           returnKeyType="send"

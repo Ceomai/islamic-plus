@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { confirmDestructive } from '../utils/confirm';
 import { getDayNames } from '../i18n';
 import { normalizeReminderTime } from '../services/advancedReminders';
 import type { CustomReminder } from '../types';
@@ -117,7 +118,15 @@ export function AdvancedRemindersScreen() {
                 {r.time} · {t(`reminders.types.${r.type}`)} · {daysLabel(r)}
               </AppText>
             </View>
-            <Pressable onPress={() => removeCustomReminder(r.id)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('reminders.delete')}>
+            <Pressable
+              onPress={async () => {
+                const ok = await confirmDestructive({ title: t('reminders.deleteTitle'), message: r.title, confirm: t('reminders.delete'), cancel: t('account.cancel') });
+                if (ok) await removeCustomReminder(r.id);
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('reminders.delete')}: ${r.title}`}
+            >
               <Ionicons name="trash-outline" size={18} color={colors.error} />
             </Pressable>
           </Surface>

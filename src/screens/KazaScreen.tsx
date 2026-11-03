@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, Switch, View } from 'react-native';
+import { Pressable, Switch, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { confirmDestructive } from '../utils/confirm';
 import { getPrayerLabel } from '../i18n';
 import { KAZA_PRAYERS, KAZA_MAX_DAYS, KAZA_MAX_YEARS, addKazaEstimate, changeKaza, kazaRemaining, loadKaza, resetKaza, type KazaData, type KazaPrayer } from '../services/kaza';
 import { AppText, Button, Screen, SectionHeader, Surface, TextField } from '../ui';
@@ -52,16 +53,9 @@ export function KazaScreen() {
     setShowEstimate(false);
   };
 
-  const confirmReset = () => {
-    const run = async () => setData(await resetKaza());
-    if (Platform.OS === 'web') {
-      void run();
-      return;
-    }
-    Alert.alert(t('kaza.resetTitle'), t('kaza.resetBody'), [
-      { text: t('account.cancel'), style: 'cancel' },
-      { text: t('kaza.reset'), style: 'destructive', onPress: () => void run() },
-    ]);
+  const confirmReset = async () => {
+    const ok = await confirmDestructive({ title: t('kaza.resetTitle'), message: t('kaza.resetBody'), confirm: t('kaza.reset'), cancel: t('account.cancel') });
+    if (ok) setData(await resetKaza());
   };
 
   const remaining = kazaRemaining(data);

@@ -230,6 +230,8 @@ export const tr = {
     },
   },
   ai: {
+    clearTitle: 'Sohbet silinsin mi?',
+    clearBody: 'Asistanla yaptığınız tüm konuşma bu cihazdan silinir.',
     disclaimer: 'Asistan cihaz üzerinde çalışır; sizi ilgili sayfaya götürür ve 5 dilde anlar. Kişisel fetva değildir, hüküm için ehil bir alime danışın.',
     placeholder: 'Sure, dua, konu ya da sayfa isteyin…',
     clear: 'Sohbeti temizle',
@@ -308,6 +310,7 @@ export const tr = {
     rose: 'Gül Şafağı',
   },
   reminders: {
+    deleteTitle: 'Hatırlatıcı silinsin mi?',
     intro: 'Zikir, dua, Kur\'an okuma veya herhangi bir manevi hedef için haftalık hatırlatıcı kurun.',
     typeLabel: 'Tür',
     titleLabel: 'Başlık',

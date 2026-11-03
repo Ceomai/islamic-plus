@@ -230,6 +230,8 @@ export const en = {
     },
   },
   ai: {
+    clearTitle: 'Clear the chat?',
+    clearBody: 'Your whole conversation with the assistant is removed from this device.',
     disclaimer: 'The assistant runs on your device, takes you to the right page and understands 5 languages. It is not a personal fatwa; consult a qualified scholar for rulings.',
     placeholder: 'Ask for a surah, dua, topic or page…',
     clear: 'Clear chat',
@@ -308,6 +310,7 @@ export const en = {
     rose: 'Rose Dawn',
   },
   reminders: {
+    deleteTitle: 'Delete this reminder?',
     intro: 'Set weekly reminders for dhikr, dua, Quran reading or any spiritual goal.',
     typeLabel: 'Type',
     titleLabel: 'Title',

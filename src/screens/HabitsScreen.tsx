@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { confirmDestructive } from '../utils/confirm';
 import type { SpiritualHabit } from '../types';
 import { AppText, Button, Chip, Screen, SectionHeader, Surface, TextField } from '../ui';
 import { lastDayKeys, localDateKey } from '../utils/date';
@@ -38,11 +39,15 @@ export function HabitsScreen() {
     setTitle('');
   };
 
-  const confirmRemove = (h: SpiritualHabit) =>
-    Alert.alert(t('habits.deleteTitle'), t('habits.deleteBody', { name: h.title }), [
-      { text: t('account.cancel'), style: 'cancel' },
-      { text: t('habits.delete'), style: 'destructive', onPress: () => void removeHabit(h.id) },
-    ]);
+  const confirmRemove = async (h: SpiritualHabit) => {
+    const ok = await confirmDestructive({
+      title: t('habits.deleteTitle'),
+      message: t('habits.deleteBody', { name: h.title }),
+      confirm: t('habits.delete'),
+      cancel: t('account.cancel'),
+    });
+    if (ok) await removeHabit(h.id);
+  };
 
   return (
     <Screen>
@@ -118,7 +123,7 @@ export function HabitsScreen() {
                     {t(`habits.cat.${h.category}`)} · {weekDone}/{h.targetPerWeek} {t('habits.thisWeek')}
                   </AppText>
                 </View>
-                <Pressable onPress={() => confirmRemove(h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('habits.delete')}>
+                <Pressable onPress={() => confirmRemove(h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${t('habits.delete')}: ${h.title}`}>
                   <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
                 </Pressable>
               </View>
