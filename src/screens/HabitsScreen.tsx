@@ -123,6 +123,7 @@ export function HabitsScreen() {
                       onPress={() => toggleHabitToday(h.id)}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: doneToday }}
+                      aria-checked={doneToday}
                       accessibilityLabel={h.title}
                       hitSlop={8}
                       style={{

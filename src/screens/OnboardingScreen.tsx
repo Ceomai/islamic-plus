@@ -167,7 +167,7 @@ export function OnboardingScreen() {
             </Surface>
             <Button label={t('onboarding.allowLocation')} icon="navigate" onPress={askLocation} loading={busy} style={{ marginTop: space[5] }} />
             {permissionNote(locationState, 'onboarding.locationDenied')}
-            {location?.city && locationState === 'granted' && (
+            {location?.city && (locationState === 'granted' || location.cityId) && (
               <AppText variant="callout" tone="brand" style={{ marginTop: space[2] }}>
                 {location.city}
               </AppText>
@@ -189,7 +189,8 @@ export function OnboardingScreen() {
                     key={c.id}
                     onPress={async () => {
                       await setManualLocation(c);
-                      setLocationState('granted');
+                      // No permission was given; the chosen city is shown instead of "permission granted"
+                      setLocationState('unknown');
                       setShowCities(false);
                       setCityQuery('');
                     }}

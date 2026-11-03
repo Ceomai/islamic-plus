@@ -167,6 +167,7 @@ export function HomeScreen({ navigation }: Props) {
                   onPress={() => togglePrayerComplete(p)}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: done }}
+                  aria-checked={done}
                   accessibilityLabel={`${prayer(p)} ${formatClock(prayerDates[p], lang)}`}
                   style={({ pressed }) => [
                     styles.slot,

@@ -28,6 +28,7 @@ export function ThemesScreen() {
             onPress={() => setThemeId(id)}
             accessibilityRole="radio"
             accessibilityState={{ checked: selected }}
+            aria-checked={selected}
             accessibilityLabel={t(APP_THEMES[id].nameKey)}
             style={({ pressed }) => ({
               flexDirection: 'row',
