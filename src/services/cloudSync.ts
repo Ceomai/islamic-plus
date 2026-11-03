@@ -10,6 +10,7 @@ import type {
   ZakatCalculationRecord,
 } from '../types';
 import type { StoredLocation } from './location';
+import { mergePrayerCompletions } from './prayerHistory';
 import { getJson, setJson, storageKeys } from './storage';
 // Type only: importing kaza.ts here would close the cloudSync ↔ userDataCloud import cycle
 import type { KazaData } from './kaza';
@@ -146,15 +147,22 @@ function normalizePayload(raw: SyncPayload | Record<string, unknown>): SyncPaylo
 
 export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): SyncPayload {
   const mergedAt = new Date().toISOString();
-  const useLocalSettings = (local.settings as UserSettings & { updatedAt?: string }).updatedAt
-    ? local.exportedAt >= remote.exportedAt
-    : local.exportedAt >= remote.exportedAt;
+  // Settings carry the time of the last user change. exportedAt is always "now" on this device, so
+  // comparing it let a fresh install's defaults overwrite the account's settings in the cloud.
+  const localStamp = local.settings.updatedAt ?? '';
+  const remoteStamp = remote.settings.updatedAt ?? '';
+  const useLocalSettings =
+    localStamp !== remoteStamp
+      ? localStamp > remoteStamp
+      : local.settings.onboardingDone !== remote.settings.onboardingDone
+        ? local.settings.onboardingDone // unstamped copies: the one that went through setup is the real one
+        : local.exportedAt >= remote.exportedAt;
 
   return {
     version: 2,
     exportedAt: mergedAt,
     profileScope: local.profileScope,
-    darkMode: local.exportedAt >= remote.exportedAt ? local.darkMode : remote.darkMode,
+    darkMode: useLocalSettings ? local.darkMode : remote.darkMode,
     settings: useLocalSettings
       ? { ...remote.settings, ...local.settings, cloudSync: local.settings.cloudSync }
       : { ...local.settings, ...remote.settings, cloudSync: local.settings.cloudSync },
@@ -243,16 +251,6 @@ function mergeDuaProgress(a: Record<string, number>, b: Record<string, number>):
     out[k] = Math.max(a[k] ?? 0, b[k] ?? 0);
   });
   return out;
-}
-
-function mergePrayerCompletions(a: PrayerCompletion[], b: PrayerCompletion[]): PrayerCompletion[] {
-  const map = new Map<string, PrayerCompletion>();
-  for (const item of [...a, ...b]) {
-    const key = `${item.prayer}:${item.date}`;
-    const existing = map.get(key);
-    if (!existing || item.completedAt > existing.completedAt) map.set(key, item);
-  }
-  return [...map.values()].slice(0, 500);
 }
 
 function mergeEducationProgress(a: EducationProgressEntry[], b: EducationProgressEntry[]): EducationProgressEntry[] {

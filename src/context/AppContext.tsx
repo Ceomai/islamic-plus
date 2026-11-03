@@ -291,20 +291,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [location, settings, refreshTodayPrayers]);
 
   const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...patch };
-      void setJson(storageKeys.settings, next);
-      if (patch.appLanguage) void setJson(storageKeys.deviceLanguage, patch.appLanguage);
-      if (location) {
-        void schedulePrayerNotifications(location.latitude, location.longitude, next);
-      }
-      if (patch.customReminders || next.customReminders) {
-        void scheduleCustomReminders(next.customReminders, next.appLanguage);
-      }
-      notifyAppDataChanged();
-      return next;
-    });
-  }, [location]);
+    // Sync bookkeeping is not a user change, so it must not make this device's settings "newer"
+    const userChange = Object.keys(patch).some((k) => k !== 'cloudSync');
+    const next = { ...stateRef.current.settings, ...patch, ...(userChange ? { updatedAt: new Date().toISOString() } : {}) };
+    stateRef.current.settings = next;
+    setSettings(next);
+    await setJson(storageKeys.settings, next);
+    if (patch.appLanguage) void setJson(storageKeys.deviceLanguage, patch.appLanguage);
+    // Prayer notifications are rescheduled by the location/settings effect; only reminders here
+    if (patch.customReminders || patch.appLanguage) {
+      void scheduleCustomReminders(next.customReminders, next.appLanguage);
+    }
+    notifyAppDataChanged();
+  }, []);
 
   const updateHomeLauncher = useCallback(
     async (order: HomeFeatureId[]) => {
@@ -480,20 +479,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addCustomReminder = useCallback(
     async (reminder: Omit<CustomReminder, 'id'>) => {
       const newR: CustomReminder = { ...reminder, id: Date.now().toString() };
-      const next = [...settings.customReminders, newR];
-      await updateSettings({ customReminders: next });
-      await scheduleCustomReminders(next, settings.appLanguage);
+      await updateSettings({ customReminders: [...stateRef.current.settings.customReminders, newR] });
     },
-    [settings.customReminders, updateSettings]
+    [updateSettings]
   );
 
   const removeCustomReminder = useCallback(
     async (id: string) => {
-      const next = settings.customReminders.filter((r) => r.id !== id);
-      await updateSettings({ customReminders: next });
-      await scheduleCustomReminders(next, settings.appLanguage);
+      await updateSettings({ customReminders: stateRef.current.settings.customReminders.filter((r) => r.id !== id) });
     },
-    [settings.customReminders, updateSettings]
+    [updateSettings]
   );
 
   const markDuaRead = useCallback(async (duaId: string) => {

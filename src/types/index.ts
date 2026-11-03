@@ -146,6 +146,8 @@ export interface UserSettings {
   darkMode: boolean;
   /** First-run introduction finished (language, prayer settings, permissions) */
   onboardingDone: boolean;
+  /** When the user last changed a setting; decides which device's settings win in a sync */
+  updatedAt?: string;
 }
 
 export type HomeFeatureId =
