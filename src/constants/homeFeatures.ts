@@ -49,6 +49,8 @@ export const DEFAULT_HOME_LAUNCHER_ORDER: HomeFeatureId[] = [
   'qibla',
   'tasbih',
   'module_widget',
+  'duties',
+  'places_mosque',
   'ai_assistant',
   'statistics',
   'calendar',

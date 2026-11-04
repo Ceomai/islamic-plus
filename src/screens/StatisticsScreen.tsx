@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import { statsSummary } from '../services/statistics';
+import { loadPrayerCompletions } from '../services/prayerTracking';
+import { countPrayersInDays, statsSummary } from '../services/statistics';
 import { AppText, ListRow, Screen, SectionHeader, Surface } from '../ui';
 import { lastDayKeys, localDateKey } from '../utils/date';
 
@@ -14,13 +15,20 @@ const CHART_HEIGHT = 120;
 type Props = NativeStackScreenProps<RootStackParamList, 'Statistics'>;
 
 export function StatisticsScreen({ navigation }: Props) {
-  const { stats, habitScore, refreshStats } = useApp();
+  const { stats, habitScore, refreshStats, todayPrayers } = useApp();
   const { colors, radius, space } = useTheme();
   const { t, lang } = useTranslation();
+
+  const [weekPrayers, setWeekPrayers] = useState(0);
 
   useEffect(() => {
     refreshStats();
   }, [refreshStats]);
+
+  // Recounted when today's marks change
+  useEffect(() => {
+    void loadPrayerCompletions().then((list) => setWeekPrayers(countPrayersInDays(list, 7)));
+  }, [todayPrayers]);
 
   const summary = statsSummary(stats, habitScore);
   const days = lastDayKeys(7);
@@ -28,7 +36,7 @@ export function StatisticsScreen({ navigation }: Props) {
   const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
   const tiles = [
-    { label: t('stats.streak'), value: String(stats.prayerStreakDays), hint: t('stats.streakHint') },
+    { label: t('stats.streak'), value: `${weekPrayers}/35`, hint: t('stats.streakHint') },
     { label: t('stats.habits'), value: `${summary.habitScore}%`, hint: t('stats.habitsHint') },
     { label: t('stats.weekly'), value: String(summary.weeklyAvg), hint: t('stats.weeklyHint') },
   ];

@@ -9,6 +9,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { flushPendingErrors, installGlobalErrorHandler } from './src/services/errorLog';
+import { definePrayerActionTask } from './src/services/prayerAction';
 import { defineWidgetTask } from './src/services/widgetBackground';
 
 function Root() {
@@ -60,6 +61,7 @@ installGlobalErrorHandler();
 void flushPendingErrors().catch(() => undefined);
 // Background tasks must be defined when the JS bundle loads, before any screen renders
 defineWidgetTask();
+definePrayerActionTask();
 
 export default function App() {
   return (

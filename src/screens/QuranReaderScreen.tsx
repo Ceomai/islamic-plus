@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, View, type ListViewToken } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QURAN_AUDIO_BASE, QURAN_EDITIONS } from '../constants/defaults';
@@ -30,8 +30,13 @@ const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => ARABIC_DIG
 /** A list row: one ayah, or a block of ayahs in the continuous mushaf view */
 type Row = { key: string; ayahs: ReaderAyah[] };
 
-export function QuranReaderScreen({ route }: Props) {
+export function QuranReaderScreen({ navigation, route }: Props) {
   const { surahNumber, edition: routeEdition, surahName, startAyah } = route.params;
+
+  // The stack's static title only said "Surah"
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: surahName ? `${surahNumber}. ${surahName}` : String(surahNumber) });
+  }, [navigation, surahNumber, surahName]);
   const { settings, updateSettings, quranProgress, refreshReadingProgress, trackActivity } = useApp();
   const { colors, radius, space, type } = useTheme();
   const { t } = useTranslation();

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -25,6 +26,7 @@ type Mode = 'tesbihat' | 33 | 99 | 100;
 const MODES: Mode[] = ['tesbihat', 33, 99, 100];
 const GOALS = [0, 100, 300, 500, 1000];
 const COUNTER_SIZE = 220;
+const KEEP_AWAKE_TAG = 'tasbih';
 
 export function TasbihScreen({ navigation }: Props) {
   const { trackActivity } = useApp();
@@ -44,6 +46,16 @@ export function TasbihScreen({ navigation }: Props) {
   const target = tesbihat ? TESBIHAT_COUNT : mode;
   const currentId = tesbihat ? TESBIHAT_SEQUENCE[step] : dhikrId;
   const dhikr = getDhikr(currentId) ?? DHIKR[0];
+
+  // Long dhikr sessions used to let the screen go dark mid-count
+  useEffect(() => {
+    void activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
+    return () => {
+      void Promise.resolve()
+        .then(() => deactivateKeepAwake(KEEP_AWAKE_TAG))
+        .catch(() => undefined);
+    };
+  }, []);
 
   useEffect(() => {
     void loadTasbihData().then((d) => {

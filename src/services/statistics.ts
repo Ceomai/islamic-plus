@@ -82,6 +82,12 @@ export function computePrayerStreak(completions: PrayerCompletion[], today: Date
   return streak;
 }
 
+/** Prayers marked over the last `days` days including today (one per prayer and day). */
+export function countPrayersInDays(completions: PrayerCompletion[], days: number, today: Date = new Date()): number {
+  const window = new Set(lastDayKeys(days, today));
+  return new Set(completions.filter((c) => window.has(c.date)).map((c) => `${c.date}|${c.prayer}`)).size;
+}
+
 export async function updatePrayerStreak(completions: PrayerCompletion[]): Promise<ActivityStats> {
   const stats = await loadStats();
   const next = { ...stats, prayerStreakDays: computePrayerStreak(completions) };

@@ -1,4 +1,5 @@
 import { localDateKey } from '../utils/date';
+import { createSerialQueue } from '../utils/serial';
 import type { PrayerCompletion, PrayerName } from '../types';
 import { trimPrayerHistory } from './prayerHistory';
 import { getJson, setJson, storageKeys } from './storage';
@@ -49,13 +50,24 @@ async function toggleNow(prayer: PrayerName): Promise<boolean> {
   return true;
 }
 
+/** Adds the mark if it is not there yet (the notification's "Prayed" button never un-marks). */
+async function markNow(prayer: PrayerName, date: string): Promise<boolean> {
+  const list = await loadPrayerCompletions();
+  if (list.some((p) => p.prayer === prayer && p.date === date)) return false;
+  const entry: PrayerCompletion = { id: `pr-${date}-${prayer}`, prayer, date, completedAt: new Date().toISOString() };
+  await savePrayerCompletions(trimPrayerHistory([entry, ...list]));
+  return true;
+}
+
 // Taps are applied one after another: two quick taps used to read the same list and lose one
-let queue: Promise<unknown> = Promise.resolve();
+const serial = createSerialQueue();
 
 export function togglePrayerCompletion(prayer: PrayerName): Promise<boolean> {
-  const run = queue.then(() => toggleNow(prayer));
-  queue = run.catch(() => undefined);
-  return run;
+  return serial(() => toggleNow(prayer));
+}
+
+export function markPrayerCompleted(prayer: PrayerName, date: string): Promise<boolean> {
+  return serial(() => markNow(prayer, date));
 }
 
 export async function getTodayCompletions(): Promise<PrayerCompletion[]> {

@@ -1,3 +1,5 @@
+import type { CalculationMethodId } from '../types';
+
 /**
  * Cities for choosing a location by hand (no GPS, permission refused, or a place other than where
  * the phone is). Coordinates are city centres; a 0.1° difference moves prayer times by well under
@@ -82,4 +84,19 @@ export function searchCities(query: string): City[] {
   const q = foldCityText(query);
   if (!q) return CITIES;
   return CITIES.filter((c) => foldCityText(c.tr).includes(q) || foldCityText(c.en).includes(q));
+}
+
+/**
+ * Calculation method most mosques use in the city's country. Turkish communities in Europe follow
+ * Diyanet; elsewhere the local authority's method. Countries with no single common choice get none.
+ */
+const METHOD_BY_COUNTRY: Partial<Record<City['country'], CalculationMethodId>> = {
+  TR: 'turkey', DE: 'turkey', AT: 'turkey', NL: 'turkey', BE: 'turkey', FR: 'turkey', CH: 'turkey',
+  SE: 'turkey', NO: 'turkey', DK: 'turkey', CY: 'turkey', AZ: 'turkey',
+  GB: 'moonsightingCommittee', US: 'northAmerica', CA: 'northAmerica',
+  SA: 'ummAlQura', EG: 'egyptian', AE: 'dubai',
+};
+
+export function suggestedMethodFor(city: City): CalculationMethodId | null {
+  return METHOD_BY_COUNTRY[city.country] ?? null;
 }

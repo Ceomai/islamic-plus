@@ -4,6 +4,7 @@ import { getPrayerLabel, translate } from '../i18n';
 import type { DisabledPrayerRule, PrayerName, UserSettings } from '../types';
 import { localDateKey } from '../utils/date';
 import { prayerDaysAhead } from './notificationBudget';
+import { PRAYER_CATEGORY, setupPrayerCategory } from './prayerAction';
 import { getPrayerDates } from './prayerTimes';
 
 Notifications.setNotificationHandler({
@@ -102,6 +103,8 @@ export async function schedulePrayerNotifications(
 
   const granted = await requestNotificationPermissions();
   if (!granted) return;
+  // The "Prayed" button's label follows the app language
+  await setupPrayerCategory(settings.appLanguage);
 
   const now = new Date();
   // Shares iOS's 64-notification limit with custom reminders (see notificationBudget)
@@ -132,6 +135,8 @@ export async function schedulePrayerNotifications(
           title: translate(settings.appLanguage, 'notifications.title', { prayer: prayerLabel }),
           body: translate(settings.appLanguage, 'notifications.body', { prayer: prayerLabel }),
           sound: tone.sound,
+          categoryIdentifier: PRAYER_CATEGORY,
+          data: { prayer, date: localDateKey(date) },
           ...(Platform.OS === 'android' && { channelId: tone.channelId }),
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },

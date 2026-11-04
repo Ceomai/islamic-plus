@@ -241,3 +241,26 @@ Haftalık özet verir, cezalandırmaz.
 | **Sezonluk** | Ramazan 1448'den (8 Şubat 2027) önce | Ramazan modu · iftar Live Activity / kalıcı bildirim · paylaşılabilir ayet kartları |
 
 Hoca incelemesi ve gerçek cihaz testi bu sıralamadan bağımsız olarak, test turunda yürütülmeli.
+
+## 5. Uygulama durumu (4 Kasım 2026)
+
+**Hemen** ve **Kısa vade** aşamaları `audit/fixes` dalında uygulandı. Web önizlemede denendi, testler eklendi (158 test).
+
+| Öneri | Ne yapıldı |
+|---|---|
+| "Premium ve Pro" etiketi | Ayarlarda "Diğer özellikler" oldu. |
+| Öğren / Eğitim | Konular ekranının başlığı da "Öğren". |
+| Okuyucu başlığı | "Sure" yerine "36. Yâsîn" gibi numara ve ad. |
+| Yatsıdan sonra | Şeridin altında yarının vakitleri "Yarın" başlığıyla; bugünün vakitleri işaretlenebilir kalır. |
+| Widget kartı | "Günün duası" kartı oldu (başlık, Arapça, meal; dokununca dua açılır). Widget'lar ekranı artık yalnızca telefon widget'ının nasıl ekleneceğini anlatır. |
+| Zekât ve camiler | Yeni kurulumlarda ana ekranda. Mevcut kullanıcılar "Düzenle"den ekleyebilir. |
+| "Kıldım" | Vakit bildiriminde düğme. Android'de uygulama açılmadan çalışır (arka plan görevi, işaret uygulama açılınca hesaba yazılır); iOS'ta uygulamayı açar. |
+| Misafir kilitleri | Yalnızca bulut senkron hesap ister; giriş ve misafir metinleri buna göre değişti. |
+| Seri yerine 3/5 | Ana sayfada "Bugün n/5" ve beş nokta; İstatistikler'de "Bu hafta kılınan n/35". |
+| Saat seçici | Hatırlatıcıda saat/dakika düğmeleri (dakika 5'er), hazır saatler duruyor. |
+| Yöntem önerisi | Listeden şehir seçilince ülkenin yaygın yöntemi farklıysa sorulur (Türkiye ve Avrupa'da Diyanet; ABD/Kanada ISNA; İngiltere Hilal Gözlem; Suudi Arabistan Ümmü'l-Kurâ; Mısır; BAE). |
+| Tesbihte ekran | Tesbih ekranı açıkken ekran kararmaz. |
+
+**Cihazda denenmesi gerekenler:** "Kıldım" düğmesi (uygulama kapalıyken ve açıkken), tesbihte ekranın kararmaması. Yeni yerel modül eklenmedi (`expo-keep-awake` Expo ile zaten derlemede), bu yüzden OTA güncellemesi yeterli.
+
+**Sıradaki:** v2 kabuk (yeni sekmeler, Bugün ekranı, tasarım sistemi) ve Ramazan modu, test grubunun geri bildiriminden sonra.

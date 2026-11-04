@@ -1,6 +1,6 @@
 import { localDateKey } from '../utils/date';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { updatePrayerWidget, type WidgetInput } from '../services/homeWidget';
 import { registerWidgetTask, saveWidgetInput } from '../services/widgetBackground';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
@@ -12,7 +12,9 @@ import { isCloudUserActive } from '../services/cloudUser';
 import { getCachedLocation, getCurrentLocation, type StoredLocation } from '../services/location';
 import type { City } from '../data/cities';
 import { recordDeletion } from '../services/tombstones';
-import { getTodayCompletions, loadPrayerCompletions, togglePrayerCompletion } from '../services/prayerTracking';
+import { getTodayCompletions, loadPrayerCompletions, markPrayerCompleted, togglePrayerCompletion } from '../services/prayerTracking';
+import { handlePrayerResponse, takePendingPrayerMarks } from '../services/prayerAction';
+import * as Notifications from 'expo-notifications';
 import {
   notifyAppDataChanged,
   registerAppDataPayloadBuilder,
@@ -434,6 +436,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
     [trackActivity, refreshTodayPrayers]
   );
+
+  // "Prayed" taps on notifications wait in a queue (the Android task runs without this account)
+  const applyPendingPrayerMarks = useCallback(async () => {
+    const marks = await takePendingPrayerMarks();
+    let added = 0;
+    for (const m of marks) {
+      if (await markPrayerCompleted(m.prayer, m.date)) added++;
+    }
+    if (added === 0) return;
+    for (let i = 0; i < added; i++) await trackActivity('prayer');
+    setStats(await updatePrayerStreak(await loadPrayerCompletions()));
+    await refreshTodayPrayers();
+  }, [trackActivity, refreshTodayPrayers]);
+
+  useEffect(() => {
+    if (loading || Platform.OS === 'web') return;
+    // Cold start from the action (iOS opens the app for it)
+    const last = Notifications.getLastNotificationResponse();
+    void (last ? handlePrayerResponse(last).then(() => Notifications.clearLastNotificationResponse()) : Promise.resolve()).then(
+      applyPendingPrayerMarks
+    );
+    const responses = Notifications.addNotificationResponseReceivedListener((r) => {
+      void handlePrayerResponse(r).then((handled) => (handled ? applyPendingPrayerMarks() : undefined));
+    });
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void applyPendingPrayerMarks();
+    });
+    return () => {
+      responses.remove();
+      appState.remove();
+    };
+  }, [loading, applyPendingPrayerMarks]);
 
   const sendAIMessage = useCallback(async (text: string, reply: string, actions?: AssistantAction[]) => {
     const now = new Date().toISOString();

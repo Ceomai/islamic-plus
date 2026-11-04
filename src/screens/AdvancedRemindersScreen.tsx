@@ -8,7 +8,7 @@ import { confirmDestructive } from '../utils/confirm';
 import { getDayNames } from '../i18n';
 import { normalizeReminderTime } from '../services/advancedReminders';
 import type { CustomReminder } from '../types';
-import { AppText, Button, Chip, IconBadge, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { AppText, Button, Chip, IconBadge, Screen, SectionHeader, Surface, TextField, TimeStepper } from '../ui';
 
 const TYPES: { id: CustomReminder['type']; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
   { id: 'dhikr', icon: 'ellipse-outline' },
@@ -62,19 +62,26 @@ export function AdvancedRemindersScreen() {
         </View>
 
         <TextField label={t('reminders.titleLabel')} placeholder={t('reminders.titlePlaceholder')} value={title} onChangeText={setTitle} />
-        <TextField
+        <TimeStepper
           label={t('reminders.timeLabel')}
-          placeholder="08:00"
           value={time}
-          onChangeText={(v) => {
+          onChange={(v) => {
             setTime(v);
             setTimeError(null);
           }}
-          keyboardType="numbers-and-punctuation"
-          maxLength={5}
-          error={timeError}
           hint={t('reminders.timeHint')}
+          labels={{
+            hourUp: t('reminders.hourUp'),
+            hourDown: t('reminders.hourDown'),
+            minuteUp: t('reminders.minuteUp'),
+            minuteDown: t('reminders.minuteDown'),
+          }}
         />
+        {timeError ? (
+          <AppText variant="caption" tone="danger" style={{ marginBottom: space[2] }}>
+            {timeError}
+          </AppText>
+        ) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginBottom: space[4] }}>
           {QUICK_TIMES.map((q) => (
             <Chip

@@ -8,8 +8,8 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigationAnalytics } from '../hooks/useNavigationAnalytics';
 import { withGuestGate } from '../components/GuestGate';
-import { AdvancedRemindersScreen as AdvancedRemindersScreenBase } from '../screens/AdvancedRemindersScreen';
-import { AIAssistantScreen as AIAssistantScreenBase } from '../screens/AIAssistantScreen';
+import { AdvancedRemindersScreen } from '../screens/AdvancedRemindersScreen';
+import { AIAssistantScreen } from '../screens/AIAssistantScreen';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { CityPickerScreen } from '../screens/CityPickerScreen';
 import { DeleteAccountScreen } from '../screens/DeleteAccountScreen';
@@ -19,7 +19,7 @@ import { DuaDetailScreen } from '../screens/DuaDetailScreen';
 import { DuasScreen } from '../screens/DuasScreen';
 import { EducationDetailScreen } from '../screens/EducationDetailScreen';
 import { EducationScreen } from '../screens/EducationScreen';
-import { FamilyModeScreen as FamilyModeScreenBase } from '../screens/FamilyModeScreen';
+import { FamilyModeScreen } from '../screens/FamilyModeScreen';
 import { HabitsScreen } from '../screens/HabitsScreen';
 import { HadithScreen } from '../screens/HadithScreen';
 import { FeedbackScreen } from '../screens/FeedbackScreen';
@@ -33,21 +33,15 @@ import { QiblaScreen } from '../screens/QiblaScreen';
 import { QuranReaderScreen } from '../screens/QuranReaderScreen';
 import { QuranScreen } from '../screens/QuranScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { StatisticsScreen as StatisticsScreenBase } from '../screens/StatisticsScreen';
+import { StatisticsScreen } from '../screens/StatisticsScreen';
 import { TasbihScreen } from '../screens/TasbihScreen';
 import { TasbihStatsScreen } from '../screens/TasbihStatsScreen';
-import { ThemesScreen as ThemesScreenBase } from '../screens/ThemesScreen';
-import { WidgetsScreen as WidgetsScreenBase } from '../screens/WidgetsScreen';
+import { ThemesScreen } from '../screens/ThemesScreen';
+import { WidgetsScreen } from '../screens/WidgetsScreen';
 import type { RootStackParamList } from './types';
 
-// Guest restrictions enforced per screen, not only on the home launcher
-const AIAssistantScreen = withGuestGate('ai_assistant', AIAssistantScreenBase);
+// Guest restrictions enforced per screen, not only on the home launcher (only cloud sync is left)
 const CloudSyncScreen = withGuestGate('cloud_sync', CloudSyncScreenBase);
-const FamilyModeScreen = withGuestGate('family_mode', FamilyModeScreenBase);
-const StatisticsScreen = withGuestGate('statistics', StatisticsScreenBase);
-const AdvancedRemindersScreen = withGuestGate('advanced_reminders', AdvancedRemindersScreenBase);
-const ThemesScreen = withGuestGate('themes', ThemesScreenBase);
-const WidgetsScreen = withGuestGate('widgets', WidgetsScreenBase);
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();

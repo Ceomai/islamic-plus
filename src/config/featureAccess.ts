@@ -1,16 +1,10 @@
 /**
  * Developer configuration — guest-restricted features (no UI edits needed).
+ * Everything except cloud sync works for guests: their data stays on the device anyway, and
+ * locking free features only pushed people away. Sync needs an account to sync to.
  */
 export const FEATURE_ACCESS = {
-  guestDisabled: [
-    'ai_assistant',
-    'cloud_sync',
-    'family_mode',
-    'statistics',
-    'advanced_reminders',
-    'themes',
-    'widgets',
-  ] as const,
+  guestDisabled: ['cloud_sync'] as const,
 } as const;
 
 export type GuestRestrictedFeatureId = (typeof FEATURE_ACCESS.guestDisabled)[number];

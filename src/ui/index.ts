@@ -8,3 +8,4 @@ export { SectionHeader } from './SectionHeader';
 export { SegmentedControl } from './SegmentedControl';
 export { Surface, type SurfaceVariant } from './Surface';
 export { TextField } from './TextField';
+export { TimeStepper } from './TimeStepper';

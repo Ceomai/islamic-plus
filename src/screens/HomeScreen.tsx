@@ -29,7 +29,6 @@ export function HomeScreen({ navigation }: Props) {
     refreshLocation,
     loading,
     settings,
-    stats,
     quranProgress,
     hadithProgress,
     todayPrayers,
@@ -78,6 +77,12 @@ export function HomeScreen({ navigation }: Props) {
   }, [location, settings.calculationMethod, settings.madhab, now]);
 
   const completedPrayers = useMemo(() => new Set(todayPrayers.map((p) => p.prayer)), [todayPrayers]);
+
+  // After Isha the day's times are all past: show tomorrow's under them (today's stay markable)
+  const tomorrowDates = useMemo(() => {
+    if (!location || !prayerDates || now < prayerDates.isha.getTime()) return null;
+    return getPrayerDates(location.latitude, location.longitude, addDays(new Date(now), 1), settings.calculationMethod, settings.madhab);
+  }, [location, prayerDates, now, settings.calculationMethod, settings.madhab]);
 
   // Ramadan card: suhoor/iftar countdown during Ramadan, days left in the month before it
   const ramadan = useMemo(() => ramadanWindow(new Date(now)), [today]);
@@ -143,14 +148,29 @@ export function HomeScreen({ navigation }: Props) {
             <AppText variant="callout" color={colors.accent} style={{ fontWeight: '600' }}>
               {remainingLabel}
             </AppText>
-            {stats.prayerStreakDays > 0 && (
-              <View style={[styles.streak, { borderRadius: 999, paddingHorizontal: space[3] }]}>
-                <Ionicons name="flame" size={14} color={colors.accent} />
-                <AppText variant="caption" color={colors.onHero} style={{ marginLeft: space[1] }}>
-                  {t('home.streakDays', { n: String(stats.prayerStreakDays) })}
-                </AppText>
+            {/* Today's count instead of a streak: one missed prayer no longer wipes out the progress */}
+            <View
+              accessible
+              accessibilityLabel={t('home.todayCountA11y', { n: String(completedPrayers.size) })}
+              style={[styles.streak, { borderRadius: 999, paddingHorizontal: space[3], gap: space[2] }]}
+            >
+              <View style={{ flexDirection: 'row', gap: 3 }}>
+                {DAILY_PRAYERS.map((p) => (
+                  <View
+                    key={p}
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: 4,
+                      backgroundColor: completedPrayers.has(p) ? colors.accent : 'rgba(255,255,255,0.3)',
+                    }}
+                  />
+                ))}
               </View>
-            )}
+              <AppText variant="caption" color={colors.onHero}>
+                {t('home.todayCount', { n: String(completedPrayers.size) })}
+              </AppText>
+            </View>
           </View>
         </Surface>
       )}
@@ -202,6 +222,27 @@ export function HomeScreen({ navigation }: Props) {
               );
             })}
           </View>
+          {tomorrowDates && (
+            <View style={{ marginTop: space[2] }}>
+              <AppText variant="overline" tone="muted" style={{ marginBottom: space[1] }}>
+                {t('home.tomorrow')}
+              </AppText>
+              <View style={[styles.strip, { gap: space[2] }]}>
+                {DAILY_PRAYERS.map((p) => (
+                  <View
+                    key={p}
+                    accessible
+                    accessibilityLabel={`${t('home.tomorrow')} ${prayer(p)} ${formatClock(tomorrowDates[p], lang)}`}
+                    style={styles.slot}
+                  >
+                    <AppText variant="callout" color={p === 'fajr' ? colors.primary : colors.textSecondary} style={p === 'fajr' ? { fontWeight: '600' } : undefined}>
+                      {formatClock(tomorrowDates[p], lang).replace(/ (AM|PM)$/, '')}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
           <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[2], marginBottom: space[3] }}>
             {t('home.markPrayersHint')}
           </AppText>
