@@ -69,6 +69,15 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     }
   };
 
+  // Scheduling never asks for permission: switching notifications on is where the app asks
+  const toggleAll = async (on: boolean) => {
+    await updateSettings({ globalNotificationsEnabled: on });
+    if (!on) return;
+    const ok = await requestNotificationPermissions();
+    setNotifAllowed(ok);
+    if (ok && location) void schedulePrayerNotifications(location.latitude, location.longitude, { ...settings, globalNotificationsEnabled: true });
+  };
+
   // Checked again on return to the app: the permission may have been changed in system settings
   useEffect(() => {
     void exactAlarmsAllowed().then((ok) => {
@@ -113,7 +122,7 @@ export function NotificationSettingsScreen({ navigation }: Props) {
             <Switch
               value={settings.globalNotificationsEnabled}
               accessibilityLabel={t('notifications.all')}
-              onValueChange={(v) => updateSettings({ globalNotificationsEnabled: v })}
+              onValueChange={toggleAll}
               trackColor={track}
             />
           }

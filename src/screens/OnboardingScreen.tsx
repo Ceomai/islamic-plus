@@ -8,7 +8,7 @@ import { searchCities } from '../data/cities';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import { requestNotificationPermissions } from '../services/notifications';
+import { requestNotificationPermissions, schedulePrayerNotifications } from '../services/notifications';
 import type { CalculationMethodId, Madhab } from '../types';
 import { AppText, Button, Chip, IconBadge, Surface, TextField } from '../ui';
 
@@ -56,6 +56,8 @@ export function OnboardingScreen() {
     const ok = await requestNotificationPermissions();
     setBusy(false);
     setNotifState(ok ? 'granted' : 'denied');
+    // Scheduling never asks for permission, so what was skipped at start-up is scheduled now
+    if (ok && location) void schedulePrayerNotifications(location.latitude, location.longitude, settings);
   };
 
   const chooseLanguage = (code: 'tr' | 'en') => {

@@ -13,7 +13,7 @@ import { getCachedLocation, getCurrentLocation, type StoredLocation } from '../s
 import type { City } from '../data/cities';
 import { recordDeletion } from '../services/tombstones';
 import { getTodayCompletions, loadPrayerCompletions, markPrayerCompleted, togglePrayerCompletion } from '../services/prayerTracking';
-import { handlePrayerResponse, takePendingPrayerMarks } from '../services/prayerAction';
+import { ackPendingPrayerMarks, handlePrayerResponse, peekPendingPrayerMarks } from '../services/prayerAction';
 import * as Notifications from 'expo-notifications';
 import {
   notifyAppDataChanged,
@@ -21,10 +21,12 @@ import {
   syncUserDataFromCloud,
 } from '../services/userDataCloud';
 import { schedulePrayerNotifications, setupNotificationChannels } from '../services/notifications';
+import { prayerScheduleKey } from '../services/prayerScheduleKey';
+import { logError } from '../services/errorLog';
 import { migrateSettings } from '../services/settingsMigration';
 import { computeHabitScore, loadStats, recordActivity, updatePrayerStreak } from '../services/statistics';
 import { logAIChatExchange, resetAIChatSessionId, trackFeatureAction } from '../services/cloudAnalytics';
-import { getJson, setJson, storageKeys } from '../services/storage';
+import { getJson, getStorageUser, setJson, storageKeys } from '../services/storage';
 import { loadHadithProgress, loadQuranProgress, onReadingProgressChanged } from '../services/readingProgress';
 import {
   scheduleReadingProgressCloudSync,
@@ -66,7 +68,8 @@ interface AppContextValue {
   stats: ActivityStats;
   refreshStats: () => Promise<void>;
   /** `report: false` records locally without an analytics event (e.g. every single tasbih tap) */
-  trackActivity: (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report?: boolean) => Promise<void>;
+  /** `day` (YYYY-MM-DD) puts the points on that day instead of today */
+  trackActivity: (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report?: boolean, day?: string) => Promise<void>;
   habitScore: number;
   aiMessages: AIChatMessage[];
   sendAIMessage: (text: string, reply: string, actions?: AssistantAction[]) => Promise<void>;
@@ -94,6 +97,8 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 /** Messages kept in the assistant chat (oldest dropped first) */
 const AI_CHAT_MAX = 200;
+/** Settings changes often come in bursts (a slider, several toggles) */
+const SCHEDULE_DEBOUNCE_MS = 400;
 
 const widgetInput = (loc: StoredLocation, s: UserSettings): WidgetInput => ({
   latitude: loc.latitude,
@@ -148,8 +153,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Channels only matter once something is scheduled; start-up must not wait for them
+    void setupNotificationChannels().catch((e) => logError(e, 'promise'));
     (async () => {
-      await setupNotificationChannels();
       void initAudio();
       const [storedSettings, deviceLanguage, savedHabits, cachedLoc, savedFamily, savedStats, savedChat] = await Promise.all([
         getJson<UserSettings | null>(storageKeys.settings, null),
@@ -191,8 +197,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (savedSettings.customReminders.length > 0) {
         void scheduleCustomReminders(savedSettings.customReminders, savedSettings.appLanguage);
       }
-      setLoading(false);
-    })();
+    })()
+      // Whatever fails here, the app must leave the loading screen (with defaults if need be)
+      .catch((e) => logError(e, 'promise'))
+      .finally(() => setLoading(false));
   }, []);
 
   const refreshReadingProgress = useCallback(async () => {
@@ -287,18 +295,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     notifyAppDataChanged();
   }, []);
 
-  // Always call: with notifications switched off it cancels what was scheduled before
+  // Always call: with notifications switched off it cancels what was scheduled before. Follows only
+  // what the notifications depend on, and waits a moment so a burst of changes schedules once
   const lastScheduleRef = useRef(0);
+  const scheduleKey = location ? prayerScheduleKey(settings, location) : null;
   useEffect(() => {
-    if (location) {
+    if (!scheduleKey) return;
+    const timer = setTimeout(() => {
+      const { location: loc, settings: s } = stateRef.current;
+      if (!loc) return;
       lastScheduleRef.current = Date.now();
-      void schedulePrayerNotifications(location.latitude, location.longitude, settings);
-      const input = widgetInput(location, settings);
-      updatePrayerWidget(input);
-      // Android refreshes the widget in the background from this copy
-      void saveWidgetInput(input).then(registerWidgetTask);
-    }
-  }, [location, settings]);
+      void schedulePrayerNotifications(loc.latitude, loc.longitude, s);
+    }, SCHEDULE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [scheduleKey]);
+
+  const widgetKey = location ? JSON.stringify(widgetInput(location, settings)) : null;
+  useEffect(() => {
+    const { location: loc, settings: s } = stateRef.current;
+    if (!widgetKey || !loc) return;
+    const input = widgetInput(loc, s);
+    updatePrayerWidget(input);
+    // Android refreshes the widget in the background from this copy
+    void saveWidgetInput(input).then(registerWidgetTask);
+  }, [widgetKey]);
 
   // Prayer notifications cover a limited number of days; extend the window and roll "today"
   // over whenever the app comes back to the foreground (at most once an hour)
@@ -417,8 +437,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const trackActivity = useCallback(
-    async (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report = true) => {
-      const next = await recordActivity(type);
+    async (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report = true, day?: string) => {
+      const next = await recordActivity(type, 1, day);
       setStats(next);
       if (report) void trackFeatureAction(type, 'activity_recorded');
       notifyAppDataChanged();
@@ -437,21 +457,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [trackActivity, refreshTodayPrayers]
   );
 
-  // "Prayed" taps on notifications wait in a queue (the Android task runs without this account)
+  // "Prayed" taps on notifications wait in a queue (the Android task runs without this account).
+  // Only this account's marks are applied, and they leave the queue once they are stored
   const applyPendingPrayerMarks = useCallback(async () => {
-    const marks = await takePendingPrayerMarks();
-    let added = 0;
+    const scope = session ? getStorageUser() : null;
+    if (!scope) return;
+    const marks = await peekPendingPrayerMarks(scope);
+    if (marks.length === 0) return;
+    const added: typeof marks = [];
     for (const m of marks) {
-      if (await markPrayerCompleted(m.prayer, m.date)) added++;
+      if (await markPrayerCompleted(m.prayer, m.date)) added.push(m);
     }
-    if (added === 0) return;
-    for (let i = 0; i < added; i++) await trackActivity('prayer');
+    await ackPendingPrayerMarks(marks);
+    if (added.length === 0) return;
+    // Points go on the day of the prayer, which is not today when the tap is applied later
+    for (const m of added) await trackActivity('prayer', true, m.date);
     setStats(await updatePrayerStreak(await loadPrayerCompletions()));
     await refreshTodayPrayers();
-  }, [trackActivity, refreshTodayPrayers]);
+  }, [session, trackActivity, refreshTodayPrayers]);
 
   useEffect(() => {
-    if (loading || Platform.OS === 'web') return;
+    if (loading || !session || Platform.OS === 'web') return;
     // Cold start from the action (iOS opens the app for it)
     const last = Notifications.getLastNotificationResponse();
     void (last ? handlePrayerResponse(last).then(() => Notifications.clearLastNotificationResponse()) : Promise.resolve()).then(
@@ -467,7 +493,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       responses.remove();
       appState.remove();
     };
-  }, [loading, applyPendingPrayerMarks]);
+  }, [loading, session, applyPendingPrayerMarks]);
 
   const sendAIMessage = useCallback(async (text: string, reply: string, actions?: AssistantAction[]) => {
     const now = new Date().toISOString();

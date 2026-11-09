@@ -22,7 +22,7 @@ describe('fast taps on tasbih and kaza (O2)', () => {
   it('counts every tasbih tap', async () => {
     const { incrementTasbih, loadTasbihData } = require('../services/tasbihStorage') as typeof import('../services/tasbihStorage');
     await AsyncStorage.clear();
-    await Promise.all(Array.from({ length: 33 }, () => incrementTasbih()));
+    await Promise.all(Array.from({ length: 33 }, () => incrementTasbih(100)));
     const data = await loadTasbihData();
     expect(data.count).toBe(33);
     expect(data.total).toBe(33);

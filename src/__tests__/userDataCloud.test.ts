@@ -5,17 +5,19 @@ import type { SyncPayload } from '../services/cloudSync';
 // The cloud copy, and a hook that runs while the pull request is "in flight"
 let mockRemote: SyncPayload | null = null;
 let mockDuringPull: () => void = () => undefined;
+let mockDuringPush: () => void = () => undefined;
 const mockRpc = jest.fn(async (name: string, _args: unknown) => {
   if (name === 'get_user_app_data') {
     mockDuringPull();
     return { data: mockRemote ? [{ payload: mockRemote }] : [], error: null };
   }
+  mockDuringPush();
   return { data: null, error: null };
 });
 jest.mock('../config/supabase', () => ({ isSupabaseConfigured: true, getSupabase: () => ({ rpc: mockRpc }) }));
 jest.mock('../services/cloudUser', () => ({ isCloudUserActive: async () => true }));
 
-import { registerAppDataPayloadBuilder, syncUserDataFromCloud } from '../services/userDataCloud';
+import { cancelUserDataCloudSync, notifyAppDataChanged, registerAppDataPayloadBuilder, syncUserDataFromCloud } from '../services/userDataCloud';
 
 const STATS = { tasbihTotal: 0, habitsCompletedTotal: 0, duasReadCount: 0, quranSessions: 0, prayerStreakDays: 0, lastActiveDate: '', weeklyActivity: [0, 0, 0, 0, 0, 0, 0] };
 
@@ -64,5 +66,22 @@ describe('pulling from the cloud at start-up (Y2)', () => {
     await syncUserDataFromCloud({ ...DEFAULT_SETTINGS, activeFamilyMemberId: 'child-1' }, [], [], STATS, false, null);
     const scopes = mockRpc.mock.calls.map(([, args]) => (args as { p_profile_scope: string }).p_profile_scope);
     expect(new Set(scopes)).toEqual(new Set(['default']));
+  });
+
+  it('does not roll back a change made while the merged result was being pushed', async () => {
+    let localHabits = ['a'];
+    registerAppDataPayloadBuilder(async () => payload(localHabits));
+    mockRemote = payload(['cloud']);
+    mockDuringPull = () => undefined;
+    mockDuringPush = () => {
+      localHabits = ['a', 'added-during-push'];
+      notifyAppDataChanged();
+    };
+
+    const { payload: result } = await syncUserDataFromCloud({ ...DEFAULT_SETTINGS }, [], [], STATS, false, null);
+    mockDuringPush = () => undefined;
+    cancelUserDataCloudSync();
+
+    expect(result.habits.map((h) => h.id).sort()).toEqual(['a', 'added-during-push', 'cloud']);
   });
 });

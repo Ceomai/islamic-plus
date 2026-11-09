@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
@@ -11,7 +11,6 @@ import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { trackFeatureAction } from '../services/cloudAnalytics';
 import {
-  completeTasbihRound,
   incrementTasbih,
   loadTasbihData,
   resetTasbihSession,
@@ -57,39 +56,70 @@ export function TasbihScreen({ navigation }: Props) {
     };
   }, []);
 
+  // What the counter shows right now. Taps read and change these synchronously, so the number,
+  // progress and haptic follow every tap at once and quick taps never act on a stale value
+  const live = useRef({ count: 0, today: 0, step: 0 });
+  const touched = useRef(false);
+  const pending = useRef(0);
+  // Bumped by a reset: storage answers for taps before it must not move the counter any more
+  const epoch = useRef(0);
+
   useEffect(() => {
     void loadTasbihData().then((d) => {
-      setCount(d.count);
-      setToday(summarizeTasbih(d, 1).today);
       setGoal(d.dailyGoal ?? 0);
+      if (touched.current) return; // the answers to those taps bring the stored numbers
+      live.current.count = d.count;
+      live.current.today = summarizeTasbih(d, 1).today;
+      setCount(live.current.count);
+      setToday(live.current.today);
     });
   }, []);
 
-  const increment = async () => {
+  const increment = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setJustFinished(false);
-    const data = await incrementTasbih();
-    void trackActivity('tasbih', false);
-    const todayNow = today + 1;
-    setToday(todayNow);
-    if (goal > 0 && todayNow === goal) {
+    touched.current = true;
+    const state = live.current;
+    const tapDhikrId = tesbihat ? TESBIHAT_SEQUENCE[state.step] : dhikrId;
+
+    state.today += 1;
+    setToday(state.today);
+    if (goal > 0 && state.today === goal) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       void trackFeatureAction('tasbih', 'goal_reached', { goal });
     }
 
-    if (data.count < target) {
-      setCount(data.count);
+    // Storage counts the tap and completes the round in one step; the screen doesn't wait for it
+    const tapEpoch = epoch.current;
+    pending.current += 1;
+    void incrementTasbih(target, tapDhikrId)
+      .then((result) => {
+        // Once every tap is stored, show the stored numbers (they differ only if a tap came before loading)
+        if (--pending.current > 0 || tapEpoch !== epoch.current) return;
+        state.count = result.count;
+        state.today = summarizeTasbih(result.data, 1).today;
+        setCount(state.count);
+        setToday(state.today);
+      })
+      .catch(() => {
+        pending.current -= 1;
+      });
+    void trackActivity('tasbih', false);
+
+    if (state.count + 1 < target) {
+      state.count += 1;
+      setCount(state.count);
       return;
     }
 
-    // Round complete: store it, then move on to the next phrase (tesbihat) or the next round
-    await completeTasbihRound(target, currentId);
-    void trackFeatureAction('tasbih', 'round_completed', { target, dhikr: currentId });
+    // Round complete: move on to the next phrase (tesbihat) or the next round
+    void trackFeatureAction('tasbih', 'round_completed', { target, dhikr: tapDhikrId });
+    state.count = 0;
     setCount(0);
     if (tesbihat) {
-      const nextStep = (step + 1) % TESBIHAT_SEQUENCE.length;
-      setStep(nextStep);
-      if (nextStep === 0) {
+      state.step = (state.step + 1) % TESBIHAT_SEQUENCE.length;
+      setStep(state.step);
+      if (state.step === 0) {
         setRounds((r) => r + 1);
         setJustFinished(true);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -104,11 +134,14 @@ export function TasbihScreen({ navigation }: Props) {
   };
 
   const reset = async () => {
-    const data = await resetTasbihSession(target, currentId);
-    setCount(data.count);
+    epoch.current += 1;
+    live.current.count = 0;
+    live.current.step = 0;
+    setCount(0);
     setStep(0);
     setRounds(0);
     setJustFinished(false);
+    await resetTasbihSession(target, currentId);
   };
 
   const changeMode = async (next: Mode) => {

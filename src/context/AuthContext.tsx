@@ -10,6 +10,7 @@ import {
   registerUser,
   requestPasswordReset,
 } from '../services/auth';
+import { logError } from '../services/errorLog';
 import type { AuthSession } from '../types';
 import type { AuthBackend } from '../services/auth';
 
@@ -37,10 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const backend = getAuthBackend();
 
   useEffect(() => {
-    getAuthSession().then((s) => {
-      setSession(s);
-      setAuthReady(true);
-    });
+    // A failed restore (storage, network, secure store) shows the sign-in screen instead of hanging
+    getAuthSession()
+      .then(setSession)
+      .catch((e) => logError(e, 'promise'))
+      .finally(() => setAuthReady(true));
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {

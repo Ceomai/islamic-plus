@@ -3,9 +3,11 @@ import { Platform } from 'react-native';
 import { getPrayerLabel, translate } from '../i18n';
 import type { DisabledPrayerRule, PrayerName, UserSettings } from '../types';
 import { localDateKey } from '../utils/date';
+import { createSerialQueue } from '../utils/serial';
 import { prayerDaysAhead } from './notificationBudget';
 import { PRAYER_CATEGORY, setupPrayerCategory } from './prayerAction';
 import { getPrayerDates } from './prayerTimes';
+import { getStorageUser } from './storage';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -83,28 +85,45 @@ export async function requestExactAlarms(): Promise<boolean> {
   }
 }
 
-async function cancelPrayerNotifications(): Promise<void> {
+async function cancelPrayerNotifications(isStale: () => boolean): Promise<void> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   for (const n of scheduled) {
+    if (isStale()) return;
     if (n.identifier.startsWith('prayer-')) {
       await Notifications.cancelScheduledNotificationAsync(n.identifier);
     }
   }
 }
 
-export async function schedulePrayerNotifications(
+// Cancel-then-schedule is not atomic: runs go one after another, and a run that a newer request
+// has replaced stops at its next step (the newer run cancels and schedules everything again)
+const scheduleQueue = createSerialQueue();
+let scheduleGeneration = 0;
+
+/** Replaces the scheduled prayer notifications. Never asks for permission (onboarding and settings do). */
+export function schedulePrayerNotifications(latitude: number, longitude: number, settings: UserSettings): Promise<void> {
+  if (!notificationsSupported) return Promise.resolve();
+  const generation = ++scheduleGeneration;
+  const isStale = () => generation !== scheduleGeneration;
+  return scheduleQueue(() => scheduleNow(latitude, longitude, settings, isStale));
+}
+
+async function scheduleNow(
   latitude: number,
   longitude: number,
-  settings: UserSettings
+  settings: UserSettings,
+  isStale: () => boolean
 ): Promise<void> {
-  if (!notificationsSupported) return;
-  await cancelPrayerNotifications();
-  if (!settings.globalNotificationsEnabled) return;
+  if (isStale()) return;
+  await cancelPrayerNotifications(isStale);
+  if (isStale() || !settings.globalNotificationsEnabled) return;
 
-  const granted = await requestNotificationPermissions();
-  if (!granted) return;
+  if (!(await notificationsAllowed()) || isStale()) return;
   // The "Prayed" button's label follows the app language
   await setupPrayerCategory(settings.appLanguage);
+  if (isStale()) return;
+  // A "Prayed" tap is applied only to the account the notification was scheduled for
+  const scope = getStorageUser();
 
   const now = new Date();
   // Shares iOS's 64-notification limit with custom reminders (see notificationBudget)
@@ -127,6 +146,7 @@ export async function schedulePrayerNotifications(
       const triggerDate = new Date(times[prayer].getTime() - (notifSettings.advanceMinutes ?? 0) * 60000);
       if (triggerDate <= now) continue;
 
+      if (isStale()) return;
       const prayerLabel = getPrayerLabel(settings.appLanguage, prayer);
       const tone = soundFor(notifSettings.sound);
       await Notifications.scheduleNotificationAsync({
@@ -136,7 +156,7 @@ export async function schedulePrayerNotifications(
           body: translate(settings.appLanguage, 'notifications.body', { prayer: prayerLabel }),
           sound: tone.sound,
           categoryIdentifier: PRAYER_CATEGORY,
-          data: { prayer, date: localDateKey(date) },
+          data: { prayer, date: localDateKey(date), scope },
           ...(Platform.OS === 'android' && { channelId: tone.channelId }),
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
@@ -145,7 +165,7 @@ export async function schedulePrayerNotifications(
   }
 
   // The window ends after daysAhead days unless the app is opened again; say so on the last evening
-  if (perDay > 0) {
+  if (perDay > 0 && !isStale()) {
     const notice = new Date();
     notice.setDate(notice.getDate() + daysAhead - 1);
     notice.setHours(21, 0, 0, 0);

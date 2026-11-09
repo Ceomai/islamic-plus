@@ -1,5 +1,6 @@
 import type { ActivityStats, PrayerCompletion, SpiritualHabit } from '../types';
 import { addDays, lastDayKeys, localDateKey } from '../utils/date';
+import { createSerialQueue } from '../utils/serial';
 import { getJson, setJson, storageKeys } from './storage';
 
 const DEFAULT_STATS: ActivityStats = {
@@ -38,27 +39,36 @@ export async function saveStats(stats: ActivityStats): Promise<void> {
   await setJson(storageKeys.stats, stats);
 }
 
-export async function recordActivity(
+// Stats are read, changed and written back whole: changes go one after another so none is lost
+const serial = createSerialQueue();
+
+/** `day` (YYYY-MM-DD) puts the points on another day, e.g. a prayer marked later from a notification. */
+export function recordActivity(
   type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer',
-  amount = 1
+  amount = 1,
+  day?: string
 ): Promise<ActivityStats> {
-  const stats = await loadStats();
-  const today = localDateKey();
-  const next: ActivityStats = { ...stats, lastActiveDate: today };
+  return serial(async () => {
+    const stats = await loadStats();
+    const today = localDateKey();
+    const next: ActivityStats = { ...stats, lastActiveDate: today };
 
-  if (type === 'tasbih') next.tasbihTotal += amount;
-  if (type === 'habit') next.habitsCompletedTotal += amount;
-  if (type === 'dua') next.duasReadCount += amount;
-  if (type === 'quran') next.quranSessions += amount;
+    if (type === 'tasbih') next.tasbihTotal += amount;
+    if (type === 'habit') next.habitsCompletedTotal += amount;
+    if (type === 'dua') next.duasReadCount += amount;
+    if (type === 'quran') next.quranSessions += amount;
 
-  const keep = new Set(lastDayKeys(KEEP_DAYS));
-  const daily = Object.fromEntries(Object.entries(stats.dailyPoints ?? {}).filter(([k]) => keep.has(k)));
-  daily[today] = (daily[today] ?? 0) + POINTS[type] * amount;
-  next.dailyPoints = daily;
-  next.weeklyActivity = weeklyFromDaily(daily);
+    const keep = new Set(lastDayKeys(KEEP_DAYS));
+    const daily = Object.fromEntries(Object.entries(stats.dailyPoints ?? {}).filter(([k]) => keep.has(k)));
+    const pointsDay = day ?? today;
+    // A day older than the kept window has no chart to show it on
+    if (keep.has(pointsDay)) daily[pointsDay] = (daily[pointsDay] ?? 0) + POINTS[type] * amount;
+    next.dailyPoints = daily;
+    next.weeklyActivity = weeklyFromDaily(daily);
 
-  await saveStats(next);
-  return next;
+    await saveStats(next);
+    return next;
+  });
 }
 
 /**
@@ -88,11 +98,13 @@ export function countPrayersInDays(completions: PrayerCompletion[], days: number
   return new Set(completions.filter((c) => window.has(c.date)).map((c) => `${c.date}|${c.prayer}`)).size;
 }
 
-export async function updatePrayerStreak(completions: PrayerCompletion[]): Promise<ActivityStats> {
-  const stats = await loadStats();
-  const next = { ...stats, prayerStreakDays: computePrayerStreak(completions) };
-  await saveStats(next);
-  return next;
+export function updatePrayerStreak(completions: PrayerCompletion[]): Promise<ActivityStats> {
+  return serial(async () => {
+    const stats = await loadStats();
+    const next = { ...stats, prayerStreakDays: computePrayerStreak(completions) };
+    await saveStats(next);
+    return next;
+  });
 }
 
 export function computeHabitScore(habits: SpiritualHabit[]): number {

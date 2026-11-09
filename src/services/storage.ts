@@ -39,6 +39,11 @@ export function setStorageUser(scope: string | null): void {
   storageUser = scope;
 }
 
+/** The bucket app data is read from and written to right now (null: nobody signed in). */
+export function getStorageUser(): string | null {
+  return storageUser;
+}
+
 function isUserKey(key: string): boolean {
   return key.startsWith('@islamic/') && !DEVICE_KEYS.has(key) && key !== LEGACY_MIGRATED_KEY;
 }

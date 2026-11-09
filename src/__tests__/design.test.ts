@@ -2,7 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { describe, expect, it, jest } from '@jest/globals';
 import { isGuestFeatureAllowed } from '../config/featureAccess';
 import { CITIES, suggestedMethodFor } from '../data/cities';
-import { handlePrayerResponse, PRAYED_ACTION, takePendingPrayerMarks } from '../services/prayerAction';
+import {
+  ackPendingPrayerMarks,
+  handlePrayerResponse,
+  marksForScope,
+  peekPendingPrayerMarks,
+  PRAYED_ACTION,
+} from '../services/prayerAction';
 import { loadPrayerCompletions, markPrayerCompleted } from '../services/prayerTracking';
 import { countPrayersInDays } from '../services/statistics';
 import type { PrayerCompletion } from '../types';
@@ -75,17 +81,42 @@ describe('"Prayed" notification button', () => {
   const response = (actionIdentifier: string, data: object) =>
     ({ actionIdentifier, notification: { request: { identifier: 'prayer-asr-0', content: { data } } } }) as never;
 
-  it('queues the prayer from the notification and applies it once', async () => {
+  const asr = { prayer: 'asr', date: '2026-11-04', scope: 'user-a' } as const;
+
+  it('queues the prayer from the notification once and keeps it until it is acknowledged', async () => {
     await AsyncStorage.clear();
-    expect(await handlePrayerResponse(response(PRAYED_ACTION, { prayer: 'asr', date: '2026-11-04' }))).toBe(true);
-    expect(await handlePrayerResponse(response(PRAYED_ACTION, { prayer: 'asr', date: '2026-11-04' }))).toBe(true);
-    expect(await takePendingPrayerMarks()).toEqual([{ prayer: 'asr', date: '2026-11-04' }]);
-    expect(await takePendingPrayerMarks()).toEqual([]);
+    expect(await handlePrayerResponse(response(PRAYED_ACTION, asr))).toBe(true);
+    expect(await handlePrayerResponse(response(PRAYED_ACTION, asr))).toBe(true);
+    expect(await peekPendingPrayerMarks('user-a')).toEqual([asr]);
+    // Applying failed before the ack: the mark is still there next time
+    expect(await peekPendingPrayerMarks('user-a')).toEqual([asr]);
+    await ackPendingPrayerMarks([asr]);
+    expect(await peekPendingPrayerMarks('user-a')).toEqual([]);
   });
 
-  it('ignores a plain tap and malformed data', async () => {
-    expect(await handlePrayerResponse(response('expo.modules.notifications.actions.DEFAULT', { prayer: 'asr', date: '2026-11-04' }))).toBe(false);
-    expect(await handlePrayerResponse(response(PRAYED_ACTION, { prayer: 'asr', date: 'today' }))).toBe(false);
+  it('applies a mark only to the account the notification was for', async () => {
+    await AsyncStorage.clear();
+    const other = { ...asr, prayer: 'isha', scope: 'user-b' } as const;
+    await handlePrayerResponse(response(PRAYED_ACTION, asr));
+    await handlePrayerResponse(response(PRAYED_ACTION, other));
+    expect(await peekPendingPrayerMarks(null)).toEqual([]);
+    expect(await peekPendingPrayerMarks('guest')).toEqual([]);
+    expect(await peekPendingPrayerMarks('user-b')).toEqual([other]);
+    await ackPendingPrayerMarks([other]);
+    // The other account's mark waits for that account
+    expect(await peekPendingPrayerMarks('user-a')).toEqual([asr]);
+  });
+
+  it('matches marks by scope, and none without a session', () => {
+    const b = { ...asr, scope: 'user-b' };
+    expect(marksForScope([asr, b], 'user-b')).toEqual([b]);
+    expect(marksForScope([asr, b], null)).toEqual([]);
+  });
+
+  it('ignores a plain tap, malformed data and notifications without an account', async () => {
+    expect(await handlePrayerResponse(response('expo.modules.notifications.actions.DEFAULT', asr))).toBe(false);
+    expect(await handlePrayerResponse(response(PRAYED_ACTION, { ...asr, date: 'today' }))).toBe(false);
+    expect(await handlePrayerResponse(response(PRAYED_ACTION, { prayer: 'asr', date: '2026-11-04' }))).toBe(false);
   });
 
   it('marks a prayer without ever un-marking it', async () => {

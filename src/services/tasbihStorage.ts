@@ -35,8 +35,25 @@ export function setTasbihGoal(goal: number): Promise<TasbihData> {
   });
 }
 
-/** One tap: advances the current round and records the hour it happened in. */
-export function incrementTasbih(at: Date = new Date()): Promise<TasbihData> {
+function withSession(data: TasbihData, count: number, target: number, dhikrId?: string): TasbihSession[] {
+  const session: TasbihSession = { id: `tb-${Date.now()}-${data.sessions.length}`, count, target, completedAt: new Date().toISOString(), dhikrId };
+  return [session, ...data.sessions].slice(0, MAX_SESSIONS);
+}
+
+export interface TasbihTapResult {
+  data: TasbihData;
+  /** The round's count after this tap (0 once the round is complete) */
+  count: number;
+  /** This tap reached the target: the round is in history and the next one starts from zero */
+  roundCompleted: boolean;
+}
+
+/**
+ * One tap: advances the current round, records the hour it happened in and, when the round reaches
+ * `target`, keeps it in history and starts the next one, all in one step. Done as two steps, two
+ * quick taps at the target could both complete the round.
+ */
+export function incrementTasbih(target: number, dhikrId?: string, at: Date = new Date()): Promise<TasbihTapResult> {
   return serial(async () => {
     const data = await loadTasbihData();
     const day = localDateKey(at);
@@ -44,24 +61,17 @@ export function incrementTasbih(at: Date = new Date()): Promise<TasbihData> {
     const hours = [...(log[day] ?? new Array(24).fill(0))];
     hours[at.getHours()] += 1;
     log[day] = hours;
-    const next = { ...data, count: data.count + 1, total: data.total + 1, log: pruneLog(log) };
+    const count = data.count + 1;
+    const roundCompleted = count >= target;
+    const next: TasbihData = {
+      ...data,
+      count: roundCompleted ? 0 : count,
+      total: data.total + 1,
+      log: pruneLog(log),
+      ...(roundCompleted ? { sessions: withSession(data, count, target, dhikrId) } : {}),
+    };
     await saveTasbihData(next);
-    return next;
-  });
-}
-
-function withSession(data: TasbihData, count: number, target: number, dhikrId?: string): TasbihSession[] {
-  const session: TasbihSession = { id: `tb-${Date.now()}-${data.sessions.length}`, count, target, completedAt: new Date().toISOString(), dhikrId };
-  return [session, ...data.sessions].slice(0, MAX_SESSIONS);
-}
-
-/** A round reached its target: keep it in history and start the next round from zero. */
-export function completeTasbihRound(target: number, dhikrId?: string): Promise<TasbihData> {
-  return serial(async () => {
-    const data = await loadTasbihData();
-    const next = { ...data, count: 0, sessions: withSession(data, data.count, target, dhikrId) };
-    await saveTasbihData(next);
-    return next;
+    return { data: next, count: next.count, roundCompleted };
   });
 }
 

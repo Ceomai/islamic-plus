@@ -35,6 +35,8 @@ const DEFAULT_STATS: ActivityStats = {
 };
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+/** Counts local changes, so a sync can tell whether something changed while it was running */
+let localChanges = 0;
 const listeners = new Set<(memberId: string | null) => void>();
 
 type PayloadBuilder = () => Promise<SyncPayload>;
@@ -45,6 +47,7 @@ export function registerAppDataPayloadBuilder(builder: PayloadBuilder | null): v
 }
 
 export function notifyAppDataChanged(): void {
+  localChanges++;
   listeners.forEach((fn) => fn(null));
   scheduleUserDataCloudSync(null);
 }
@@ -108,10 +111,13 @@ export async function syncUserDataFromCloud(
     return { payload: await localNow(), ok: false };
   }
 
+  const changesBefore = localChanges;
   const local = await localNow();
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.payload) {
-    return { payload: local, ok: await pushUserDataNow(local) };
+    const ok = await pushUserDataNow(local);
+    // A change made during the push is newer than `local`; the caller must not roll it back
+    return { payload: localChanges === changesBefore ? local : await localNow(), ok };
   }
 
   const remote = row.payload as SyncPayload;
@@ -119,7 +125,15 @@ export async function syncUserDataFromCloud(
 
   await importSyncPayloadToStorage(merged);
   // Push the merged result itself: the app's state still holds the pre-merge values at this point
-  return { payload: merged, ok: await pushUserDataNow(merged) };
+  const ok = await pushUserDataNow(merged);
+  if (localChanges === changesBefore) return { payload: merged, ok };
+
+  // Something changed on this device while the merge was written and pushed: the app's state has
+  // the change but not the merge, storage may have either. Merge again so neither is lost (the
+  // change itself already scheduled its own push)
+  const latest = mergeSyncPayloads(merged, await localNow());
+  await importSyncPayloadToStorage(latest);
+  return { payload: latest, ok };
 }
 
 /** Drop a pending push without sending it (account deleted). */
