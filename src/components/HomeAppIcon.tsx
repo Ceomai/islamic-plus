@@ -2,21 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import type { HomeCategory } from '../theme/tokens';
 import { AppText } from '../ui/AppText';
 import { IconBadge } from '../ui/IconBadge';
 
-/** Launcher tile: white card with a tinted icon; a lock badge marks guest-restricted features. */
+const LOCK_SIZE = 18;
+
+/** Launcher tile: white card with an icon tinted by its category; a lock badge marks guest-restricted features. */
 export function HomeAppIcon(props: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  /** Kept for API compatibility — tiles now follow the theme instead of per-feature colors */
-  color?: string;
+  category: HomeCategory;
   locked?: boolean;
   onPress: () => void;
 }) {
   const { colors, radius, space } = useTheme();
   return (
-    <View style={styles.cell}>
+    <View style={[styles.cell, { padding: space[1] }]}>
       <Pressable
         onPress={props.onPress}
         accessibilityRole="button"
@@ -28,12 +30,17 @@ export function HomeAppIcon(props: {
             borderColor: colors.border,
             borderRadius: radius.lg,
             paddingVertical: space[3],
+            paddingHorizontal: space[1],
             opacity: props.locked ? 0.6 : 1,
           },
         ]}
       >
         <View>
-          <IconBadge name={props.icon} tone={props.locked ? 'neutral' : 'brand'} />
+          <IconBadge
+            name={props.icon}
+            tone="neutral"
+            palette={props.locked ? undefined : colors.category[props.category]}
+          />
           {props.locked && (
             <View style={[styles.lock, { backgroundColor: colors.textSecondary, borderColor: colors.surface }]}>
               <Ionicons name="lock-closed" size={9} color={colors.surface} />
@@ -49,15 +56,15 @@ export function HomeAppIcon(props: {
 }
 
 const styles = StyleSheet.create({
-  cell: { width: '25%', padding: 4 },
-  tile: { alignItems: 'center', borderWidth: 1, minHeight: 96, paddingHorizontal: 4 },
+  cell: { width: '25%' },
+  tile: { alignItems: 'center', borderWidth: 1, minHeight: 96 },
   lock: {
     position: 'absolute',
     right: -4,
     bottom: -4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: LOCK_SIZE,
+    height: LOCK_SIZE,
+    borderRadius: LOCK_SIZE / 2,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',

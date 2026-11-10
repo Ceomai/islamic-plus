@@ -11,6 +11,8 @@ import { lastDayKeys, localDateKey } from '../utils/date';
 
 const CATEGORIES: SpiritualHabit['category'][] = ['prayer', 'quran', 'dhikr', 'charity', 'fasting', 'other'];
 const TARGETS = [1, 3, 5, 7];
+const CHECKBOX = 32;
+const DAY_DOT = 10;
 const CATEGORY_ICONS: Record<SpiritualHabit['category'], React.ComponentProps<typeof Ionicons>['name']> = {
   prayer: 'moon-outline',
   quran: 'book-outline',
@@ -127,9 +129,9 @@ export function HabitsScreen() {
                       accessibilityLabel={h.title}
                       hitSlop={8}
                       style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
+                        width: CHECKBOX,
+                        height: CHECKBOX,
+                        borderRadius: CHECKBOX / 2,
                         borderWidth: 2,
                         borderColor: colors.primary,
                         backgroundColor: doneToday ? colors.primary : 'transparent',
@@ -164,9 +166,9 @@ export function HabitsScreen() {
                           </AppText>
                           <View
                             style={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: 5,
+                              width: DAY_DOT,
+                              height: DAY_DOT,
+                              borderRadius: DAY_DOT / 2,
                               backgroundColor: done ? colors.primary : colors.surfaceMuted,
                             }}
                           />

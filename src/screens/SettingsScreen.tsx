@@ -51,7 +51,7 @@ export function SettingsScreen({ navigation }: Props) {
   };
 
   const switchTrack = { true: colors.primary, false: colors.borderStrong };
-  const check = <Ionicons name="checkmark" size={20} color={colors.primary} />;
+  const check = <Ionicons name="checkmark" size={20} color={colors.primaryText} />;
 
   return (
     <Screen>

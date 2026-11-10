@@ -22,6 +22,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 const DAILY_PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 const COUNTDOWN_TICK_MS = 30_000;
+const PROGRESS_DOT = 7;
+const ICON_BUTTON = 44;
 
 export function HomeScreen({ navigation }: Props) {
   const {
@@ -36,7 +38,7 @@ export function HomeScreen({ navigation }: Props) {
     refreshTodayPrayers,
   } = useApp();
   const { canAccess } = useFeatureAccess();
-  const { colors, space } = useTheme();
+  const { colors, radius, space } = useTheme();
   const { t, prayer, lang } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
 
@@ -140,29 +142,29 @@ export function HomeScreen({ navigation }: Props) {
             <AppText variant="display" color={colors.onHero}>
               {prayer(nextPrayer.name)}
             </AppText>
-            <AppText variant="title" color={colors.onHero}>
+            <AppText variant="title" tone="onHero" numeric>
               {formatClock(nextPrayer.time, lang)}
             </AppText>
           </View>
           <View style={styles.heroFooter}>
-            <AppText variant="callout" color={colors.accent} style={{ fontWeight: '600' }}>
+            <AppText variant="calloutStrong" tone="onHeroAccent" numeric>
               {remainingLabel}
             </AppText>
             {/* Today's count instead of a streak: one missed prayer no longer wipes out the progress */}
             <View
               accessible
               accessibilityLabel={t('home.todayCountA11y', { n: String(completedPrayers.size) })}
-              style={[styles.streak, { borderRadius: 999, paddingHorizontal: space[3], gap: space[2] }]}
+              style={[styles.streak, { borderRadius: radius.pill, backgroundColor: colors.heroChipBg, paddingHorizontal: space[3], gap: space[2] }]}
             >
               <View style={{ flexDirection: 'row', gap: 3 }}>
                 {DAILY_PRAYERS.map((p) => (
                   <View
                     key={p}
                     style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: 4,
-                      backgroundColor: completedPrayers.has(p) ? colors.accent : 'rgba(255,255,255,0.3)',
+                      width: PROGRESS_DOT,
+                      height: PROGRESS_DOT,
+                      borderRadius: PROGRESS_DOT / 2,
+                      backgroundColor: completedPrayers.has(p) ? colors.accent : colors.heroTrack,
                     }}
                   />
                 ))}
@@ -192,7 +194,7 @@ export function HomeScreen({ navigation }: Props) {
                   style={({ pressed }) => [
                     styles.slot,
                     {
-                      borderRadius: 14,
+                      borderRadius: radius.md,
                       paddingVertical: space[3],
                       backgroundColor: done ? colors.primarySoft : pressed ? colors.surfaceMuted : colors.surface,
                       borderColor: isNext ? colors.primary : done ? colors.primarySoft : colors.border,
@@ -200,22 +202,22 @@ export function HomeScreen({ navigation }: Props) {
                     },
                   ]}
                 >
-                  <AppText variant="caption" tone={done ? 'brand' : 'secondary'} numberOfLines={1}>
+                  <AppText variant="caption" tone={done ? 'onPrimarySoft' : 'secondary'} numberOfLines={1}>
                     {prayer(p)}
                   </AppText>
-                  <AppText variant="bodyStrong" color={done ? colors.onPrimarySoft : colors.text} style={{ marginTop: 2 }}>
+                  <AppText variant="bodyStrong" tone={done ? 'onPrimarySoft' : 'default'} numeric style={{ marginTop: 2 }}>
                     {formatClock(prayerDates[p], lang).replace(/ (AM|PM)$/, '')}
                   </AppText>
-                  {/* English times drop AM/PM to fit; keep it small so "3:39" is not ambiguous */}
+                  {/* English times drop AM/PM to fit; shown below so "3:39" is not ambiguous */}
                   {lang === 'en' && (
-                    <AppText variant="caption" tone="muted" style={{ fontSize: 10, lineHeight: 12 }}>
+                    <AppText variant="caption" tone={done ? 'onPrimarySoft' : 'muted'}>
                       {formatClock(prayerDates[p], lang).slice(-2)}
                     </AppText>
                   )}
                   <Ionicons
                     name={done ? 'checkmark-circle' : 'ellipse-outline'}
                     size={16}
-                    color={done ? colors.primary : colors.textMuted}
+                    color={done ? colors.onPrimarySoft : colors.textMuted}
                     style={{ marginTop: space[1] }}
                   />
                 </Pressable>
@@ -235,7 +237,7 @@ export function HomeScreen({ navigation }: Props) {
                     accessibilityLabel={`${t('home.tomorrow')} ${prayer(p)} ${formatClock(tomorrowDates[p], lang)}`}
                     style={styles.slot}
                   >
-                    <AppText variant="callout" color={p === 'fajr' ? colors.primary : colors.textSecondary} style={p === 'fajr' ? { fontWeight: '600' } : undefined}>
+                    <AppText variant={p === 'fajr' ? 'calloutStrong' : 'callout'} tone={p === 'fajr' ? 'brand' : 'secondary'} numeric>
                       {formatClock(tomorrowDates[p], lang).replace(/ (AM|PM)$/, '')}
                     </AppText>
                   </View>
@@ -271,7 +273,7 @@ export function HomeScreen({ navigation }: Props) {
               <AppText variant="title" numberOfLines={1} tone={location ? 'default' : 'brand'} style={{ flexShrink: 1 }}>
                 {location ? location.city ?? t('home.yourLocation') : t('home.tapLocation')}
               </AppText>
-              <Ionicons name="chevron-down" size={18} color={location ? colors.textSecondary : colors.primary} />
+              <Ionicons name="chevron-down" size={18} color={location ? colors.textSecondary : colors.primaryText} />
             </Pressable>
             <AppText variant="caption" tone="secondary">
               {hijri.formatted}
@@ -307,7 +309,7 @@ export function HomeScreen({ navigation }: Props) {
           >
             <Ionicons name={fast?.kind === 'iftar' ? 'restaurant-outline' : 'moon-outline'} size={26} color={colors.onPrimarySoft} />
             <View style={{ flex: 1 }}>
-              <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }}>
+              <AppText variant="captionStrong" tone="onPrimarySoft">
                 {ramadan.inRamadan ? t('ramadan.dayOf', { n: String(ramadan.dayOfRamadan), total: String(ramadan.length) }) : t('nav.imsakiye')}
               </AppText>
               <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
@@ -362,6 +364,7 @@ export function HomeScreen({ navigation }: Props) {
               <HomeAppIcon
                 key={id}
                 icon={def.icon}
+                category={def.category}
                 label={t(def.titleKey)}
                 locked={!canAccess(id)}
                 onPress={() => openFeature(id)}
@@ -379,9 +382,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'flex-start' },
   iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: ICON_BUTTON,
+    height: ICON_BUTTON,
+    borderRadius: ICON_BUTTON / 2,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -389,7 +392,7 @@ const styles = StyleSheet.create({
   },
   heroRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 4 },
   heroFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  streak: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, backgroundColor: 'rgba(255,255,255,0.14)' },
+  streak: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   strip: { flexDirection: 'row' },
   slot: { flex: 1, alignItems: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },

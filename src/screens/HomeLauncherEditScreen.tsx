@@ -115,7 +115,7 @@ export function HomeLauncherEditScreen({ navigation }: Props) {
                 <AppText variant="body" style={{ flex: 1 }}>
                   {t(def.titleKey)}
                 </AppText>
-                <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+                <Ionicons name="add-circle-outline" size={22} color={colors.primaryText} />
               </Pressable>
             ))}
           </Surface>

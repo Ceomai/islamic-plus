@@ -10,10 +10,10 @@ interface Props extends TextInputProps {
 }
 
 export function TextField({ label, hint, error, style, onFocus, onBlur, ...rest }: Props) {
-  const { colors, radius, space, type } = useTheme();
+  const { colors, radius, space, type, component } = useTheme();
   const [focused, setFocused] = useState(false);
 
-  const borderColor = error ? colors.error : focused ? colors.primary : colors.border;
+  const borderColor = error ? colors.error : focused ? colors.primary : colors.inputBorder;
 
   return (
     <View style={{ marginBottom: space[3] }}>
@@ -39,11 +39,11 @@ export function TextField({ label, hint, error, style, onFocus, onBlur, ...rest 
         style={[
           type.body,
           {
-            minHeight: 48,
+            minHeight: component.textField.minHeight,
             paddingHorizontal: space[4],
             paddingVertical: space[3],
             borderRadius: radius.md,
-            borderWidth: focused || error ? 1.5 : 1,
+            borderWidth: focused || error ? component.textField.borderWidthFocused : component.textField.borderWidth,
             borderColor,
             backgroundColor: colors.surface,
             color: colors.text,

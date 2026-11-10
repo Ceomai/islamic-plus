@@ -67,10 +67,10 @@ export function ImsakiyeScreen() {
         <Surface variant="soft" style={{ marginTop: space[4], flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
           <Ionicons name={countdown.kind === 'iftar' ? 'restaurant-outline' : 'moon-outline'} size={28} color={colors.onPrimarySoft} />
           <View style={{ flex: 1 }}>
-            <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }}>
+            <AppText variant="captionStrong" tone="onPrimarySoft">
               {countdown.kind === 'iftar' ? t('ramadan.untilIftar') : t('ramadan.untilSahur')} · {clock(countdown.target)}
             </AppText>
-            <AppText variant="display" color={colors.onPrimarySoft}>
+            <AppText variant="display" tone="onPrimarySoft" numeric>
               {(() => {
                 const { h, m } = formatDuration(countdown.target.getTime() - now.getTime());
                 return t('ramadan.left', { h: String(h), m: String(m) });
@@ -91,7 +91,7 @@ export function ImsakiyeScreen() {
         <Surface padding={0} style={{ marginTop: space[5], paddingHorizontal: space[3] }}>
           <View style={{ flexDirection: 'row', paddingVertical: space[2], borderBottomWidth: 1, borderBottomColor: colors.border }}>
             {COLS.map((c) => (
-              <AppText key={c} variant="caption" tone="muted" style={{ flex: c === 'date' ? 1.4 : 1, fontWeight: '600', textAlign: c === 'day' ? 'left' : 'center' }}>
+              <AppText key={c} variant="captionStrong" tone="muted" style={{ flex: c === 'date' ? 1.4 : 1, textAlign: c === 'day' ? 'left' : 'center' }}>
                 {t(`ramadan.col.${c}`)}
               </AppText>
             ))}
@@ -112,7 +112,7 @@ export function ImsakiyeScreen() {
                   paddingHorizontal: space[3],
                 }}
               >
-                <AppText variant="caption" style={{ flex: 1, fontWeight: '700' }} tone={isToday ? 'brand' : 'default'}>
+                <AppText variant="captionStrong" numeric style={{ flex: 1 }} tone={isToday ? 'onPrimarySoft' : 'default'}>
                   {d.day}
                 </AppText>
                 {/* Weekday on its own line keeps every row the same height on narrow phones */}
@@ -120,12 +120,12 @@ export function ImsakiyeScreen() {
                   <AppText variant="caption" tone="secondary" numberOfLines={1}>
                     {d.date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                   </AppText>
-                  <AppText variant="caption" tone="muted" numberOfLines={1} style={{ fontSize: 11 }}>
+                  <AppText variant="caption" tone="muted" numberOfLines={1}>
                     {d.date.toLocaleDateString(locale, { weekday: 'short' })}
                   </AppText>
                 </View>
                 {[d.imsak, d.sunrise, d.iftar, d.isha].map((time, j) => (
-                  <AppText key={j} variant="caption" style={{ flex: 1, textAlign: 'center', fontWeight: j === 0 || j === 2 ? '700' : '400' }}>
+                  <AppText key={j} variant={j === 0 || j === 2 ? 'captionStrong' : 'caption'} numeric style={{ flex: 1, textAlign: 'center' }}>
                     {clock(time)}
                   </AppText>
                 ))}

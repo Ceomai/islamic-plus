@@ -29,7 +29,7 @@ const KEEP_AWAKE_TAG = 'tasbih';
 
 export function TasbihScreen({ navigation }: Props) {
   const { trackActivity } = useApp();
-  const { colors, radius, space, type } = useTheme();
+  const { colors, radius, space, component, motion } = useTheme();
   const { t, lang } = useTranslation();
   const [mode, setMode] = useState<Mode>('tesbihat');
   const [dhikrId, setDhikrId] = useState('subhanallah');
@@ -198,7 +198,7 @@ export function TasbihScreen({ navigation }: Props) {
       )}
 
       <Surface style={{ alignSelf: 'stretch', alignItems: 'center', marginTop: space[4] }}>
-        <AppText style={[type.arabic, { textAlign: 'center', fontSize: 30, lineHeight: 52 }]} tone="brand">
+        <AppText variant="arabicDua" tone="brand" align="center">
           {dhikr.arabic}
         </AppText>
         <AppText variant="bodyStrong" align="center">
@@ -239,13 +239,13 @@ export function TasbihScreen({ navigation }: Props) {
           alignItems: 'center',
           justifyContent: 'center',
           marginTop: space[6],
-          transform: [{ scale: pressed ? 0.97 : 1 }],
+          transform: [{ scale: pressed ? motion.pressedScale : 1 }],
         })}
       >
-        <AppText style={{ fontSize: 64, lineHeight: 72, fontWeight: '700' }} color={colors.onPrimary}>
+        <AppText style={component.tasbihCounter} tone="onPrimary" numeric>
           {count}
         </AppText>
-        <AppText variant="callout" color="rgba(255,255,255,0.75)">
+        <AppText variant="callout" tone="onHeroMuted" numeric>
           / {target}
         </AppText>
       </Pressable>
@@ -254,7 +254,7 @@ export function TasbihScreen({ navigation }: Props) {
         <View style={{ width: `${progress * 100}%`, height: '100%', backgroundColor: colors.primary }} />
       </View>
 
-      <AppText variant="callout" tone={justFinished ? 'brand' : 'muted'} align="center" style={{ marginTop: space[3], fontWeight: justFinished ? '600' : '400' }}>
+      <AppText variant={justFinished ? 'calloutStrong' : 'callout'} tone={justFinished ? 'brand' : 'muted'} align="center" style={{ marginTop: space[3] }}>
         {status}
       </AppText>
       <AppText variant="caption" tone="secondary" style={{ marginTop: space[1] }}>
@@ -264,7 +264,7 @@ export function TasbihScreen({ navigation }: Props) {
       {/* Daily goal */}
       <Surface variant="muted" padding={space[3]} style={{ alignSelf: 'stretch', marginTop: space[5] }}>
         <Pressable onPress={() => setEditGoal((v) => !v)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
-          <Ionicons name={goal > 0 && today >= goal ? 'trophy' : 'flag-outline'} size={16} color={colors.primary} />
+          <Ionicons name={goal > 0 && today >= goal ? 'trophy' : 'flag-outline'} size={16} color={colors.primaryText} />
           <AppText variant="callout" style={{ flex: 1 }}>
             {goal > 0 ? (today >= goal ? t('tasbih.goalReached', { n: String(today) }) : t('tasbih.goalProgress', { n: String(today), goal: String(goal) })) : t('tasbih.goalOff')}
           </AppText>

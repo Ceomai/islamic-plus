@@ -45,6 +45,7 @@ function renderInline(text: string): React.ReactNode[] {
 /** Screens that only live in the Learn tab; everything else is in the Home stack. */
 const LEARN_ONLY = new Set(['Education', 'EducationDetail']);
 const AUTO_NAVIGATE_DELAY = 1200;
+const SEND_BUTTON = 40;
 
 export function AIAssistantScreen() {
   const { aiMessages, sendAIMessage, clearAIChat, settings, location } = useApp();
@@ -291,9 +292,9 @@ export function AIAssistantScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('ai.send')}
           style={({ pressed }) => ({
-            width: 40,
-            height: 40,
-            borderRadius: 20,
+            width: SEND_BUTTON,
+            height: SEND_BUTTON,
+            borderRadius: SEND_BUTTON / 2,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: pressed ? colors.primaryPressed : colors.primary,

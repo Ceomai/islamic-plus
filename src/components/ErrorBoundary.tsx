@@ -1,8 +1,14 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Appearance, Pressable, Text, View } from 'react-native';
+import { APP_THEMES, DEFAULT_THEME_ID } from '../constants/themes';
 import { logError } from '../services/errorLog';
+import { buildThemeColors } from '../theme/colors';
+import { radius, space, type } from '../theme/tokens';
 
-/** The boundary sits above the theme and language providers, so it carries its own colours and words. */
+/**
+ * The boundary sits above the theme and language providers, so it reads the tokens directly (default
+ * theme, system light/dark) and carries its own words.
+ */
 const TEXT = {
   tr: {
     title: 'Bir şeyler ters gitti',
@@ -44,22 +50,23 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   render() {
     if (!this.state.error) return this.props.children;
     const t = TEXT[deviceLang()];
+    const colors = buildThemeColors(APP_THEMES[DEFAULT_THEME_ID], Appearance.getColorScheme() === 'dark');
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: '#F6F4EE' }}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: '#1B2A24', textAlign: 'center' }}>{t.title}</Text>
-        <Text style={{ fontSize: 15, lineHeight: 22, color: '#4A5A53', textAlign: 'center', marginTop: 12 }}>{t.body}</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[8], backgroundColor: colors.background }}>
+        <Text style={[type.title, { color: colors.text, textAlign: 'center' }]}>{t.title}</Text>
+        <Text style={[type.callout, { color: colors.textSecondary, textAlign: 'center', marginTop: space[3] }]}>{t.body}</Text>
         <Pressable
           onPress={() => this.setState({ error: null })}
           accessibilityRole="button"
           style={({ pressed }) => ({
-            marginTop: 24,
-            paddingHorizontal: 24,
-            paddingVertical: 12,
-            borderRadius: 12,
-            backgroundColor: pressed ? '#0B4A3B' : '#0F5C4A',
+            marginTop: space[6],
+            paddingHorizontal: space[6],
+            paddingVertical: space[3],
+            borderRadius: radius.md,
+            backgroundColor: pressed ? colors.primaryPressed : colors.primary,
           })}
         >
-          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>{t.retry}</Text>
+          <Text style={[type.bodyStrong, { color: colors.onPrimary }]}>{t.retry}</Text>
         </Pressable>
       </View>
     );

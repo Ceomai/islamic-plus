@@ -50,10 +50,10 @@ export function StatisticsScreen({ navigation }: Props) {
       <View style={{ flexDirection: 'row', gap: space[2] }}>
         {tiles.map((tile) => (
           <Surface key={tile.label} variant="soft" padding={space[3]} style={{ flex: 1 }}>
-            <AppText variant="title" color={colors.onPrimarySoft}>
+            <AppText variant="title" tone="onPrimarySoft" numeric>
               {tile.value}
             </AppText>
-            <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }} numberOfLines={2}>
+            <AppText variant="captionStrong" tone="onPrimarySoft" numberOfLines={2}>
               {tile.label}
             </AppText>
           </Surface>

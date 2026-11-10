@@ -65,7 +65,7 @@ export function QuranScreen({ navigation }: Props) {
         >
           <IconBadge name="bookmark" tone="brand" />
           <View style={{ flex: 1 }}>
-            <AppText variant="caption" tone="brand" style={{ fontWeight: '600' }}>
+            <AppText variant="captionStrong" tone="onPrimarySoft">
               {t('reading.continueQuran')}
             </AppText>
             <AppText variant="bodyStrong">
@@ -80,7 +80,7 @@ export function QuranScreen({ navigation }: Props) {
       <Surface style={{ marginBottom: space[4] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <AppText variant="bodyStrong">{t('quran.khatm')}</AppText>
-          <AppText variant="callout" tone="brand" style={{ fontWeight: '600' }}>
+          <AppText variant="calloutStrong" tone="brand" numeric>
             {completed.size}/114
           </AppText>
         </View>
@@ -202,20 +202,20 @@ export function QuranScreen({ navigation }: Props) {
               marginRight: space[3],
             }}
           >
-            <AppText variant="callout" color={colors.onPrimarySoft} style={{ fontWeight: '700' }}>
+            <AppText variant="calloutStrong" tone="onPrimarySoft" numeric>
               {item.number}
             </AppText>
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[1] }}>
               <AppText variant="bodyStrong">{item.englishName}</AppText>
-              {completed.has(item.number) && <Ionicons name="checkmark-circle" size={14} color={colors.primary} />}
+              {completed.has(item.number) && <Ionicons name="checkmark-circle" size={14} color={colors.primaryText} />}
             </View>
             <AppText variant="caption" tone="secondary">
               {item.numberOfAyahs} {t('quran.ayahs')}
             </AppText>
           </View>
-          <AppText variant="heading" tone="brand" style={{ fontWeight: '400' }}>
+          <AppText variant="arabicPreview" tone="brand">
             {item.name}
           </AppText>
         </Pressable>

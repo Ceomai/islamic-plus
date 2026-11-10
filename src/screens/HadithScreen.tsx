@@ -136,7 +136,7 @@ export function HadithScreen() {
         <Surface variant="soft" onPress={resume} style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], marginBottom: space[4] }}>
           <IconBadge name="bookmark" />
           <View style={{ flex: 1 }}>
-            <AppText variant="caption" tone="brand" style={{ fontWeight: '600' }}>
+            <AppText variant="captionStrong" tone="onPrimarySoft">
               {t('reading.continueHadith')}
             </AppText>
             <AppText variant="bodyStrong">
@@ -234,7 +234,7 @@ export function HadithScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], marginBottom: space[3] }}>
         {collection.sections.length > 1 && (
           <Pressable onPress={() => setSection(null)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('hadith.chapters')}>
-            <Ionicons name="chevron-back" size={22} color={colors.primary} />
+            <Ionicons name="chevron-back" size={22} color={colors.primaryText} />
           </Pressable>
         )}
         <View style={{ flex: 1 }}>
@@ -277,15 +277,15 @@ export function HadithScreen() {
                   accessibilityLabel={t('reading.bookmark')}
                   accessibilityState={{ selected: marked }}
                 >
-                  <Ionicons name={marked ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.primary} />
+                  <Ionicons name={marked ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.primaryText} />
                 </Pressable>
               </View>
               {showArabic && arabic[h.number] ? (
-                <AppText style={[type.arabic, { fontSize: 22, lineHeight: 40, textAlign: 'right', marginTop: space[2] }]}>
+                <AppText variant="arabicDua" style={{ marginTop: space[2] }}>
                   {arabic[h.number]}
                 </AppText>
               ) : null}
-              <AppText variant="body" style={{ fontSize: 17, lineHeight: 27, marginTop: space[2] }}>
+              <AppText variant="body" style={{ marginTop: space[2] }}>
                 {h.text}
               </AppText>
               {grade ? (

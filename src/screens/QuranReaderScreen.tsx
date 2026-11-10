@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, View, type ListViewToken } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, View, type ListViewToken, type TextStyle } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QURAN_AUDIO_BASE, QURAN_EDITIONS } from '../constants/defaults';
 import { useApp } from '../context/AppContext';
@@ -186,17 +186,23 @@ export function QuranReaderScreen({ navigation, route }: Props) {
   };
   const setScale = (next: number) => void updateSettings({ quranFontScale: Math.min(1.6, Math.max(0.85, Math.round(next * 100) / 100)) });
 
-  const arabicStyle = { ...type.arabic, fontSize: 26 * scale, lineHeight: 48 * scale };
-  const translationStyle = { fontSize: 16 * scale, lineHeight: 26 * scale };
+  // The reader's own font-size setting scales the shared type tokens
+  const scaled = (style: TextStyle): TextStyle => ({
+    ...style,
+    fontSize: (style.fontSize ?? 0) * scale,
+    lineHeight: (style.lineHeight ?? 0) * scale,
+  });
+  const arabicStyle = scaled(type.arabicQuran);
+  const translationStyle = scaled(type.body);
 
   const renderRow = ({ item }: { item: Row }) => {
     if (view === 'mushaf') {
       return (
         <AppText style={[arabicStyle, { textAlign: 'justify', paddingVertical: space[2] }]}>
           {item.ayahs.map((a) => (
-            <AppText key={a.numberInSurah} style={arabicStyle} color={playing === a.numberInSurah ? colors.primary : undefined}>
+            <AppText key={a.numberInSurah} style={arabicStyle} color={playing === a.numberInSurah ? colors.primaryText : undefined}>
               {a.arabic}{' '}
-              <AppText style={[arabicStyle, { color: colors.accent }]}>﴿{toArabicDigits(a.numberInSurah)}﴾ </AppText>
+              <AppText style={[arabicStyle, { color: colors.accentText }]}>﴿{toArabicDigits(a.numberInSurah)}﴾ </AppText>
             </AppText>
           ))}
         </AppText>
@@ -229,7 +235,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
               justifyContent: 'center',
             }}
           >
-            <AppText variant="caption" color={colors.onAccentSoft} style={{ fontWeight: '700' }}>
+            <AppText variant="captionStrong" tone="accent" numeric>
               {a.numberInSurah}
             </AppText>
           </View>
@@ -240,7 +246,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             accessibilityRole="button"
             accessibilityLabel={`${isPlaying ? t('duas.stop') : t('duas.listen')} ${a.numberInSurah}`}
           >
-            <Ionicons name={isPlaying ? 'stop-circle' : 'play-circle-outline'} size={22} color={colors.primary} />
+            <Ionicons name={isPlaying ? 'stop-circle' : 'play-circle-outline'} size={22} color={colors.primaryText} />
           </Pressable>
           <Pressable
             onPress={() => shareAyah(a)}
@@ -248,7 +254,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             accessibilityRole="button"
             accessibilityLabel={`${t('quran.share')} ${a.numberInSurah}`}
           >
-            <Ionicons name="share-outline" size={20} color={colors.primary} />
+            <Ionicons name="share-outline" size={20} color={colors.primaryText} />
           </Pressable>
           <Pressable
             onPress={() => bookmarkAyah(a.numberInSurah)}
@@ -257,7 +263,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             accessibilityLabel={`${marked ? t('reading.removeBookmark') : t('reading.bookmark')} ${a.numberInSurah}`}
             accessibilityState={{ selected: marked }}
           >
-            <Ionicons name={marked ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.primary} />
+            <Ionicons name={marked ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.primaryText} />
           </Pressable>
         </View>
         {a.arabic ? <AppText style={arabicStyle}>{a.arabic}</AppText> : null}
@@ -312,7 +318,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             hitSlop={6}
             style={{ padding: space[1] }}
           >
-            <AppText variant="callout" style={{ fontWeight: '700' }}>A−</AppText>
+            <AppText variant="calloutStrong">A−</AppText>
           </Pressable>
           <Pressable
             onPress={() => setScale(scale + FONT_STEP)}
@@ -321,7 +327,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             hitSlop={6}
             style={{ padding: space[1] }}
           >
-            <AppText variant="heading" style={{ fontWeight: '700' }}>A+</AppText>
+            <AppText variant="heading">A+</AppText>
           </Pressable>
         </ScrollView>
       </View>

@@ -8,6 +8,8 @@ import { useTranslation } from '../hooks/useTranslation';
 import { AppText, Screen } from '../ui';
 
 const THEME_IDS = Object.keys(APP_THEMES) as ThemeId[];
+const ACCENT_DOT = 10;
+const SWATCH = 14;
 
 export function ThemesScreen() {
   const { settings, setThemeId } = useApp();
@@ -45,18 +47,18 @@ export function ThemesScreen() {
             {/* Mini preview: hero block, accent dot and a soft surface */}
             <View style={{ width: 64, height: 48, borderRadius: radius.md, overflow: 'hidden', backgroundColor: theme.primarySoft }}>
               <View style={{ height: 24, backgroundColor: theme.hero, justifyContent: 'center', paddingLeft: 6 }}>
-                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: theme.accent }} />
+                <View style={{ width: ACCENT_DOT, height: ACCENT_DOT, borderRadius: ACCENT_DOT / 2, backgroundColor: theme.accent }} />
               </View>
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="bodyStrong">{t(APP_THEMES[id].nameKey)}</AppText>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: space[1] }}>
                 {[theme.primary, theme.accent, theme.primarySoft].map((c) => (
-                  <View key={c} style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: c, borderWidth: 1, borderColor: colors.border }} />
+                  <View key={c} style={{ width: SWATCH, height: SWATCH, borderRadius: SWATCH / 2, backgroundColor: c, borderWidth: 1, borderColor: colors.border }} />
                 ))}
               </View>
             </View>
-            {selected ? <Ionicons name="checkmark-circle" size={24} color={theme.primary} /> : null}
+            {selected ? <Ionicons name="checkmark-circle" size={24} color={theme.primaryText} /> : null}
           </Pressable>
         );
       })}

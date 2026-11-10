@@ -10,6 +10,8 @@ import { getDistanceToKaaba, getQiblaBearing } from '../services/qibla';
 import { AppText, Button, Screen, Surface } from '../ui';
 
 const DIAL = 260;
+const KAABA_MARKER = 36;
+const DIAL_HUB = 12;
 const ALIGN_TOLERANCE_DEG = 5;
 // Compass letters in the app language (Kuzey/Doğu/Güney/Batı in Turkish)
 const CARDINALS = [
@@ -135,9 +137,9 @@ export function QiblaScreen() {
               style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', transform: [{ rotate: `${c.deg}deg` }] }}
             >
               <AppText
-                variant="caption"
+                variant="captionStrong"
                 tone={c.key === 'n' ? 'danger' : 'secondary'}
-                style={{ marginTop: space[2], fontWeight: '700', transform: [{ rotate: `${-c.deg - dialRotation}deg` }] }}
+                style={{ marginTop: space[2], transform: [{ rotate: `${-c.deg - dialRotation}deg` }] }}
               >
                 {lang === 'tr' ? c.tr : c.en}
               </AppText>
@@ -150,9 +152,9 @@ export function QiblaScreen() {
             <View
               style={{
                 marginTop: space[6],
-                width: 36,
-                height: 36,
-                borderRadius: 18,
+                width: KAABA_MARKER,
+                height: KAABA_MARKER,
+                borderRadius: KAABA_MARKER / 2,
                 backgroundColor: aligned ? colors.success : colors.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -164,7 +166,7 @@ export function QiblaScreen() {
             <View style={{ width: 3, height: DIAL / 2 - 70, backgroundColor: aligned ? colors.success : colors.primary, opacity: 0.35 }} />
           </View>
         </View>
-        <View style={{ position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: colors.text }} />
+        <View style={{ position: 'absolute', width: DIAL_HUB, height: DIAL_HUB, borderRadius: DIAL_HUB / 2, backgroundColor: colors.text }} />
       </View>
 
       <Surface style={{ alignSelf: 'stretch', marginTop: space[8], flexDirection: 'row' }}>

@@ -33,7 +33,7 @@ export function Chip({ label, selected, icon, onPress }: Props) {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[1] }}>
         {icon ? <Ionicons name={icon} size={16} color={fg} /> : null}
-        <AppText variant="callout" color={fg} style={{ fontWeight: '600' }}>
+        <AppText variant="calloutStrong" color={fg}>
           {label}
         </AppText>
       </View>

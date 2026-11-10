@@ -93,7 +93,7 @@ export function AuthScreen() {
             accessibilityRole="button"
             style={{ alignSelf: 'flex-end', marginTop: -space[1], marginBottom: space[3] }}
           >
-            <AppText variant="callout" tone="brand" style={{ fontWeight: '600' }}>
+            <AppText variant="calloutStrong" tone="brand">
               {t('auth.forgotPassword')}
             </AppText>
           </Pressable>

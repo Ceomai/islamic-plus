@@ -177,7 +177,7 @@ export function PlacesScreen({ route, navigation }: Props) {
               {item.address ? ` · ${item.address}` : ''}
             </AppText>
           </View>
-          <Ionicons name="navigate-outline" size={18} color={colors.primary} />
+          <Ionicons name="navigate-outline" size={18} color={colors.primaryText} />
         </Surface>
       )}
     />

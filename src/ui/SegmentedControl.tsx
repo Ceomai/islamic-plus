@@ -15,7 +15,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
   return (
     <View
       accessibilityRole="tablist"
-      style={{ flexDirection: 'row', backgroundColor: colors.surfaceMuted, borderRadius: radius.md, padding: 3 }}
+      style={{ flexDirection: 'row', backgroundColor: colors.surfaceMuted, borderRadius: radius.md, padding: space[1] }}
     >
       {options.map((o) => {
         const selected = o.value === value;
@@ -29,13 +29,14 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
               flex: 1,
               alignItems: 'center',
               paddingVertical: space[2],
-              borderRadius: radius.md - 3,
+              // Inner radius = outer radius minus the track padding
+              borderRadius: radius.md - space[1],
               backgroundColor: selected ? colors.surface : 'transparent',
               borderWidth: selected ? 1 : 0,
               borderColor: colors.border,
             }}
           >
-            <AppText variant="callout" tone={selected ? 'default' : 'secondary'} style={{ fontWeight: '600' }}>
+            <AppText variant="calloutStrong" tone={selected ? 'default' : 'secondary'}>
               {o.label}
             </AppText>
           </Pressable>

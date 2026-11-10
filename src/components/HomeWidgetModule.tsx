@@ -49,7 +49,7 @@ export function HomeWidgetModule({ onOpenDua }: Props) {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
         <Ionicons name="hand-left-outline" size={16} color={colors.onPrimarySoft} />
-        <AppText variant="overline" tone="brand" style={{ flex: 1 }}>
+        <AppText variant="overline" tone="onPrimarySoft" style={{ flex: 1 }}>
           {t('launcher.widgetModule')}
         </AppText>
         {onOpenDua ? <Ionicons name="chevron-forward" size={16} color={colors.onPrimarySoft} /> : null}
@@ -57,7 +57,7 @@ export function HomeWidgetModule({ onOpenDua }: Props) {
       <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
         {dua.title[lang]}
       </AppText>
-      <AppText variant="title" numberOfLines={3} style={{ writingDirection: 'rtl', textAlign: 'right', lineHeight: 34 }}>
+      <AppText variant="arabicDua" numberOfLines={3}>
         {dua.arabic}
       </AppText>
       <AppText variant="callout" tone="secondary" numberOfLines={3}>

@@ -24,7 +24,7 @@ export function OnboardingScreen() {
   const { settings, updateSettings, refreshLocation, setManualLocation, location } = useApp();
   const [cityQuery, setCityQuery] = useState('');
   const [showCities, setShowCities] = useState(false);
-  const { colors, space } = useTheme();
+  const { colors, radius, space } = useTheme();
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('welcome');
   const [locationState, setLocationState] = useState<Permission>(location ? 'granted' : 'unknown');
@@ -93,7 +93,7 @@ export function OnboardingScreen() {
         {/* Progress */}
         <View style={{ flexDirection: 'row', gap: space[2], marginBottom: space[6] }}>
           {STEPS.map((s, i) => (
-            <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= index ? colors.primary : colors.surfaceMuted }} />
+            <View key={s} style={{ flex: 1, height: 4, borderRadius: radius.pill, backgroundColor: i <= index ? colors.primary : colors.surfaceMuted }} />
           ))}
         </View>
 

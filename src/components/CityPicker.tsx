@@ -75,7 +75,7 @@ export function CityPicker({ onSelect, selectedId, header }: Props) {
               <AppText variant="body" style={{ flex: 1 }}>
                 {name(item)}
               </AppText>
-              {item.id === selectedId && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+              {item.id === selectedId && <Ionicons name="checkmark" size={20} color={colors.primaryText} />}
             </Pressable>
           </View>
         );

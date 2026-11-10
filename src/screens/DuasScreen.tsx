@@ -104,7 +104,7 @@ export function DuasScreen({ navigation }: Props) {
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </View>
-      <AppText tone="brand" numberOfLines={1} style={{ fontSize: 20, lineHeight: 34, textAlign: 'right', marginTop: space[2] }}>
+      <AppText variant="arabicPreview" tone="brand" numberOfLines={2} style={{ marginTop: space[2] }}>
         {item.arabic}
       </AppText>
     </Surface>

@@ -120,7 +120,7 @@ export function DutiesScreen() {
         <AppText variant="display" color={colors.onHero}>
           {priceMissing ? '—' : money(zakat.zakatDue)}
         </AppText>
-        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: space[3] }} />
+        <View style={{ height: 1, backgroundColor: colors.heroDivider, marginVertical: space[3] }} />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <AppText variant="caption" color={colors.onHeroMuted}>
             {t('duties.totalWealth')}
@@ -137,7 +137,7 @@ export function DutiesScreen() {
             {priceMissing ? '—' : money(zakat.nisabThreshold)}
           </AppText>
         </View>
-        <AppText variant="callout" color={colors.accent} style={{ marginTop: space[3], fontWeight: '600' }}>
+        <AppText variant="calloutStrong" tone="onHeroAccent" style={{ marginTop: space[3] }}>
           {priceMissing ? t('duties.enterPrice') : zakat.isObligatory ? t('duties.obligatoryYes') : t('duties.obligatoryNo')}
         </AppText>
       </Surface>

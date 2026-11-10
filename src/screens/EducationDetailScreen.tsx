@@ -9,9 +9,13 @@ import type { RootStackParamList } from '../navigation/types';
 import { markEducationTopicRead } from '../services/educationProgress';
 import { AppText, Screen, Surface } from '../ui';
 
+const BULLET = 5;
+
 /** Sections of a topic: optional heading, paragraph and bullet list. Shared with the inline list view. */
 export function LearnTopicBody({ topic }: { topic: LearnTopic }) {
-  const { colors, space } = useTheme();
+  const { colors, space, type } = useTheme();
+  // Centre the bullet on the first line of body text
+  const bulletOffset = ((type.body.lineHeight ?? BULLET) - BULLET) / 2;
   const { lang } = useTranslation();
   return (
     <View style={{ gap: space[3] }}>
@@ -28,7 +32,7 @@ export function LearnTopicBody({ topic }: { topic: LearnTopic }) {
           {s.text ? <AppText variant="body">{s.text[lang]}</AppText> : null}
           {s.bullets?.[lang].map((b, j) => (
             <View key={j} style={{ flexDirection: 'row', gap: space[2], marginTop: j === 0 && s.text ? space[2] : space[1] }}>
-              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary, marginTop: 9 }} />
+              <View style={{ width: BULLET, height: BULLET, borderRadius: BULLET / 2, backgroundColor: colors.primary, marginTop: bulletOffset }} />
               <AppText variant="body" style={{ flex: 1 }}>
                 {b}
               </AppText>

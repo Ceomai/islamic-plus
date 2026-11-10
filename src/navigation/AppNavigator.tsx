@@ -51,10 +51,10 @@ function useStackScreenOptions(): NativeStackNavigationOptions {
   const { colors, type } = useTheme();
   return {
     headerShown: true,
-    headerTintColor: colors.primary,
+    headerTintColor: colors.primaryText,
     headerStyle: { backgroundColor: colors.background },
     headerShadowVisible: false,
-    headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: '600', color: colors.text },
+    headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: type.heading.fontWeight, color: colors.text },
     headerBackButtonDisplayMode: 'minimal',
     contentStyle: { backgroundColor: colors.background },
   };
@@ -146,14 +146,14 @@ function MoreStack() {
 export function AppNavigator() {
   const { darkMode } = useApp();
   const { t } = useTranslation();
-  const { colors, type } = useTheme();
+  const { colors, type, component } = useTheme();
   const { onNavigationStateChange } = useNavigationAnalytics();
   const base = darkMode ? DarkTheme : DefaultTheme;
   const navTheme = {
     ...base,
     colors: {
       ...base.colors,
-      primary: colors.primary,
+      primary: colors.primaryText,
       background: colors.background,
       card: colors.surface,
       text: colors.text,
@@ -166,10 +166,10 @@ export function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarActiveTintColor: colors.primary,
+          tabBarActiveTintColor: colors.primaryText,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.surface },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+          tabBarLabelStyle: component.tabBar.label,
           tabBarIcon: ({ color, size, focused }) => {
             const [active, inactive] = TAB_ICONS[route.name] ?? ['ellipse', 'ellipse-outline'];
             return <Ionicons name={focused ? active : inactive} size={size} color={color} />;
@@ -185,7 +185,7 @@ export function AppNavigator() {
             headerShown: true,
             headerStyle: { backgroundColor: colors.background },
             headerShadowVisible: false,
-            headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: '600', color: colors.text },
+            headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: type.heading.fontWeight, color: colors.text },
           }}
         />
         <Tab.Screen name="LearnTab" component={LearnStack} options={{ title: t('tabs.learn') }} />

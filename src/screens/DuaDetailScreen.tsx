@@ -15,7 +15,7 @@ export function DuaDetailScreen({ route, navigation }: Props) {
   const { duaId } = route.params;
   const dua = DUAS.find((d) => d.id === duaId);
   const { settings, markDuaRead } = useApp();
-  const { colors, radius, space, type } = useTheme();
+  const { colors, radius, space } = useTheme();
   const { t, appLanguage: lang } = useTranslation();
   const [playing, setPlaying] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
@@ -93,7 +93,7 @@ export function DuaDetailScreen({ route, navigation }: Props) {
   return (
     <Screen>
       <Surface padding={space[6]} style={{ marginBottom: space[5] }}>
-        <AppText tone="brand" style={[type.arabic, { fontSize: 28, lineHeight: 50, textAlign: 'center' }]}>
+        <AppText variant="arabicDua" tone="brand" align="center">
           {dua.arabic}
         </AppText>
       </Surface>
@@ -108,7 +108,7 @@ export function DuaDetailScreen({ route, navigation }: Props) {
       <AppText variant="overline" tone="muted" style={{ marginBottom: space[1] }}>
         {t('duas.meaning')}
       </AppText>
-      <AppText variant="body" style={{ fontSize: 17, lineHeight: 26 }}>
+      <AppText variant="body">
         {translation}
       </AppText>
 
@@ -136,10 +136,10 @@ export function DuaDetailScreen({ route, navigation }: Props) {
           })}
         >
           <View>
-            <AppText variant="caption" color={counted >= repeat ? colors.success : colors.onAccentSoft} style={{ fontWeight: '600' }}>
+            <AppText variant="captionStrong" color={counted >= repeat ? colors.success : colors.onAccentSoft}>
               {counted >= repeat ? t('duas.counterDone') : t('duas.repeat')}
             </AppText>
-            <AppText variant="title" color={counted >= repeat ? colors.success : colors.onAccentSoft}>
+            <AppText variant="title" numeric color={counted >= repeat ? colors.success : colors.onAccentSoft}>
               {counted} / {repeat}
             </AppText>
           </View>

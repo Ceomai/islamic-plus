@@ -24,7 +24,7 @@ export function SectionHeader({ title, actionLabel, onAction }: Props) {
       <AppText variant="heading">{title}</AppText>
       {actionLabel && onAction ? (
         <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button">
-          <AppText variant="callout" tone="brand" style={{ fontWeight: '600' }}>
+          <AppText variant="calloutStrong" tone="brand">
             {actionLabel}
           </AppText>
         </Pressable>

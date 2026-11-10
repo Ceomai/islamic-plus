@@ -68,18 +68,18 @@ export function KazaScreen() {
 
       <View style={{ flexDirection: 'row', gap: space[2], marginTop: space[4] }}>
         <Surface variant="soft" padding={space[3]} style={{ flex: 1 }}>
-          <AppText variant="title" color={colors.onPrimarySoft}>
+          <AppText variant="title" tone="onPrimarySoft" numeric>
             {num(remaining)}
           </AppText>
-          <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }}>
+          <AppText variant="captionStrong" tone="onPrimarySoft">
             {t('kaza.remaining')}
           </AppText>
         </Surface>
         <Surface variant="soft" padding={space[3]} style={{ flex: 1 }}>
-          <AppText variant="title" color={colors.onPrimarySoft}>
+          <AppText variant="title" tone="onPrimarySoft" numeric>
             {num(data.madeUp)}
           </AppText>
-          <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }}>
+          <AppText variant="captionStrong" tone="onPrimarySoft">
             {t('kaza.madeUp')}
           </AppText>
         </Surface>
@@ -118,11 +118,11 @@ export function KazaScreen() {
               })}
             >
               <Ionicons name="checkmark" size={16} color={colors.onPrimary} />
-              <AppText variant="caption" color={colors.onPrimary} style={{ fontWeight: '600' }}>
+              <AppText variant="captionStrong" tone="onPrimary">
                 {t('kaza.prayed')}
               </AppText>
             </Pressable>
-            <AppText variant="heading" style={{ width: 64, textAlign: 'center' }}>
+            <AppText variant="heading" numeric style={{ width: 64, textAlign: 'center' }}>
               {num(data.counts[p])}
             </AppText>
             <Pressable
@@ -131,7 +131,7 @@ export function KazaScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('kaza.addOne', { prayer: label(p) })}
             >
-              <Ionicons name="add-circle-outline" size={26} color={colors.primary} />
+              <Ionicons name="add-circle-outline" size={26} color={colors.primaryText} />
             </Pressable>
           </View>
         ))}

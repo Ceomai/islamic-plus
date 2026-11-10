@@ -9,6 +9,7 @@ import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface, TextFie
 
 const EMOJIS = ['👨', '👩', '👦', '👧', '🧑', '👴', '👵'];
 const ROLES: FamilyMember['role'][] = ['parent', 'child', 'spouse', 'other'];
+const EMOJI_OPTION = 44;
 
 export function FamilyModeScreen() {
   const { family, addFamilyMember, removeFamilyMember, settings, updateSettings, setActiveFamilyMember } = useApp();
@@ -62,7 +63,7 @@ export function FamilyModeScreen() {
               subtitle={t('family.meHint')}
               onPress={() => setActiveFamilyMember(null)}
               showChevron={false}
-              trailing={activeId === null ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : <View />}
+              trailing={activeId === null ? <Ionicons name="checkmark-circle" size={22} color={colors.primaryText} /> : <View />}
               divider={family.length > 0}
             />
             {family.map((m, i) => (
@@ -82,14 +83,14 @@ export function FamilyModeScreen() {
                     borderBottomColor: colors.border,
                   })}
                 >
-                  <AppText style={{ fontSize: 26, lineHeight: 32 }}>{m.avatarEmoji}</AppText>
+                  <AppText variant="title">{m.avatarEmoji}</AppText>
                   <View style={{ flex: 1 }}>
                     <AppText variant="bodyStrong">{m.name}</AppText>
                     <AppText variant="caption" tone="secondary">
                       {t(`family.role.${m.role}`)}
                     </AppText>
                   </View>
-                  {activeId === m.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+                  {activeId === m.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primaryText} /> : null}
                 </Pressable>
                 <Pressable onPress={() => confirmRemove(m)} hitSlop={10} style={{ paddingLeft: space[3] }} accessibilityLabel={t('family.remove')}>
                   <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
@@ -111,8 +112,8 @@ export function FamilyModeScreen() {
                   accessibilityRole="button"
                   accessibilityState={{ selected: emoji === e }}
                   style={{
-                    width: 44,
-                    height: 44,
+                    width: EMOJI_OPTION,
+                    height: EMOJI_OPTION,
                     borderRadius: radius.md,
                     borderWidth: emoji === e ? 2 : 1,
                     borderColor: emoji === e ? colors.primary : colors.border,
@@ -120,7 +121,7 @@ export function FamilyModeScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <AppText style={{ fontSize: 22, lineHeight: 28 }}>{e}</AppText>
+                  <AppText variant="title">{e}</AppText>
                 </Pressable>
               ))}
             </View>
