@@ -630,6 +630,10 @@ export const tr = {
     continue: "Devam",
     start: "Başla",
     later: "Bu ayarları istediğiniz zaman Ayarlar’dan değiştirebilirsiniz.",
+    accountTitle: "Verilerinizi cihazlar arasında yedekleyin",
+    accountBody: "Hesap olmadan da her özellik çalışır ve verileriniz bu cihazda kalır. Ücretsiz bir hesapla namazlarınız, tesbihleriniz, alışkanlıklarınız ve okuma ilerlemeniz yedeklenir, diğer cihazlarınızla eşitlenir.",
+    notNow: "Şimdi değil",
+    accountLater: "Hesabı istediğiniz zaman Ayarlar’dan oluşturabilirsiniz.",
   },
   ramadan: {
     title: "Ramazan {{year}}",

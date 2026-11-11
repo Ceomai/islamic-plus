@@ -630,6 +630,10 @@ export const en = {
     continue: "Continue",
     start: "Get started",
     later: "You can change any of these later in Settings.",
+    accountTitle: "Back up your data across devices",
+    accountBody: "Everything works without an account and your data stays on this device. With a free account, your prayers, tasbih, habits and reading progress are backed up and synced to your other devices.",
+    notNow: "Not now",
+    accountLater: "You can create an account any time from Settings.",
   },
   ramadan: {
     title: "Ramadan {{year}}",

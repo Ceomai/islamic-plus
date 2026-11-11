@@ -18,14 +18,22 @@ const KEYS = {
   educationProgress: '@islamic/educationProgress',
   zakatHistory: '@islamic/zakatHistory',
   deviceLanguage: '@islamic/deviceLanguage',
+  /** Set once this device has started its first (automatic guest) session — see firstRun.ts */
+  firstRunDone: '@islamic/firstRunDone',
   kaza: '@islamic/kaza',
   /** Deleted habits, family members and prayer marks (see tombstones.ts) */
   deleted: '@islamic/deleted',
 };
 
 /** Device-wide keys — everything else belongs to the signed-in account. */
-const DEVICE_KEYS = new Set<string>([KEYS.authSession, KEYS.offlineAudio, KEYS.deviceLanguage, '@islamic/auth/users']);
-const LEGACY_MIGRATED_KEY = '@islamic/legacyMigratedTo';
+const DEVICE_KEYS = new Set<string>([
+  KEYS.authSession,
+  KEYS.offlineAudio,
+  KEYS.deviceLanguage,
+  KEYS.firstRunDone,
+  '@islamic/auth/users',
+]);
+export const LEGACY_MIGRATED_KEY = '@islamic/legacyMigratedTo';
 
 let storageUser: string | null = null;
 

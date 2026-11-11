@@ -6,22 +6,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, CALCULATION_METHODS, MADHABS } from '../constants/defaults';
 import { searchCities } from '../data/cities';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { requestNotificationPermissions, schedulePrayerNotifications } from '../services/notifications';
 import type { CalculationMethodId, Madhab } from '../types';
 import { AppText, Button, Chip, IconBadge, Surface, TextField } from '../ui';
 
-type Step = 'welcome' | 'prayer' | 'location' | 'notifications';
-const STEPS: Step[] = ['welcome', 'prayer', 'location', 'notifications'];
+type Step = 'welcome' | 'prayer' | 'location' | 'notifications' | 'account';
+const BASE_STEPS: Step[] = ['welcome', 'prayer', 'location', 'notifications'];
+/** Guests get one last, skippable offer to create an account for cloud backup */
+const GUEST_STEPS: Step[] = [...BASE_STEPS, 'account'];
 type Permission = 'unknown' | 'granted' | 'denied';
 
 /**
- * First run after sign-in: language, how prayer times are calculated, and why the app asks for
- * location and notifications. Every step can be skipped and changed later in Settings.
+ * First run (as a guest or after sign-in): language, how prayer times are calculated, and why the app
+ * asks for location and notifications. Every step can be skipped and changed later in Settings.
  */
 export function OnboardingScreen() {
   const { settings, updateSettings, refreshLocation, setManualLocation, location } = useApp();
+  const { isGuest, logout } = useAuth();
+  const STEPS = isGuest ? GUEST_STEPS : BASE_STEPS;
   const [cityQuery, setCityQuery] = useState('');
   const [showCities, setShowCities] = useState(false);
   const { colors, radius, space } = useTheme();
@@ -41,10 +46,21 @@ export function OnboardingScreen() {
       return true;
     });
     return () => sub.remove();
-  }, [index]);
+  }, [index, STEPS]);
   const next = () => {
     if (index < STEPS.length - 1) setStep(STEPS[index + 1]);
     else void updateSettings({ onboardingDone: true });
+  };
+
+  // Finish the introduction first, so the guest data copied into a new account opens at home
+  const goToAccount = async () => {
+    setBusy(true);
+    try {
+      await updateSettings({ onboardingDone: true });
+      await logout();
+    } finally {
+      setBusy(false);
+    }
   };
 
   const askLocation = async () => {
@@ -250,19 +266,53 @@ export function OnboardingScreen() {
           </View>
         )}
 
+        {step === 'account' && (
+          <View style={{ flex: 1 }}>
+            <IconBadge name="cloud-upload-outline" size="lg" />
+            <AppText variant="title" style={{ marginTop: space[4] }}>
+              {t('onboarding.accountTitle')}
+            </AppText>
+            <AppText variant="body" tone="secondary" style={{ marginTop: space[2] }}>
+              {t('onboarding.accountBody')}
+            </AppText>
+            <Button
+              label={t('auth.signInOrRegister')}
+              icon="log-in-outline"
+              variant="secondary"
+              onPress={goToAccount}
+              loading={busy}
+              style={{ marginTop: space[5] }}
+            />
+          </View>
+        )}
+
         <View style={{ flexDirection: 'row', gap: space[3], marginTop: space[6] }}>
           {index > 0 && (
             <Button label={t('onboarding.back')} variant="secondary" onPress={() => setStep(STEPS[index - 1])} style={{ flex: 1 }} />
           )}
           <Button
-            label={index === STEPS.length - 1 ? t('onboarding.start') : step === 'location' || step === 'notifications' ? t('onboarding.continue') : t('onboarding.next')}
+            label={
+              step === 'account'
+                ? t('onboarding.notNow')
+                : index === STEPS.length - 1
+                  ? t('onboarding.start')
+                  : step === 'location' || step === 'notifications'
+                    ? t('onboarding.continue')
+                    : t('onboarding.next')
+            }
             onPress={next}
+            disabled={busy && step === 'account'}
             style={{ flex: 2 }}
           />
         </View>
         {(step === 'location' || step === 'notifications') && (
           <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[3] }}>
             {t('onboarding.later')}
+          </AppText>
+        )}
+        {step === 'account' && (
+          <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[3] }}>
+            {t('onboarding.accountLater')}
           </AppText>
         )}
       </ScrollView>
