@@ -1,33 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, Pressable, ScrollView, useAnimatedValue, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useActivity } from '../context/AppContext';
-import { DHIKR, TESBIHAT_COUNT, TESBIHAT_SEQUENCE, getDhikr } from '../data/dhikr';
+import { DHIKR, TESBIHAT_SEQUENCE, getDhikr } from '../data/dhikr';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useTasbihCounter, type TasbihMode } from '../hooks/useTasbihCounter';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { trackFeatureAction } from '../services/cloudAnalytics';
-import { tasbihHaptic, type TasbihHaptic } from '../services/tasbihFeedback';
-import {
-  incrementTasbih,
-  loadTasbihData,
-  resetTasbihSession,
-  setTasbihGoal,
-  summarizeTasbih,
-} from '../services/tasbihStorage';
+import type { TasbihHaptic } from '../services/tasbihFeedback';
 import { AppText, Button, Chip, PressableScale, ProgressBar, Screen, Surface } from '../ui';
 import { easeInOut, timing } from '../ui/motion';
 import { announce } from '../utils/announce';
 import { confirmDestructive } from '../utils/confirm';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tasbih'>;
-type Mode = 'tesbihat' | 33 | 99 | 100;
-
-const MODES: Mode[] = ['tesbihat', 33, 99, 100];
+const MODES: TasbihMode[] = ['tesbihat', 33, 99, 100];
 const GOALS = [0, 100, 300, 500, 1000];
 const COUNTER_SIZE = 220;
 const KEEP_AWAKE_TAG = 'tasbih';
@@ -38,25 +28,29 @@ const PLAY_HAPTIC: Record<TasbihHaptic, () => Promise<void>> = {
 };
 
 export function TasbihScreen({ navigation }: Props) {
-  const { trackActivity } = useActivity();
   const { colors, radius, space, component, motion, layout } = useTheme();
   const { t, lang } = useTranslation();
-  const [mode, setMode] = useState<Mode>('tesbihat');
-  const [dhikrId, setDhikrId] = useState('subhanallah');
-  const [step, setStep] = useState(0);
-  const [count, setCount] = useState(0);
-  const [rounds, setRounds] = useState(0);
-  const [justFinished, setJustFinished] = useState(false);
-  const [today, setToday] = useState(0);
-  const [goal, setGoal] = useState(0);
   const [editGoal, setEditGoal] = useState(false);
   const reduced = useReducedMotion();
   // One-shot pulse of the counter when a round completes (on top of the press scale)
   const pulse = useAnimatedValue(1);
 
-  const tesbihat = mode === 'tesbihat';
-  const target = tesbihat ? TESBIHAT_COUNT : mode;
-  const currentId = tesbihat ? TESBIHAT_SEQUENCE[step] : dhikrId;
+  const playPulse = () => {
+    if (reduced) return;
+    pulse.stopAnimation();
+    pulse.setValue(1);
+    Animated.sequence([
+      timing(pulse, motion.pulseScale, motion.duration.fast),
+      timing(pulse, 1, motion.duration.fast, easeInOut),
+    ]).start();
+  };
+
+  const counter = useTasbihCounter({
+    // The goal line changes on every tap, so it is not a live region: announce only the goal itself
+    onGoalReached: (n) => announce(t('tasbih.goalReached', { n: String(n) }), { hasLiveRegion: false }),
+    onRoundComplete: playPulse,
+  });
+  const { mode, dhikrId, step, count, rounds, justFinished, today, goal, tesbihat, target, currentId, clearSession } = counter;
   const dhikr = getDhikr(currentId) ?? DHIKR[0];
 
   // Long dhikr sessions used to let the screen go dark mid-count
@@ -69,106 +63,12 @@ export function TasbihScreen({ navigation }: Props) {
     };
   }, []);
 
-  // What the counter shows right now. Taps read and change these synchronously, so the number,
-  // progress and haptic follow every tap at once and quick taps never act on a stale value
-  const live = useRef({ count: 0, today: 0, step: 0 });
-  const touched = useRef(false);
-  const pending = useRef(0);
-  // Bumped by a reset: storage answers for taps before it must not move the counter any more
-  const epoch = useRef(0);
-
-  useEffect(() => {
-    void loadTasbihData().then((d) => {
-      setGoal(d.dailyGoal ?? 0);
-      if (touched.current) return; // the answers to those taps bring the stored numbers
-      live.current.count = d.count;
-      live.current.today = summarizeTasbih(d, 1).today;
-      setCount(live.current.count);
-      setToday(live.current.today);
-    });
-  }, []);
-
-  const playPulse = () => {
-    if (reduced) return;
-    pulse.stopAnimation();
-    pulse.setValue(1);
-    Animated.sequence([
-      timing(pulse, motion.pulseScale, motion.duration.fast),
-      timing(pulse, 1, motion.duration.fast, easeInOut),
-    ]).start();
-  };
-
-  const increment = () => {
-    setJustFinished(false);
-    touched.current = true;
-    const state = live.current;
-    const tapDhikrId = tesbihat ? TESBIHAT_SEQUENCE[state.step] : dhikrId;
-
-    state.today += 1;
-    setToday(state.today);
-    const goalReached = goal > 0 && state.today === goal;
-    if (goalReached) {
-      void trackFeatureAction('tasbih', 'goal_reached', { goal });
-      // The goal line changes on every tap, so it is not a live region: announce only the goal itself
-      announce(t('tasbih.goalReached', { n: String(state.today) }), { hasLiveRegion: false });
-    }
-
-    // Storage counts the tap and completes the round in one step; the screen doesn't wait for it
-    const tapEpoch = epoch.current;
-    pending.current += 1;
-    void incrementTasbih(target, tapDhikrId)
-      .then((result) => {
-        // Once every tap is stored, show the stored numbers (they differ only if a tap came before loading)
-        if (--pending.current > 0 || tapEpoch !== epoch.current) return;
-        state.count = result.count;
-        state.today = summarizeTasbih(result.data, 1).today;
-        setCount(state.count);
-        setToday(state.today);
-      })
-      .catch(() => {
-        pending.current -= 1;
-      });
-    void trackActivity('tasbih', false);
-
-    const roundComplete = state.count + 1 >= target;
-    let setComplete = false;
-    if (!roundComplete) {
-      state.count += 1;
-      setCount(state.count);
-    } else {
-      // Round complete: move on to the next phrase (tesbihat) or the next round
-      void trackFeatureAction('tasbih', 'round_completed', { target, dhikr: tapDhikrId });
-      state.count = 0;
-      setCount(0);
-      if (tesbihat) {
-        state.step = (state.step + 1) % TESBIHAT_SEQUENCE.length;
-        setStep(state.step);
-      }
-      setComplete = !tesbihat || state.step === 0;
-      if (setComplete) {
-        setRounds((r) => r + 1);
-        setJustFinished(true);
-      }
-      playPulse();
-    }
-    // Exactly one haptic per tap, in the same frame as the number changes
-    void PLAY_HAPTIC[tasbihHaptic({ tesbihat, roundComplete, setComplete, goalReached })]();
-  };
-
-  const clearSession = async () => {
-    epoch.current += 1;
-    live.current.count = 0;
-    live.current.step = 0;
-    setCount(0);
-    setStep(0);
-    setRounds(0);
-    setJustFinished(false);
-    await resetTasbihSession(target, currentId);
-  };
+  // Exactly one haptic per tap, in the same frame as the number changes
+  const increment = () => void PLAY_HAPTIC[counter.increment()]();
 
   // A started count (or tesbihat already past its first phrase) is lost by a reset: ask first
   const confirmLoss = (confirmLabel: string, message: string) => {
-    if (live.current.count === 0 && live.current.step === 0) return Promise.resolve(true);
+    if (!counter.hasProgress()) return Promise.resolve(true);
     return confirmDestructive({ title: t('tasbih.resetTitle'), message, confirm: confirmLabel, cancel: t('account.cancel') });
   };
 
@@ -177,18 +77,18 @@ export function TasbihScreen({ navigation }: Props) {
     await clearSession();
   };
 
-  const changeMode = async (next: Mode) => {
+  const changeMode = async (next: TasbihMode) => {
     if (next === mode) return;
     if (!(await confirmLoss(t('tasbih.switchConfirm'), t('tasbih.switchBody')))) return;
     await clearSession();
-    setMode(next);
+    counter.setMode(next);
   };
 
   const changeDhikr = async (id: string) => {
     if (id === dhikrId) return;
     if (!(await confirmLoss(t('tasbih.switchConfirm'), t('tasbih.switchBody')))) return;
     await clearSession();
-    setDhikrId(id);
+    counter.setDhikrId(id);
   };
 
   const progress = Math.min(count / target, 1);
@@ -338,9 +238,8 @@ export function TasbihScreen({ navigation }: Props) {
                 label={g === 0 ? t('tasbih.goalNone') : String(g)}
                 selected={goal === g}
                 onPress={() => {
-                  setGoal(g);
+                  counter.changeGoal(g);
                   setEditGoal(false);
-                  void setTasbihGoal(g);
                 }}
               />
             ))}

@@ -17,7 +17,7 @@ const fold = (s: string) => s.toLocaleLowerCase('tr').replace(/ı/g, 'i');
 export function HadithScreen({ navigation }: Props) {
   const { settings, hadithProgress } = useApp();
   const { colors, space, motion } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, lang, locale } = useTranslation();
   const lastRead = hadithProgress.lastRead;
 
   const [collectionId, setCollectionId] = useState(
@@ -110,7 +110,7 @@ export function HadithScreen({ navigation }: Props) {
     <Screen>
       {header}
       <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
-        {t('hadith.collectionInfo', { n: collection.total.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US'), s: String(collection.sections.length) })}
+        {t('hadith.collectionInfo', { n: collection.total.toLocaleString(locale), s: String(collection.sections.length) })}
         {lang === 'tr' && !collection.tr ? ` · ${t('hadith.englishOnly')}` : ''}
       </AppText>
       <SearchField value={query} onChangeText={setQuery} placeholder={t('hadith.searchChapters')} style={{ marginBottom: space[3] }} />

@@ -14,10 +14,10 @@ interface Props {
 }
 
 /**
- * "Dua of the day" card on the home screen. It used to be a "home widget" module that repeated the
- * next prayer and the hijri date already shown above it.
+ * "Dua of the day" card on the home screen. Its launcher id stays 'module_widget' (from the
+ * earlier "home widget" module) because saved home layouts refer to it.
  */
-export function HomeWidgetModule({ onOpenDua }: Props) {
+export function DailyDuaCard({ onOpenDua }: Props) {
   const { colors, space } = useTheme();
   const { t, lang } = useTranslation();
   // Rolls over to the next dua after midnight while the app stays open
@@ -29,13 +29,13 @@ export function HomeWidgetModule({ onOpenDua }: Props) {
     <Surface
       variant="soft"
       onPress={onOpenDua ? () => onOpenDua(dua.id) : undefined}
-      accessibilityLabel={`${t('launcher.widgetModule')}: ${dua.title[lang]}`}
+      accessibilityLabel={`${t('launcher.dailyDua')}: ${dua.title[lang]}`}
       style={{ marginBottom: space[3], gap: space[2] }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
         <Ionicons name="hand-left-outline" size={16} color={colors.onPrimarySoft} />
         <AppText variant="overline" tone="onPrimarySoft" style={{ flex: 1 }}>
-          {t('launcher.widgetModule')}
+          {t('launcher.dailyDua')}
         </AppText>
         {onOpenDua ? <Ionicons name="chevron-forward" size={16} color={colors.onPrimarySoft} /> : null}
       </View>

@@ -19,4 +19,13 @@ module.exports = defineConfig([
       'import/namespace': 'off',
     },
   },
+  {
+    // Tests declare jest.mock() (and the variables it reads) before importing the mocked modules,
+    // and require() modules inside a test when they need them after a mock or a storage reset
+    files: ['src/__tests__/**'],
+    rules: {
+      'import/first': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 ]);

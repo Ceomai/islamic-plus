@@ -26,14 +26,14 @@ const CATEGORY_ICONS: Record<SpiritualHabit['category'], React.ComponentProps<ty
 export function HabitsScreen() {
   const { habits, addHabit, toggleHabitToday, removeHabit, settings } = useApp();
   const { space } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, locale } = useTranslation();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<SpiritualHabit['category']>('dhikr');
   const [target, setTarget] = useState(7);
   const today = localDateKey();
   const week = lastDayKeys(7);
   const dayInitials = week.map((k) =>
-    new Date(`${k}T12:00:00`).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'narrow' })
+    new Date(`${k}T12:00:00`).toLocaleDateString(locale, { weekday: 'narrow' })
   );
 
   const handleAdd = () => {

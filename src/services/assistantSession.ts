@@ -1,5 +1,5 @@
 import type { AIChatMessage, AppLanguage, AssistantAction, AssistantTarget, PrayerName } from '../types';
-import { askAssistant, type ChatLang } from './aiAssistant';
+import { askAssistant, type ChatLang } from './assistant';
 import { askRemoteAssistant, isRemoteAssistantAvailable } from './assistantRemote';
 import { trackFeatureAction } from './cloudAnalytics';
 import { fireAndForget } from './fireAndForget';

@@ -1,23 +1,22 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
-import { BackHandler, Platform, Pressable, ScrollView, View } from 'react-native';
+import { BackHandler, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, CALCULATION_METHODS, MADHABS } from '../constants/defaults';
-import { searchCities } from '../data/cities';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { OnboardingCitySearch } from '../components/onboarding/OnboardingCitySearch';
+import { PermissionNote, type PermissionState } from '../components/onboarding/PermissionNote';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { requestNotificationPermissions, schedulePrayerNotifications } from '../services/notifications';
 import type { CalculationMethodId, Madhab } from '../types';
-import { AppText, Button, Chip, Enter, IconBadge, Surface, TextField } from '../ui';
+import { AppText, Button, Chip, Enter, IconBadge, Surface } from '../ui';
 
 type Step = 'welcome' | 'prayer' | 'location' | 'notifications' | 'account';
 const BASE_STEPS: Step[] = ['welcome', 'prayer', 'location', 'notifications'];
 /** Guests get one last, skippable offer to create an account for cloud backup */
 const GUEST_STEPS: Step[] = [...BASE_STEPS, 'account'];
-type Permission = 'unknown' | 'granted' | 'denied';
 
 /**
  * First run (as a guest or after sign-in): language, how prayer times are calculated, and why the app
@@ -34,8 +33,8 @@ export function OnboardingScreen() {
   const [step, setStep] = useState<Step>('welcome');
   // Which way the last step change went: the new step slides in from that side (none on first open)
   const [direction, setDirection] = useState<1 | -1 | 0>(0);
-  const [locationState, setLocationState] = useState<Permission>(location ? 'granted' : 'unknown');
-  const [notifState, setNotifState] = useState<Permission>('unknown');
+  const [locationState, setLocationState] = useState<PermissionState>(location ? 'granted' : 'unknown');
+  const [notifState, setNotifState] = useState<PermissionState>('unknown');
   const [busy, setBusy] = useState(false);
 
   const index = STEPS.indexOf(step);
@@ -105,20 +104,6 @@ export function OnboardingScreen() {
   const chooseMadhab = (m: Madhab) => {
     void updateSettings(m === 'jafari' ? { madhab: m, calculationMethod: 'tehran' } : { madhab: m });
   };
-
-  const permissionNote = (state: Permission, deniedKey: string) =>
-    state === 'unknown' ? null : (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[3] }}>
-        <Ionicons
-          name={state === 'granted' ? 'checkmark-circle' : 'alert-circle-outline'}
-          size={18}
-          color={state === 'granted' ? colors.primary : colors.textSecondary}
-        />
-        <AppText variant="callout" tone={state === 'granted' ? 'brand' : 'secondary'} style={{ flex: 1 }}>
-          {state === 'granted' ? t('onboarding.granted') : t(deniedKey)}
-        </AppText>
-      </View>
-    );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -214,49 +199,24 @@ export function OnboardingScreen() {
                 </AppText>
               </Surface>
               <Button label={t('onboarding.allowLocation')} icon="navigate" onPress={askLocation} loading={busy} style={{ marginTop: space[5] }} />
-              {permissionNote(locationState, 'onboarding.locationDenied')}
+              <PermissionNote state={locationState} deniedKey="onboarding.locationDenied" />
               {location?.city && (locationState === 'granted' || location.cityId) && (
                 <AppText variant="callout" tone="brand" style={{ marginTop: space[2] }}>
                   {location.city}
                 </AppText>
               )}
-              {/* No GPS or no permission: pick the city from a list that works offline */}
-              <Button label={t('city.choose')} icon="list" variant="ghost" onPress={() => setShowCities((v) => !v)} style={{ marginTop: space[3] }} />
-              {showCities && (
-                <View style={{ marginTop: space[2] }}>
-                  <TextField
-                    label={t('city.search')}
-                    value={cityQuery}
-                    onChangeText={setCityQuery}
-                    placeholder={t('city.searchPlaceholder')}
-                    autoCorrect={false}
-                    maxLength={40}
-                  />
-                  {searchCities(cityQuery).slice(0, 8).map((c) => (
-                    <Pressable
-                      key={c.id}
-                      onPress={async () => {
-                        await setManualLocation(c);
-                        // No permission was given; the chosen city is shown instead of "permission granted"
-                        setLocationState('unknown');
-                        setShowCities(false);
-                        setCityQuery('');
-                      }}
-                      accessibilityRole="button"
-                      style={({ pressed }) => ({
-                        minHeight: 48,
-                        justifyContent: 'center',
-                        paddingHorizontal: space[3],
-                        borderBottomWidth: 1,
-                        borderBottomColor: colors.border,
-                        backgroundColor: pressed ? colors.surfaceMuted : 'transparent',
-                      })}
-                    >
-                      <AppText variant="body">{settings.appLanguage === 'tr' ? c.tr : c.en}</AppText>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
+              <OnboardingCitySearch
+                appLanguage={settings.appLanguage}
+                open={showCities}
+                onOpenChange={setShowCities}
+                query={cityQuery}
+                onQueryChange={setCityQuery}
+                onPick={async (c) => {
+                  await setManualLocation(c);
+                  // No permission was given; the chosen city is shown instead of "permission granted"
+                  setLocationState('unknown');
+                }}
+              />
             </View>
           )}
 
@@ -276,7 +236,7 @@ export function OnboardingScreen() {
               ) : (
                 <Button label={t('onboarding.allowNotif')} icon="notifications" onPress={askNotifications} loading={busy} style={{ marginTop: space[5] }} />
               )}
-              {permissionNote(notifState, 'onboarding.notifDenied')}
+              <PermissionNote state={notifState} deniedKey="onboarding.notifDenied" />
             </View>
           )}
 

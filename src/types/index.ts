@@ -42,13 +42,6 @@ export interface CustomReminder {
   sound: 'default' | 'adhan_short' | 'silent';
 }
 
-export interface WidgetPreferences {
-  showNextPrayer: boolean;
-  showHijriDate: boolean;
-  showDailyDua: boolean;
-  compactMode: boolean;
-}
-
 export interface ActivityStats {
   tasbihTotal: number;
   habitsCompletedTotal: number;
@@ -110,11 +103,6 @@ export interface PrayerNotificationSettings {
   advanceMinutes: number;
 }
 
-export interface PrayerSchedule {
-  date: string;
-  times: Record<PrayerName, string>;
-}
-
 export interface DisabledPrayerRule {
   prayer: PrayerName;
   daysOfWeek: number[];
@@ -137,7 +125,6 @@ export interface UserSettings {
   familyModeEnabled: boolean;
   activeFamilyMemberId: string | null;
   cloudSync: CloudSyncMeta;
-  widgetPrefs: WidgetPreferences;
   customReminders: CustomReminder[];
   offlineAudioEnabled: boolean;
   /** How the Quran reader lays out ayahs */
@@ -310,29 +297,4 @@ export interface NearbyPlace {
   type: 'mosque' | 'prayer_room' | 'halal_restaurant';
   /** Where the data came from, for attribution */
   source?: 'google' | 'osm';
-}
-
-export interface EducationTopic {
-  id: string;
-  title: string;
-  summary: string;
-  perspectives: {
-    sect: string;
-    approach: string;
-  }[];
-}
-
-export interface QuranEdition {
-  id: string;
-  name: string;
-  language: string;
-  translator?: string;
-  sect?: SectPreference;
-}
-
-export interface HadithCollection {
-  id: string;
-  name: string;
-  language: string;
-  sect?: SectPreference;
 }

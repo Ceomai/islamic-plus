@@ -82,7 +82,7 @@ Yerel:    adhan (vakit), expo-notifications (60 bildirim bütçesi), expo-widget
 | Kıble | QiblaScreen (İbadet sekmesi) | qibla.ts | sensör |
 | Yakındaki camiler | PlacesScreen | places.ts | Overpass/Nominatim (+ places edge fn) |
 | Alışkanlıklar, aile modu, istatistikler | HabitsScreen, FamilyModeScreen, StatisticsScreen | AppContext, statistics.ts | — |
-| Asistan (5 dilde istek, cihazda) | AIAssistantScreen | aiAssistant.ts (+ assistantRemote.ts, kapalı) | (assistant edge fn) |
+| Asistan (5 dilde istek, cihazda) | AIAssistantScreen | assistant/ (+ assistantRemote.ts, kapalı) | (assistant edge fn) |
 | Ana ekran düzenleme, temalar, widget'lar | HomeLauncherEditScreen, ThemesScreen, WidgetsScreen | homeWidget.ts, widgetBackground.ts | expo-widgets |
 | Bulut senkron / yedek | CloudSyncScreen | cloudSync.ts, userDataCloud.ts, tombstones.ts | Supabase |
 | Geri bildirim / hata raporu | FeedbackScreen | errorLog.ts | Supabase (008/009) |

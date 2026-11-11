@@ -1,6 +1,9 @@
 /**
- * Fails when a translation key used in src/ is missing from the tr or en locale.
- * Keys built at runtime (category ids, view names…) are listed in DYNAMIC below.
+ * Fails when a translation key used in src/ is missing from the tr or en locale, or when a locale
+ * key is not referenced anywhere in src/ (unused text drifts out of date and gets translated for nothing).
+ * Keys built at runtime (category ids, view names…) are listed in DYNAMIC below; prefixes whose every
+ * child is picked at runtime are listed in DYNAMIC_PREFIXES. A template-literal key (t(`x.${id}`))
+ * whose prefix is in neither list fails the check, so new dynamic keys have to be registered here.
  * Run: node scripts/check-i18n.js
  */
 const fs = require('fs');
@@ -21,6 +24,9 @@ const DYNAMIC = [
   ...['day', 'date', 'imsak', 'sunrise', 'iftar', 'isha'].map((c) => `ramadan.col.${c}`),
 ];
 
+/** Every direct child of these is chosen at runtime (prayer names, calculation methods, madhabs) */
+const DYNAMIC_PREFIXES = ['prayer.', 'calcMethod.', 'madhab.'];
+
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
@@ -30,9 +36,16 @@ function walk(dir) {
 }
 
 const used = new Set(DYNAMIC);
+/** Every quoted string in src/, to tell which locale keys are referenced (titleKey: 'nav.quran' counts) */
+const literals = new Set();
+/** Prefixes of keys built from template literals, e.g. `habits.cat.` from t(`habits.cat.${c}`) */
+const templatePrefixes = new Set();
 for (const file of walk(SRC)) {
-  if (file.includes(`${path.sep}i18n${path.sep}`)) continue;
+  if (file.includes(`${path.sep}locales${path.sep}`)) continue;
   const code = fs.readFileSync(file, 'utf8');
+  for (const m of code.matchAll(/['"`]([a-zA-Z0-9_.]+)['"`]/g)) literals.add(m[1]);
+  for (const m of code.matchAll(/`([a-zA-Z0-9_.]+\.)\$\{/g)) templatePrefixes.add(m[1]);
+  if (file.includes(`${path.sep}i18n${path.sep}`)) continue;
   // t('a.b'), t(cond ? 'a.b' : 'c.d'), cond ? t('a.b') : t('c.d')
   for (const m of code.matchAll(/\bt\(\s*'([a-zA-Z0-9_.]+)'/g)) used.add(m[1]);
   for (const m of code.matchAll(/\bt\(\s*[\w.]+\s*\?\s*'([a-zA-Z0-9_.]+)'\s*:\s*'([a-zA-Z0-9_.]+)'/g)) {
@@ -56,4 +69,20 @@ for (const lang of ['tr', 'en']) {
   console.log(`${lang}: ${absent.length ? `missing ${absent.length}: ${absent.join(', ')}` : 'ok'}`);
 }
 console.log(`${used.size} keys checked`);
-process.exit(missing ? 1 : 0);
+
+const unregistered = [...templatePrefixes].filter(
+  (p) => !DYNAMIC_PREFIXES.includes(p) && !DYNAMIC.some((k) => k.startsWith(p))
+);
+if (unregistered.length) console.log(`dynamic key prefixes missing from DYNAMIC: ${unregistered.join(', ')}`);
+
+const flatten = (obj, prefix = '') =>
+  Object.entries(obj).flatMap(([k, v]) => (v && typeof v === 'object' ? flatten(v, `${prefix}${k}.`) : [`${prefix}${k}`]));
+const isReferenced = (key) =>
+  literals.has(key) || used.has(key) || DYNAMIC_PREFIXES.some((p) => key.startsWith(p) && !key.slice(p.length).includes('.'));
+let unused = 0;
+for (const lang of ['tr', 'en']) {
+  const keys = flatten(loadLocale(lang)).filter((k) => !isReferenced(k)).sort();
+  unused += keys.length;
+  if (keys.length) console.log(`${lang}: unused ${keys.length}: ${keys.join(', ')}`);
+}
+process.exit(missing || unused || unregistered.length ? 1 : 0);

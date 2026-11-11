@@ -18,7 +18,7 @@ export interface HomeFeatureDef {
 
 export const HOME_FEATURE_CATALOG: HomeFeatureDef[] = [
   { id: 'module_prayer_times', icon: 'time', titleKey: 'launcher.prayerModule', isModule: true, category: 'worship' },
-  { id: 'module_widget', icon: 'apps', titleKey: 'launcher.widgetModule', isModule: true, category: 'tools' },
+  { id: 'module_widget', icon: 'apps', titleKey: 'launcher.dailyDua', isModule: true, category: 'tools' },
   { id: 'quran', icon: 'book', titleKey: 'nav.quran', subtitleKey: 'home.quranSub', route: 'Quran', category: 'reading' },
   { id: 'hadith', icon: 'document-text', titleKey: 'nav.hadith', subtitleKey: 'home.hadithSub', route: 'Hadith', category: 'reading' },
   { id: 'duas', icon: 'hand-left', titleKey: 'nav.duas', subtitleKey: 'home.duasSub', route: 'Duas', category: 'reading' },

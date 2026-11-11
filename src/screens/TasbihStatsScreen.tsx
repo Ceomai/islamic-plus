@@ -14,8 +14,7 @@ const CHART_HEIGHT = 110;
 
 export function TasbihStatsScreen() {
   const { colors, radius, space } = useTheme();
-  const { t, lang } = useTranslation();
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  const { t, locale } = useTranslation();
   const [data, setData] = useState<TasbihData | null>(null);
   const [period, setPeriod] = useState<Period>('7');
 

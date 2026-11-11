@@ -8,7 +8,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { AppText, Button } from '../ui';
-import { confirmDestructive } from '../utils/confirm';
+import { confirm } from '../utils/confirm';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CityPicker'>;
 
@@ -38,12 +38,11 @@ export function CityPickerScreen({ navigation }: Props) {
           // Abroad the default method is often not the one the local mosque uses
           const method = suggestedMethodFor(city);
           if (method && method !== settings.calculationMethod) {
-            const ok = await confirmDestructive({
+            const ok = await confirm({
               title: t('city.methodTitle'),
               message: t('city.methodBody', { city: city[lang], method: t(`calcMethod.${method}`) }),
               confirm: t('city.methodYes'),
               cancel: t('city.methodNo'),
-              destructive: false,
             });
             if (ok) await updateSettings({ calculationMethod: method });
           }

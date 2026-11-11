@@ -1,12 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { getPrayerLabel, translate } from '../i18n';
-import type { DisabledPrayerRule, PrayerName, UserSettings } from '../types';
-import { localDateKey } from '../utils/date';
+import type { UserSettings } from '../types';
 import { createSerialQueue } from '../utils/serial';
-import { prayerDaysAhead } from './notificationBudget';
-import { PRAYER_CATEGORY, setupPrayerCategory } from './prayerAction';
-import { getPrayerDates } from './prayerTimes';
+import { setupPrayerCategory } from './prayerAction';
+import { ADHAN_CHANNEL_ID, ADHAN_SOUND_FILE, PRAYER_CHANNEL_ID, SILENT_CHANNEL_ID, buildPrayerTriggers } from './prayerTriggers';
 import { getStorageUser } from './storage';
 
 Notifications.setNotificationHandler({
@@ -18,32 +15,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-/**
- * Android channel. v2 replaces the original "prayer-times" channel, which pointed at an adhan
- * sound file that was never bundled; channel sounds can't be changed once a channel exists.
- */
-export const PRAYER_CHANNEL_ID = 'prayer-times-v2';
-/** Android plays the channel's sound, not the notification's, so each sound choice has a channel */
-const ADHAN_CHANNEL_ID = 'prayer-adhan-v1';
-const SILENT_CHANNEL_ID = 'prayer-silent-v1';
-/** Bundled through the expo-notifications plugin (app.json); 28 s, under iOS's 30 s limit */
-const ADHAN_SOUND_FILE = 'adhan_short.wav';
-
-function soundFor(sound: string | undefined): { sound?: string; channelId: string } {
-  if (sound === 'silent') return { sound: undefined, channelId: SILENT_CHANNEL_ID };
-  if (sound === 'adhan_short' || sound === 'adhan_full') return { sound: ADHAN_SOUND_FILE, channelId: ADHAN_CHANNEL_ID };
-  return { sound: 'default', channelId: PRAYER_CHANNEL_ID };
-}
-const NOTIFY_PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 const notificationsSupported = Platform.OS !== 'web';
-
-function isPrayerDisabled(prayer: PrayerName, date: Date, rules: DisabledPrayerRule[]): boolean {
-  const dateStr = localDateKey(date);
-  const dayOfWeek = date.getDay();
-  return rules.some(
-    (r) => r.prayer === prayer && (r.specificDates.includes(dateStr) || r.daysOfWeek.includes(dayOfWeek))
-  );
-}
 
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (!notificationsSupported) return false;
@@ -125,61 +97,13 @@ async function scheduleNow(
   // A "Prayed" tap is applied only to the account the notification was scheduled for
   const scope = getStorageUser();
 
-  const now = new Date();
-  // Shares iOS's 64-notification limit with custom reminders (see notificationBudget)
-  const perDay = NOTIFY_PRAYERS.filter((p) => settings.prayerNotifications[p]?.enabled).length;
-  const daysAhead = prayerDaysAhead(settings.customReminders ?? [], perDay);
-  for (let dayOffset = 0; dayOffset < daysAhead; dayOffset++) {
-    const date = new Date();
-    date.setDate(date.getDate() + dayOffset);
-    date.setHours(12, 0, 0, 0);
-
-    // Use the computed Date objects directly: formatting to a clock string and parsing it back
-    // depended on the device locale (e.g. Turkish "ÖS" instead of "PM").
-    const times = getPrayerDates(latitude, longitude, date, settings.calculationMethod, settings.madhab);
-
-    for (const prayer of NOTIFY_PRAYERS) {
-      const notifSettings = settings.prayerNotifications[prayer];
-      if (!notifSettings?.enabled) continue;
-      if (isPrayerDisabled(prayer, date, settings.disabledPrayerRules)) continue;
-
-      const triggerDate = new Date(times[prayer].getTime() - (notifSettings.advanceMinutes ?? 0) * 60000);
-      if (triggerDate <= now) continue;
-
-      if (isStale()) return;
-      const prayerLabel = getPrayerLabel(settings.appLanguage, prayer);
-      const tone = soundFor(notifSettings.sound);
-      await Notifications.scheduleNotificationAsync({
-        identifier: `prayer-${prayer}-${dayOffset}`,
-        content: {
-          title: translate(settings.appLanguage, 'notifications.title', { prayer: prayerLabel }),
-          body: translate(settings.appLanguage, 'notifications.body', { prayer: prayerLabel }),
-          sound: tone.sound,
-          categoryIdentifier: PRAYER_CATEGORY,
-          data: { prayer, date: localDateKey(date), scope },
-          ...(Platform.OS === 'android' && { channelId: tone.channelId }),
-        },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
-      });
-    }
-  }
-
-  // The window ends after daysAhead days unless the app is opened again; say so on the last evening
-  if (perDay > 0 && !isStale()) {
-    const notice = new Date();
-    notice.setDate(notice.getDate() + daysAhead - 1);
-    notice.setHours(21, 0, 0, 0);
-    if (notice > now) {
-      await Notifications.scheduleNotificationAsync({
-        identifier: 'prayer-refresh',
-        content: {
-          title: translate(settings.appLanguage, 'notifications.refreshTitle'),
-          body: translate(settings.appLanguage, 'notifications.refreshBody'),
-          ...(Platform.OS === 'android' && { channelId: PRAYER_CHANNEL_ID }),
-        },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: notice },
-      });
-    }
+  for (const trigger of buildPrayerTriggers(settings, { latitude, longitude }, new Date(), scope)) {
+    if (isStale()) return;
+    await Notifications.scheduleNotificationAsync({
+      identifier: trigger.identifier,
+      content: { ...trigger.content, ...(Platform.OS === 'android' && { channelId: trigger.channelId }) },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: trigger.date },
+    });
   }
 }
 

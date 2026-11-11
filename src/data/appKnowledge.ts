@@ -1,5 +1,3 @@
-import type { AppLanguage } from '../types';
-
 export interface AppKnowledgeEntry {
   id: string;
   keywords: string[];
@@ -191,10 +189,3 @@ export const ISLAMIC_KNOWLEDGE: AppKnowledgeEntry[] = [
     tr: 'Hadisler Peygamber Efendimiz ﷺ hakkındaki rivayetlerdir. İnceleme için Hadis bölümünü kullanın; hüküm için alime danışın.',
   },
 ];
-
-export function getKnowledgeCatalog(lang: AppLanguage): string {
-  const lines = APP_KNOWLEDGE.map((e) => `• ${lang === 'tr' ? e.tr.split('.')[0] : e.en.split('.')[0]}`);
-  return lang === 'tr'
-    ? `Uygulama konuları:\n${lines.join('\n')}`
-    : `App topics I can guide:\n${lines.join('\n')}`;
-}

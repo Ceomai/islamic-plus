@@ -2,18 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View, type ScrollViewInstance } from 'react-native';
 import { ChatBubble } from '../components/assistant/ChatBubble';
 import { ChatComposer } from '../components/assistant/ChatComposer';
 import { useAIChat, useAppLocation, useSettings } from '../context/AppContext';
 import { useEventCallback } from '../hooks/useEventCallback';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { getAIWelcome } from '../services/aiAssistant';
+import { getAIWelcome } from '../services/assistant';
 import { getReply, spokenReply } from '../services/assistantSession';
 import { formatClock, getNextPrayer } from '../services/prayerTimes';
 import type { AssistantTarget } from '../types';
@@ -36,7 +35,6 @@ export function AIAssistantScreen() {
   const { settings } = useSettings();
   const { location } = useAppLocation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { canAccess } = useFeatureAccess();
   const { colors, radius, space, layout } = useTheme();
   const reduced = useReducedMotion();
   const headerHeight = useHeaderHeight();
@@ -59,8 +57,12 @@ export function AIAssistantScreen() {
     [navigation]
   );
 
-  useEffect(() => {
+  // Once on open: an empty chat starts with the welcome message
+  const welcomeOnOpen = useEffectEvent(() => {
     if (aiMessages.length === 0) void sendAIMessage('', getAIWelcome(settings.appLanguage));
+  });
+  useEffect(() => {
+    welcomeOnOpen();
     return () => {
       if (pendingNav.current) clearTimeout(pendingNav.current);
     };
@@ -130,16 +132,6 @@ export function AIAssistantScreen() {
   };
 
   const messages = useMemo(() => aiMessages.filter((m) => m.content.length > 0), [aiMessages]);
-
-  if (!canAccess('ai_assistant')) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6], backgroundColor: colors.background }}>
-        <AppText tone="secondary" align="center">
-          {t('auth.guestBanner')}
-        </AppText>
-      </View>
-    );
-  }
 
   return (
     <KeyboardAvoidingView

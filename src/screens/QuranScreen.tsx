@@ -8,7 +8,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { SURAHS } from '../data/surahs';
-import { fold } from '../services/aiAssistant';
+import { fold } from '../services/assistant';
 import type { SurahListItem } from '../services/quranApi';
 import type { QuranBookmark } from '../types';
 import { removeQuranBookmark, startNewKhatm } from '../services/readingProgress';

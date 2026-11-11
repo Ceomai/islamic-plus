@@ -11,6 +11,7 @@ import type {
 } from '../types';
 import type { StoredLocation } from './location';
 import { mergePrayerCompletions } from './prayerHistory';
+import { computePrayerStreak } from './statistics';
 import { reconcileThemeMode, themeModeFields } from './themeMode';
 import { getJson, setJson, storageKeys } from './storage';
 import { loadTombstones, mergeTombstones, prayerTombstoneKey, saveTombstones, type Tombstones } from './tombstones';
@@ -113,46 +114,6 @@ export async function importSyncPayloadToStorage(payload: SyncPayload): Promise<
   }
 }
 
-export async function saveToCloudBlob(payload: SyncPayload): Promise<void> {
-  await setJson(storageKeys.cloudBlob, payload);
-}
-
-export async function loadFromCloudBlob(): Promise<SyncPayload | null> {
-  const blob = await getJson<SyncPayload | null>(storageKeys.cloudBlob, null);
-  if (!blob || (blob.version !== 2 && blob.version !== 1)) return null;
-  return normalizePayload(blob);
-}
-
-function normalizePayload(raw: SyncPayload | Record<string, unknown>): SyncPayload {
-  if ((raw as SyncPayload).version === 2) return raw as SyncPayload;
-  const legacy = raw as {
-    version: 1;
-    exportedAt: string;
-    settings: UserSettings;
-    habits: SpiritualHabit[];
-    family: FamilyMember[];
-    stats: ActivityStats;
-    tasbih: { count: number; total: number };
-    duaProgress: Record<string, number>;
-  };
-  return {
-    version: 2,
-    exportedAt: legacy.exportedAt,
-    profileScope: legacy.settings?.activeFamilyMemberId ?? 'default',
-    darkMode: false,
-    settings: legacy.settings,
-    habits: legacy.habits,
-    family: legacy.family,
-    stats: legacy.stats,
-    tasbih: { count: legacy.tasbih.count, total: legacy.tasbih.total, sessions: [] },
-    duaProgress: legacy.duaProgress,
-    prayerCompletions: [],
-    educationProgress: [],
-    zakatHistory: [],
-    locationPref: null,
-  };
-}
-
 export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): SyncPayload {
   const mergedAt = new Date().toISOString();
   // Settings carry the time of the last user change. exportedAt is always "now" on this device, so
@@ -180,6 +141,7 @@ export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): Sync
     const removedAt = deleted.prayers[prayerTombstoneKey(p)];
     return !removedAt || p.completedAt > removedAt;
   };
+  const prayerCompletions = mergePrayerCompletions(remote.prayerCompletions, local.prayerCompletions).filter(prayerAlive);
 
   return {
     version: 2,
@@ -189,10 +151,12 @@ export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): Sync
     settings: { ...mergedSettings, ...appearance },
     habits: mergeHabits(remote.habits, local.habits).filter((h) => !deleted.habits[h.id]),
     family: mergeFamily(remote.family, local.family).filter((m) => !deleted.family[m.id]),
-    stats: mergeStats(remote.stats, local.stats),
+    // The streak follows from the merged prayers; the larger of two stored streaks could count days
+    // whose marks were removed on the other device
+    stats: { ...mergeStats(remote.stats, local.stats), prayerStreakDays: computePrayerStreak(prayerCompletions) },
     tasbih: mergeTasbih(remote.tasbih, local.tasbih),
     duaProgress: mergeDuaProgress(remote.duaProgress, local.duaProgress),
-    prayerCompletions: mergePrayerCompletions(remote.prayerCompletions, local.prayerCompletions).filter(prayerAlive),
+    prayerCompletions,
     educationProgress: mergeEducationProgress(remote.educationProgress, local.educationProgress),
     zakatHistory: mergeZakatHistory(remote.zakatHistory, local.zakatHistory),
     locationPref: pickNewerLocation(remote.locationPref, local.locationPref),
@@ -312,37 +276,8 @@ function pickNewerLocation(a: LocationPref | null, b: LocationPref | null): Loca
   return a.updatedAt >= b.updatedAt ? a : b;
 }
 
-export async function performCloudSync(
-  local: SyncPayload,
-  onMerge: (merged: SyncPayload) => Promise<void>
-): Promise<{ success: boolean; mergedAt: string }> {
-  const remote = await loadFromCloudBlob();
-  const mergedAt = new Date().toISOString();
-
-  if (!remote) {
-    await saveToCloudBlob(local);
-    await onMerge(local);
-    return { success: true, mergedAt };
-  }
-
-  const merged = mergeSyncPayloads(remote, local);
-  await saveToCloudBlob(merged);
-  await onMerge(merged);
-  return { success: true, mergedAt };
-}
-
 export function payloadToJson(payload: SyncPayload): string {
   return JSON.stringify(payload, null, 2);
-}
-
-export function parseSyncJson(raw: string): SyncPayload | null {
-  try {
-    const parsed = JSON.parse(raw) as { version?: number };
-    if (parsed.version !== 1 && parsed.version !== 2) return null;
-    return normalizePayload(JSON.parse(raw));
-  } catch {
-    return null;
-  }
 }
 
 // Re-export merge helpers for tests

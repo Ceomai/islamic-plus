@@ -9,12 +9,3 @@ export interface PrayerWidgetProps {
   /** The five daily prayers, already formatted */
   times: { name: string; time: string; isNext: boolean }[];
 }
-
-export const EMPTY_WIDGET_PROPS: PrayerWidgetProps = {
-  city: 'Islamic+',
-  hijri: '',
-  nextLabel: '',
-  nextName: '',
-  nextTime: '',
-  times: [],
-};

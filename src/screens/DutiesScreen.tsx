@@ -12,8 +12,7 @@ const CURRENCIES: Currency[] = ['TRY', 'USD', 'EUR'];
 
 export function DutiesScreen() {
   const { colors, space } = useTheme();
-  const { t, lang } = useTranslation();
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  const { t, lang, locale } = useTranslation();
   const [currency, setCurrency] = useState<Currency>(lang === 'tr' ? 'TRY' : 'USD');
   const [fields, setFields] = useState({
     cash: '',

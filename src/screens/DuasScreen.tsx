@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, ScrollView, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DUA_CATEGORIES, DUA_PURPOSES, DUAS, getDuaCategoryIcon, searchDuas, type Dua, type DuaCategory } from '../data/duas';
 import { useTheme } from '../hooks/useTheme';
@@ -16,12 +16,12 @@ export function DuasScreen({ navigation }: Props) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<DuaCategory | 'all'>('all');
 
-  const categoryLabel = (c: DuaCategory) => t(`duas.cat.${c}`);
+  const categoryLabel = useCallback((c: DuaCategory) => t(`duas.cat.${c}`), [t]);
 
   const results = useMemo(() => {
     const base = query.trim() ? searchDuas(query, lang, categoryLabel) : DUAS;
     return category === 'all' ? base : base.filter((d) => d.category === category);
-  }, [query, category, lang, t]);
+  }, [query, category, lang, categoryLabel]);
 
   const searching = query.trim().length > 0;
 

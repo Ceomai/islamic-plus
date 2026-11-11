@@ -145,3 +145,24 @@ describe('reading progress sync (O1, O6)', () => {
     expect(mergeQuranProgress(local as never, remote as never).bookmarks.map((b) => b.ayahNumber)).toEqual([9]);
   });
 });
+
+describe('prayer streak after a merge', () => {
+  const stats = (prayerStreakDays: number) => ({ ...payload({}, '').stats, prayerStreakDays });
+
+  it('is counted from the merged prayers, not the larger stored streak', () => {
+    // Each device saw only part of the last three days; together they are complete
+    const days = history(3);
+    const cloud = payload({}, '2026-11-03T07:00:00.000Z', { prayerCompletions: days.filter((_, i) => i % 2 === 0), stats: stats(0) });
+    const local = payload({}, '2026-11-03T09:00:00.000Z', { prayerCompletions: days.filter((_, i) => i % 2 === 1), stats: stats(0) });
+    expect(mergeSyncPayloads(cloud, local).stats.prayerStreakDays).toBe(3);
+  });
+
+  it('drops days whose marks were removed on the other device', () => {
+    const today = localDateKey();
+    const removedToday = { habits: {}, family: {}, prayers: { [`fajr:${today}`]: '2999-01-01T00:00:00.000Z' } };
+    const cloud = payload({}, '2026-11-03T07:00:00.000Z', { prayerCompletions: history(4), stats: stats(4) });
+    const local = payload({}, '2026-11-03T09:00:00.000Z', { stats: stats(4), deleted: removedToday });
+    // Today is incomplete now, so the streak is the three days before it
+    expect(mergeSyncPayloads(cloud, local).stats.prayerStreakDays).toBe(3);
+  });
+});

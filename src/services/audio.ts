@@ -61,7 +61,6 @@ async function playUri(source: string | number, onFinish?: () => void, gen: numb
 }
 
 /** Full adhan (CC0 recording from Wikimedia Commons, see docs/CONTENT-SOURCES.md) */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const ADHAN_FULL: number = require('../../assets/sounds/adhan_full.m4a');
 
 export async function playAdhan(onFinish?: () => void): Promise<boolean> {
@@ -124,6 +123,3 @@ export async function isAudioDownloaded(duaId: string): Promise<boolean> {
   }
 }
 
-export function isAudioAvailable(): boolean {
-  return true;
-}

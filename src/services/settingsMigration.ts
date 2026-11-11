@@ -29,7 +29,9 @@ function normalizeQuranChoice(
 }
 
 export function migrateSettings(raw: unknown): UserSettings {
-  const base = { ...DEFAULT_SETTINGS, ...(raw as Partial<UserSettings>) };
+  // widgetPrefs belonged to a removed home widget editor; older builds (and their cloud copies) may still carry it
+  const { widgetPrefs: _droppedWidgetPrefs, ...stored } = (raw ?? {}) as Partial<UserSettings> & { widgetPrefs?: unknown };
+  const base = { ...DEFAULT_SETTINGS, ...stored };
   const legacy = raw as { language?: string; appLanguage?: AppLanguage; quranEditionId?: string; quranView?: QuranView };
 
   const withPro = {
@@ -38,7 +40,6 @@ export function migrateSettings(raw: unknown): UserSettings {
     familyModeEnabled: base.familyModeEnabled ?? false,
     activeFamilyMemberId: base.activeFamilyMemberId ?? null,
     cloudSync: base.cloudSync ?? DEFAULT_SETTINGS.cloudSync,
-    widgetPrefs: base.widgetPrefs ?? DEFAULT_SETTINGS.widgetPrefs,
     customReminders: base.customReminders ?? [],
     offlineAudioEnabled: base.offlineAudioEnabled ?? true,
     homeLauncher: base.homeLauncher ?? DEFAULT_SETTINGS.homeLauncher,

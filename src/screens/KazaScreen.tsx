@@ -11,7 +11,7 @@ import { AppText, Button, IconButton, Screen, SectionHeader, Surface, TextField 
 
 export function KazaScreen() {
   const { colors, radius, space } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, lang, locale } = useTranslation();
   const [data, setData] = useState<KazaData | null>(null);
   const [showEstimate, setShowEstimate] = useState(false);
   const [years, setYears] = useState('');
@@ -26,7 +26,7 @@ export function KazaScreen() {
   if (!data) return <Screen>{null}</Screen>;
 
   const label = (p: KazaPrayer) => (p === 'witr' ? t('kaza.witr') : getPrayerLabel(lang, p));
-  const num = (n: number) => n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US');
+  const num = (n: number) => n.toLocaleString(locale);
 
   const change = async (p: KazaPrayer, delta: 1 | -1) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

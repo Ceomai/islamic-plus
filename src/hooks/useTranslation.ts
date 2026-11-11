@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { translate } from '../i18n';
+import { localeFor, translate } from '../i18n';
 import { useAppLanguage } from '../context/AppContext';
 
 export function useTranslation() {
@@ -16,7 +16,8 @@ export function useTranslation() {
   );
 
   return useMemo(
-    () => ({ t, prayer, appLanguage: lang, lang }),
+    // locale: BCP 47 tag for toLocaleString / Intl formatting in the app language
+    () => ({ t, prayer, appLanguage: lang, lang, locale: localeFor(lang) }),
     [t, prayer, lang]
   );
 }

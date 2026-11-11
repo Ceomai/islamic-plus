@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { DailyDuaCard } from '../components/DailyDuaCard';
 import { HomeAppIcon } from '../components/HomeAppIcon';
-import { HomeWidgetModule } from '../components/HomeWidgetModule';
-import { NextPrayerRemaining } from '../components/prayer/NextPrayerRemaining';
+import { HomeSkeleton } from '../components/HomeSkeleton';
 import { RamadanCard } from '../components/prayer/RamadanCard';
+import { TodayPrayersModule } from '../components/prayer/TodayPrayersModule';
 import { getHomeFeature } from '../constants/homeFeatures';
 import { useAppLocation, usePrayerDay, useReading, useSettings } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,21 +24,13 @@ import { ramadanWindow } from '../services/ramadan';
 import { launcherColumns } from '../theme/tokens';
 import { confirm } from '../utils/confirm';
 import { dateFromKey } from '../utils/date';
-import { formatClock } from '../services/prayerTimes';
 import type { HomeFeatureId, PrayerName } from '../types';
-import { AppText, Button, Enter, ListRow, PopIn, SectionHeader, SkeletonBlock, SkeletonGroup, Surface } from '../ui';
+import { AppText, Enter, ListRow, SectionHeader, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-const DAILY_PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 const COUNTDOWN_TICK_MS = 30_000;
-const PROGRESS_DOT = 7;
 const ICON_BUTTON = 44;
-/** Above this text scale the five prayers no longer fit side by side and are listed instead */
-const STACK_FONT_SCALE = 1.3;
-/** Loading placeholder heights: the next-prayer card and one prayer slot */
-const SKELETON_HERO = 132;
-const SKELETON_SLOT = 76;
 
 export function HomeScreen({ navigation }: Props) {
   const { location, refreshLocation } = useAppLocation();
@@ -46,16 +39,18 @@ export function HomeScreen({ navigation }: Props) {
   const { todayPrayers, togglePrayerComplete, refreshTodayPrayers } = usePrayerDay();
   const { canAccess } = useFeatureAccess();
   const { logout } = useAuth();
-  const { colors, radius, space, layout, motion } = useTheme();
-  const { width, fontScale } = useWindowDimensions();
-  const stacked = fontScale > STACK_FONT_SCALE;
+  const { colors, space, layout, motion } = useTheme();
+  const { width } = useWindowDimensions();
   const columns = launcherColumns(width);
-  const { t, prayer, lang } = useTranslation();
+  const { t, lang } = useTranslation();
 
-  useEffect(() => {
-    // A city chosen by hand stays until the user picks "use my location" again
+  // Once when the screen opens: a city chosen by hand stays until the user picks "use my location" again
+  const refreshOnOpen = useEffectEvent(() => {
     if (!location?.cityId) void refreshLocation();
     void refreshTodayPrayers();
+  });
+  useEffect(() => {
+    refreshOnOpen();
   }, []);
 
   const openFeature = (id: HomeFeatureId) => {
@@ -113,144 +108,6 @@ export function HomeScreen({ navigation }: Props) {
     return def && !def.isModule;
   });
 
-  const renderPrayerModule = () => (
-    <View key="module_prayer_times">
-      {!location && (
-        <Surface variant="soft" style={{ marginBottom: space[3], gap: space[3] }}>
-          <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
-            {t('home.noLocationTitle')}
-          </AppText>
-          <AppText variant="callout" color={colors.onPrimarySoft}>
-            {t('home.noLocationBody')}
-          </AppText>
-          <Button label={t('city.choose')} icon="list" onPress={() => navigation.navigate('CityPicker')} />
-        </Surface>
-      )}
-      {nextPrayer && (
-        <Surface variant="hero" padding={space[5]} style={{ marginBottom: space[3] }}>
-          <AppText variant="overline" color={colors.onHeroMuted}>
-            {t('home.nextPrayer')}
-          </AppText>
-          <View style={styles.heroRow}>
-            <AppText variant="display" color={colors.onHero}>
-              {prayer(nextPrayer.name)}
-            </AppText>
-            <AppText variant="title" tone="onHero" numeric>
-              {formatClock(nextPrayer.time, lang)}
-            </AppText>
-          </View>
-          <View style={styles.heroFooter}>
-            <NextPrayerRemaining target={nextPrayer.time} tickMs={COUNTDOWN_TICK_MS} />
-            {/* Today's count instead of a streak: one missed prayer no longer wipes out the progress */}
-            <View
-              accessible
-              accessibilityLabel={t('home.todayCountA11y', { n: String(completedPrayers.size) })}
-              style={[styles.streak, { borderRadius: radius.pill, backgroundColor: colors.heroChipBg, paddingHorizontal: space[3], gap: space[2] }]}
-            >
-              <View style={{ flexDirection: 'row', gap: 3 }}>
-                {DAILY_PRAYERS.map((p) => (
-                  <View
-                    key={p}
-                    style={{
-                      width: PROGRESS_DOT,
-                      height: PROGRESS_DOT,
-                      borderRadius: PROGRESS_DOT / 2,
-                      backgroundColor: completedPrayers.has(p) ? colors.accent : colors.heroTrack,
-                    }}
-                  />
-                ))}
-              </View>
-              <AppText variant="caption" color={colors.onHero}>
-                {t('home.todayCount', { n: String(completedPrayers.size) })}
-              </AppText>
-            </View>
-          </View>
-        </Surface>
-      )}
-
-      {prayerDates && (
-        <>
-          <View style={[stacked ? styles.list : styles.strip, { gap: space[2] }]}>
-            {DAILY_PRAYERS.map((p) => {
-              const done = completedPrayers.has(p);
-              const isNext = nextPrayer?.name === p;
-              return (
-                <Pressable
-                  key={p}
-                  onPress={() => markPrayer(p)}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: done }}
-                  aria-checked={done}
-                  accessibilityLabel={`${prayer(p)} ${formatClock(prayerDates[p], lang)}`}
-                  style={({ pressed }) => [
-                    stacked ? [styles.listRow, { gap: space[3], paddingHorizontal: space[4], minHeight: layout.minTouch }] : styles.slot,
-                    {
-                      borderRadius: radius.md,
-                      paddingVertical: space[3],
-                      backgroundColor: done ? colors.primarySoft : pressed ? colors.surfaceMuted : colors.surface,
-                      borderColor: isNext ? colors.primary : done ? colors.primarySoft : colors.border,
-                      borderWidth: isNext ? 1.5 : 1,
-                    },
-                  ]}
-                >
-                  <AppText
-                    variant={stacked ? 'body' : 'caption'}
-                    tone={done ? 'onPrimarySoft' : 'secondary'}
-                    numberOfLines={stacked ? undefined : 1}
-                    style={stacked ? styles.grow : null}
-                  >
-                    {prayer(p)}
-                  </AppText>
-                  <AppText variant="bodyStrong" tone={done ? 'onPrimarySoft' : 'default'} numeric style={stacked ? null : { marginTop: 2 }}>
-                    {formatClock(prayerDates[p], lang).replace(/ (AM|PM)$/, '')}
-                  </AppText>
-                  {/* English times drop AM/PM to fit; shown below so "3:39" is not ambiguous */}
-                  {lang === 'en' && (
-                    <AppText variant="caption" tone={done ? 'onPrimarySoft' : 'muted'}>
-                      {formatClock(prayerDates[p], lang).slice(-2)}
-                    </AppText>
-                  )}
-                  <PopIn active={done} style={stacked ? null : { marginTop: space[1] }}>
-                    <Ionicons name={done ? 'checkmark-circle' : 'ellipse-outline'} size={16} color={done ? colors.onPrimarySoft : colors.textMuted} />
-                  </PopIn>
-                </Pressable>
-              );
-            })}
-          </View>
-          {tomorrowDates && (
-            <View style={{ marginTop: space[2] }}>
-              <AppText variant="overline" tone="muted" style={{ marginBottom: space[1] }}>
-                {t('home.tomorrow')}
-              </AppText>
-              <View style={[stacked ? styles.list : styles.strip, { gap: space[2] }]}>
-                {DAILY_PRAYERS.map((p) => (
-                  <View
-                    key={p}
-                    accessible
-                    accessibilityLabel={`${t('home.tomorrow')} ${prayer(p)} ${formatClock(tomorrowDates[p], lang)}`}
-                    style={stacked ? [styles.listRow, { paddingHorizontal: space[4] }] : styles.slot}
-                  >
-                    {stacked && (
-                      <AppText variant="callout" tone="secondary" style={styles.grow}>
-                        {prayer(p)}
-                      </AppText>
-                    )}
-                    <AppText variant={p === 'fajr' ? 'calloutStrong' : 'callout'} tone={p === 'fajr' ? 'brand' : 'secondary'} numeric>
-                      {formatClock(tomorrowDates[p], lang).replace(/ (AM|PM)$/, '')}
-                    </AppText>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-          <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[2], marginBottom: space[3] }}>
-            {t('home.markPrayersHint')}
-          </AppText>
-        </>
-      )}
-    </View>
-  );
-
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.background }]}>
       <Enter animate={showedSkeleton} duration={motion.duration.medium} style={styles.container}>
@@ -293,9 +150,19 @@ export function HomeScreen({ navigation }: Props) {
 
           {modules.map((id) =>
             id === 'module_prayer_times' ? (
-              renderPrayerModule()
+              <TodayPrayersModule
+                key={id}
+                hasLocation={!!location}
+                nextPrayer={nextPrayer}
+                today={prayerDates}
+                tomorrow={tomorrowDates}
+                completed={completedPrayers}
+                countdownTickMs={COUNTDOWN_TICK_MS}
+                onMarkPrayer={markPrayer}
+                onChooseCity={() => navigation.navigate('CityPicker')}
+              />
             ) : (
-              <HomeWidgetModule key={id} onOpenDua={(duaId) => navigation.navigate('DuaDetail', { duaId })} />
+              <DailyDuaCard key={id} onOpenDua={(duaId) => navigation.navigate('DuaDetail', { duaId })} />
             )
           )}
 
@@ -353,25 +220,6 @@ export function HomeScreen({ navigation }: Props) {
   );
 }
 
-/** Loading placeholder in the shape of the home screen: header, next-prayer card and the five prayers. */
-function HomeSkeleton({ label }: { label: string }) {
-  const { colors, radius, space } = useTheme();
-  return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <SkeletonGroup accessibilityLabel={label} style={{ paddingHorizontal: space[4], paddingTop: space[3] }}>
-        <SkeletonBlock width="35%" height={space[4]} />
-        <SkeletonBlock width="60%" height={space[6]} style={{ marginTop: space[2], marginBottom: space[5] }} />
-        <SkeletonBlock height={SKELETON_HERO} radius={radius.lg} style={{ marginBottom: space[3] }} />
-        <View style={[styles.strip, { gap: space[2] }]}>
-          {DAILY_PRAYERS.map((p) => (
-            <SkeletonBlock key={p} width="auto" height={SKELETON_SLOT} radius={radius.md} style={styles.grow} />
-          ))}
-        </View>
-      </SkeletonGroup>
-    </SafeAreaView>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'flex-start' },
@@ -384,13 +232,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 12,
   },
-  heroRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 4 },
-  heroFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  streak: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  strip: { flexDirection: 'row' },
-  list: { flexDirection: 'column' },
-  listRow: { flexDirection: 'row', alignItems: 'center' },
-  grow: { flex: 1 },
-  slot: { flex: 1, alignItems: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
 });

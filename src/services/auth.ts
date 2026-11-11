@@ -71,10 +71,6 @@ export async function getAuthSession(): Promise<AuthSession | null> {
   return activateSession(await getLocalAuthSession());
 }
 
-export async function setAuthSession(session: AuthSession | null): Promise<void> {
-  await setLocalAuthSession(session);
-}
-
 export async function registerUser(email: string, password: string): Promise<AuthResult> {
   const result = isSupabaseConfigured ? await registerSupabaseUser(email, password) : await registerLocalUser(email, password);
   // A new account starts with what was recorded as a guest on this device (prayers, tasbih, kaza…)

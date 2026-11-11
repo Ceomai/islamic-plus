@@ -19,7 +19,7 @@ export function StatisticsScreen({ navigation }: Props) {
   const { habitScore } = useHabits();
   const { todayPrayers } = usePrayerDay();
   const { colors, radius, space } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const [weekPrayers, setWeekPrayers] = useState(0);
 
@@ -35,7 +35,6 @@ export function StatisticsScreen({ navigation }: Props) {
   const summary = statsSummary(stats, habitScore);
   const days = lastDayKeys(7);
   const today = localDateKey();
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
   const weekday = (key: string | undefined) =>
     key ? new Date(`${key}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' }) : '';

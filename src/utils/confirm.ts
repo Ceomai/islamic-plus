@@ -31,7 +31,7 @@ export function confirm(opts: ConfirmOptions): Promise<boolean> {
   });
 }
 
-/** Asks before an action that cannot be undone (destructive style unless `destructive: false`). */
-export function confirmDestructive(opts: ConfirmOptions): Promise<boolean> {
-  return confirm({ ...opts, destructive: opts.destructive ?? true });
+/** Asks before an action that cannot be undone (red, destructive-style confirm button). */
+export function confirmDestructive(opts: Omit<ConfirmOptions, 'destructive'>): Promise<boolean> {
+  return confirm({ ...opts, destructive: true });
 }

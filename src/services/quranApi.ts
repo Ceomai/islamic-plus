@@ -62,25 +62,6 @@ async function getJsonWithCache<T>(url: string, cacheKey: string): Promise<T> {
   return json;
 }
 
-export async function fetchSurahList(_edition = 'en'): Promise<SurahListItem[]> {
-  const json = await getJsonWithCache<{ data?: SurahListItem[] }>(`${BASE}/surah`, 'surah-list');
-  return json.data ?? [];
-}
-
-export async function fetchSurah(
-  surahNumber: number,
-  edition = 'en.sahih'
-): Promise<{ ayahs: Ayah[]; surah: SurahListItem }> {
-  const json = await getJsonWithCache<{ data: SurahListItem & { ayahs: Ayah[] } }>(
-    `${BASE}/surah/${surahNumber}/${edition}`,
-    `surah-${surahNumber}-${edition}`
-  );
-  return {
-    surah: json.data,
-    ayahs: (json.data?.ayahs ?? []).map((a) => ({ number: a.number, text: a.text, numberInSurah: a.numberInSurah })),
-  };
-}
-
 const BISMILLAH_UTHMANI = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
 
 /** Letters only: the API orders stacked marks (shadda + fatha) differently from typed text */
@@ -137,13 +118,6 @@ export async function fetchSurahReading(
 
   const { edition: _e, ayahs: _a, ...surah } = first ?? ({} as never);
   return { surah: surah as SurahListItem, ayahs, hasBismillahHeader };
-}
-
-export async function searchQuran(query: string, edition = 'en'): Promise<string[]> {
-  const json = await fetchJson<{ data?: { matches?: { surah: { englishName: string }; numberInSurah: number }[] } }>(`${BASE}/search/${encodeURIComponent(query)}/all/${edition}`);
-  return (json.data?.matches ?? []).slice(0, 20).map(
-    (m: { surah: { englishName: string }; numberInSurah: number }) => `${m.surah.englishName} ${m.numberInSurah}`
-  );
 }
 
 export { BISMILLAH_UTHMANI };

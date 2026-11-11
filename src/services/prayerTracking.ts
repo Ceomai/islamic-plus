@@ -21,12 +21,6 @@ export async function savePrayerCompletions(list: PrayerCompletion[]): Promise<v
   notifyAppDataChanged();
 }
 
-export async function isPrayerCompletedToday(prayer: PrayerName): Promise<boolean> {
-  const today = todayKey();
-  const list = await loadPrayerCompletions();
-  return list.some((p) => p.prayer === prayer && p.date === today);
-}
-
 async function toggleNow(prayer: PrayerName): Promise<boolean> {
   const today = todayKey();
   const list = await loadPrayerCompletions();

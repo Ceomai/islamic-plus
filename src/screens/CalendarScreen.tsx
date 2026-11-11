@@ -7,12 +7,11 @@ import { AppText, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
 export function CalendarScreen() {
   const { colors, radius, space } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, lang, locale } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const hijri = useMemo(() => gregorianToHijri(today, lang), [today, lang]);
   const events = useMemo(() => getUpcomingIslamicEvents(today, 9, lang), [today, lang]);
   const months = hijriMonthNames(lang);
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
   const daysLabel = (n: number) =>
     n === 0 ? t('calendar.today') : n === 1 ? t('calendar.tomorrow') : t('calendar.daysLeft', { n: String(n) });

@@ -103,7 +103,7 @@ describe('city list for choosing a location by hand (Y5)', () => {
 });
 
 describe('surah search folding', () => {
-  const { fold } = require('../services/aiAssistant') as typeof import('../services/aiAssistant');
+  const { fold } = require('../services/assistant') as typeof import('../services/assistant');
   const { SURAHS } = require('../data/surahs') as typeof import('../data/surahs');
   const key = (t: string) => fold(t).replace(/\s+/g, '');
   const find = (q: string) => SURAHS.filter((s) => [s.tr, s.en, s.ar].some((n) => key(n).includes(key(q)))).map((s) => s.number);

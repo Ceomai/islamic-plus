@@ -51,9 +51,10 @@ export function EducationDetailScreen({ route }: Props) {
   const { t, lang } = useTranslation();
   const entry = findLearnTopic(route.params.topicId);
 
+  const topicId = entry?.topic.id;
   useEffect(() => {
-    if (entry) void markEducationTopicRead(entry.topic.id);
-  }, [entry?.topic.id]);
+    if (topicId) void markEducationTopicRead(topicId);
+  }, [topicId]);
 
   if (!entry) {
     return (

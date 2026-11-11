@@ -18,15 +18,19 @@ export function ImsakiyeScreen() {
   const { location, refreshLocation } = useAppLocation();
   const { settings } = useSettings();
   const { colors, space } = useTheme();
-  const { t, lang } = useTranslation();
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  const { t, lang, locale } = useTranslation();
   // Recomputed once a day; only the countdown card ticks
   const todayKey = useDayKey();
   const today = useMemo(() => dateFromKey(todayKey), [todayKey]);
   const ramadan = useMemo(() => ramadanWindow(today), [today]);
+  const latitude = location?.latitude;
+  const longitude = location?.longitude;
   const days = useMemo(
-    () => (location ? buildImsakiye(location.latitude, location.longitude, settings.calculationMethod, settings.madhab, ramadan) : []),
-    [location?.latitude, location?.longitude, settings.calculationMethod, settings.madhab, ramadan]
+    () =>
+      latitude !== undefined && longitude !== undefined
+        ? buildImsakiye(latitude, longitude, settings.calculationMethod, settings.madhab, ramadan)
+        : [],
+    [latitude, longitude, settings.calculationMethod, settings.madhab, ramadan]
   );
   const clock = (d: Date) => formatClock(d, lang);
   const prayerDays = usePrayerDays(location, settings.calculationMethod, settings.madhab, todayKey);

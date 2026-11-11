@@ -1,18 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useApp } from '../context/AppContext';
+import { useHadithSection } from '../hooks/useHadithSection';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import {
-  fetchHadithSection,
-  hadithCollectionName,
-  hadithEdition,
-  hadithSectionName,
-  type HadithCollectionInfo,
-  type HadithItem,
-  type HadithSection,
-} from '../services/hadithApi';
+import { hadithCollectionName, hadithSectionName, type HadithCollectionInfo, type HadithSection } from '../services/hadithApi';
 import { addHadithBookmark, removeHadithBookmark, updateHadithLastRead } from '../services/readingProgress';
 import { AppText, Button, Chip, IconButton, Surface } from '../ui';
 
@@ -30,39 +23,7 @@ export function HadithSectionContent({ collection, section }: Props) {
   const lastRead = hadithProgress.lastRead;
   const collectionName = hadithCollectionName(collection, lang);
 
-  const [showArabic, setShowArabic] = useState(false);
-  const [items, setItems] = useState<HadithItem[]>([]);
-  const [arabic, setArabic] = useState<Record<number, string>>({});
-  const [arabicFailed, setArabicFailed] = useState(false);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [reload, setReload] = useState(0);
-
-  useEffect(() => {
-    let alive = true;
-    setStatus('loading');
-    fetchHadithSection(hadithEdition(collection, lang), section.n)
-      .then((list) => {
-        if (!alive) return;
-        setItems(list);
-        setStatus('ready');
-      })
-      .catch(() => alive && setStatus('error'));
-    return () => {
-      alive = false;
-    };
-  }, [collection, section.n, lang, reload]);
-
-  useEffect(() => {
-    if (!showArabic) return;
-    let alive = true;
-    setArabicFailed(false);
-    fetchHadithSection(hadithEdition(collection, 'ara'), section.n)
-      .then((list) => alive && setArabic(Object.fromEntries(list.map((h) => [h.number, h.text]))))
-      .catch(() => alive && setArabicFailed(true));
-    return () => {
-      alive = false;
-    };
-  }, [collection, section.n, showArabic]);
+  const { items, status, retry, showArabic, toggleArabic, arabic, arabicFailed } = useHadithSection(collection, section.n, lang);
 
   const bookmarked = useMemo(
     () => new Set(hadithProgress.bookmarks.filter((b) => b.collectionId === collection.id).map((b) => b.itemIndex)),
@@ -89,7 +50,7 @@ export function HadithSectionContent({ collection, section }: Props) {
             {collection.sections.length > 1 ? `${section.n}. ${hadithSectionName(section, lang)}` : collectionName}
           </AppText>
         </View>
-        <Chip label={t('hadith.arabic')} icon="language-outline" selected={showArabic} onPress={() => setShowArabic((v) => !v)} />
+        <Chip label={t('hadith.arabic')} icon="language-outline" selected={showArabic} onPress={toggleArabic} />
       </View>
 
       {showArabic && arabicFailed && (
@@ -109,7 +70,7 @@ export function HadithSectionContent({ collection, section }: Props) {
           <AppText tone="secondary" align="center">
             {t('hadith.loadError')}
           </AppText>
-          <Button label={t('common.retry')} icon="refresh" variant="secondary" onPress={() => setReload((r) => r + 1)} />
+          <Button label={t('common.retry')} icon="refresh" variant="secondary" onPress={retry} />
         </Surface>
       )}
       {status === 'ready' && items.length === 0 && (

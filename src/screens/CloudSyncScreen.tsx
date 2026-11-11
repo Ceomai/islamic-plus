@@ -15,7 +15,7 @@ export function CloudSyncScreen() {
   const { settings, syncNow, exportSyncPayload } = useApp();
   const { backend, isGuest } = useAuth();
   const { colors, space } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, locale } = useTranslation();
   const [syncing, setSyncing] = useState(false);
   const [message, setMessageState] = useState<{ text: string; ok: boolean } | null>(null);
   // Results appear at the bottom, away from the button: Android reads them via the live region, iOS via announce
@@ -24,7 +24,6 @@ export function CloudSyncScreen() {
     if (next) announce(next.text);
   };
   const cloud = backend === 'supabase' && !isGuest;
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
   const handleSync = async () => {
     setSyncing(true);

@@ -10,13 +10,6 @@ const defaultPrayerNotification = {
 
 const prayers: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-const defaultWidgetPrefs = {
-  showNextPrayer: true,
-  showHijriDate: true,
-  showDailyDua: true,
-  compactMode: false,
-};
-
 export const DEFAULT_SETTINGS: UserSettings = {
   appLanguage: 'en',
   quranEditionId: 'en.sahih',
@@ -35,7 +28,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
   familyModeEnabled: false,
   activeFamilyMemberId: null,
   cloudSync: { lastSyncAt: null, deviceId: `device-${Date.now()}`, syncEnabled: false },
-  widgetPrefs: defaultWidgetPrefs,
   customReminders: [],
   offlineAudioEnabled: true,
   quranView: 'parallel',

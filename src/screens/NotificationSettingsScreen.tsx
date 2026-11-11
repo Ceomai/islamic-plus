@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AppState, Linking, Switch, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
@@ -78,6 +78,7 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     if (ok && location) void schedulePrayerNotifications(location.latitude, location.longitude, { ...settings, globalNotificationsEnabled: true });
   };
 
+  const onExactChangeFromEffect = useEffectEvent(onExactChange);
   // Checked again on return to the app: the permission may have been changed in system settings
   useEffect(() => {
     void exactAlarmsAllowed().then((ok) => {
@@ -87,7 +88,7 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     void notificationsAllowed().then(setNotifAllowed);
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
-      void exactAlarmsAllowed().then(onExactChange);
+      void exactAlarmsAllowed().then(onExactChangeFromEffect);
       void notificationsAllowed().then((ok) => {
         setNotifAllowed(ok);
         if (ok && location) void schedulePrayerNotifications(location.latitude, location.longitude, settings);

@@ -1,7 +1,7 @@
 import { isAuthRetryableFetchError } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import type { AuthSession } from '../types';
-import { getSupabase, isSupabaseConfigured } from '../config/supabase';
+import { getSupabase } from '../config/supabase';
 import { hashEmail, pseudonymFromEmail } from './authCrypto';
 import { setLocalAuthSession } from './localAuth';
 import { isValidEmail, mapSupabaseAuthError, normalizeEmail, validateAuthInput } from './authValidation';

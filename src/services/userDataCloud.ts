@@ -1,4 +1,3 @@
-import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { getSupabase } from '../config/supabase';
 import { isCloudUserActive } from './cloudUser';
 import {
@@ -14,7 +13,6 @@ import type {
   UserSettings,
 } from '../types';
 import type { StoredLocation } from './location';
-import { getJson, storageKeys } from './storage';
 
 const SYNC_DEBOUNCE_MS = 3000;
 /**
@@ -24,20 +22,10 @@ const SYNC_DEBOUNCE_MS = 3000;
  * Reading progress is per member and keeps its own scopes (readingProgressCloud.ts).
  */
 const APP_DATA_SCOPE = 'default';
-const DEFAULT_STATS: ActivityStats = {
-  tasbihTotal: 0,
-  habitsCompletedTotal: 0,
-  duasReadCount: 0,
-  quranSessions: 0,
-  prayerStreakDays: 0,
-  lastActiveDate: '',
-  weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
-};
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 /** Counts local changes, so a sync can tell whether something changed while it was running */
 let localChanges = 0;
-const listeners = new Set<(memberId: string | null) => void>();
 
 type PayloadBuilder = () => Promise<SyncPayload>;
 let payloadBuilder: PayloadBuilder | null = null;
@@ -48,13 +36,7 @@ export function registerAppDataPayloadBuilder(builder: PayloadBuilder | null): v
 
 export function notifyAppDataChanged(): void {
   localChanges++;
-  listeners.forEach((fn) => fn(null));
   scheduleUserDataCloudSync(null);
-}
-
-export function onAppDataChanged(listener: (memberId: string | null) => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
 }
 
 export function scheduleUserDataCloudSync(_memberId: string | null): void {
@@ -150,18 +132,4 @@ export async function flushUserDataCloudSync(): Promise<void> {
     debounceTimer = null;
   }
   await pushUserDataNow();
-}
-
-export async function reloadLocalAppData(): Promise<{
-  settings: UserSettings;
-  habits: SpiritualHabit[];
-  family: FamilyMember[];
-  stats: ActivityStats;
-  darkMode: boolean;
-}> {
-  const settings = await getJson(storageKeys.settings, DEFAULT_SETTINGS);
-  const habits = await getJson<SpiritualHabit[]>(storageKeys.habits, []);
-  const family = await getJson<FamilyMember[]>(storageKeys.family, []);
-  const stats = await getJson<ActivityStats>(storageKeys.stats, DEFAULT_STATS);
-  return { settings, habits, family, stats, darkMode: settings.darkMode ?? false };
 }

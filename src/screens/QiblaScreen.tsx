@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Animated, useAnimatedValue, View } from 'react-native';
 import { LocationBlockedNotice } from '../components/LocationBlockedNotice';
 import { useAppLocation } from '../context/AppContext';
@@ -46,9 +46,12 @@ export function QiblaScreen() {
     setLocationTries((n) => n + 1);
   };
 
-  useEffect(() => {
-    // Keep a city chosen by hand; the list's coordinates are close enough for the Qibla bearing
+  // Once on open. Keep a city chosen by hand; the list's coordinates are close enough for the Qibla bearing
+  const refreshOnOpen = useEffectEvent(() => {
     if (!location?.cityId) void refreshLocation();
+  });
+  useEffect(() => {
+    refreshOnOpen();
   }, []);
 
   const qiblaBearing = location ? getQiblaBearing(location.latitude, location.longitude) : null;

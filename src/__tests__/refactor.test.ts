@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { getReply, spokenReply, type AssistantBackends, type ReplyContext } from '../services/assistantSession';
-import type { AssistantReply } from '../services/aiAssistant';
+import type { AssistantReply } from '../services/assistant';
 import { dayOfYear, duaOfTheDay, pickForDay } from '../services/dailyDua';
 import { logError } from '../services/errorLog';
 import { fireAndForget } from '../services/fireAndForget';
