@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { AppProvider, useApp } from './src/context/AppContext';
+import { AppProvider, useAppearance, useSettings } from './src/context/AppContext';
 import { useTranslation } from './src/hooks/useTranslation';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -17,7 +17,8 @@ import { defineWidgetTask } from './src/services/widgetBackground';
 import { useAppFonts } from './src/theme/fonts';
 
 function Root() {
-  const { darkMode, loading, settings } = useApp();
+  const { loading, settings } = useSettings();
+  const { darkMode } = useAppearance();
   const { session, firstRunDone } = useAuth();
   const { t } = useTranslation();
 

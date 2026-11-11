@@ -1,21 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
-import { DUAS } from '../data/duas';
+import { useDayKey } from '../hooks/useClock';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { duaOfTheDay } from '../services/dailyDua';
+import { dateFromKey } from '../utils/date';
 import { AppText } from '../ui/AppText';
 import { Surface } from '../ui/Surface';
-
-const TICK_MS = 60_000;
-const DAY_MS = 86_400_000;
-
-/** Same dua for the whole day, rotating through the collection. */
-export function duaOfTheDay(date: Date) {
-  const start = new Date(date.getFullYear(), 0, 0).getTime();
-  const dayOfYear = Math.floor((date.getTime() - start) / DAY_MS);
-  return DUAS[dayOfYear % DUAS.length];
-}
 
 interface Props {
   onOpenDua?: (duaId: string) => void;
@@ -28,16 +20,9 @@ interface Props {
 export function HomeWidgetModule({ onOpenDua }: Props) {
   const { colors, space } = useTheme();
   const { t, lang } = useTranslation();
-  const [now, setNow] = useState(() => Date.now());
-
   // Rolls over to the next dua after midnight while the app stays open
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), TICK_MS);
-    return () => clearInterval(id);
-  }, []);
-
-  const day = new Date(now).toDateString();
-  const dua = useMemo(() => duaOfTheDay(new Date(now)), [day]);
+  const day = useDayKey();
+  const dua = useMemo(() => duaOfTheDay(dateFromKey(day)), [day]);
   if (!dua) return null;
 
   return (

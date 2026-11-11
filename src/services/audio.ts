@@ -4,6 +4,14 @@ import { getJson, setJson, storageKeys } from './storage';
 
 let currentPlayer: AudioPlayer | null = null;
 let audioReady = false;
+/**
+ * Bumped by every play request and every stop. A request that finds it changed while it was
+ * awaiting something has been replaced, and must not start a player (two quick taps used to leave
+ * the first player playing with nothing able to stop it).
+ */
+let generation = 0;
+const claimGeneration = () => ++generation;
+const isCurrent = (gen: number) => gen === generation;
 
 export async function initAudio() {
   if (audioReady) return;
@@ -15,18 +23,28 @@ export async function initAudio() {
   audioReady = true;
 }
 
-export async function stopAudio() {
+function releasePlayer() {
   if (!currentPlayer) return;
   currentPlayer.pause();
   currentPlayer.remove();
   currentPlayer = null;
 }
 
-/** A remote/local URI, or a bundled asset (require(...) module id) */
-async function playUri(source: string | number, onFinish?: () => void): Promise<boolean> {
+/** Stops what is playing, and any play request still on its way. */
+export async function stopAudio() {
+  claimGeneration();
+  releasePlayer();
+}
+
+/**
+ * A remote/local URI, or a bundled asset (require(...) module id). False only when playback failed;
+ * a request replaced by a newer one (or by a stop) resolves true without playing.
+ */
+async function playUri(source: string | number, onFinish?: () => void, gen: number = claimGeneration()): Promise<boolean> {
   try {
     await initAudio();
-    await stopAudio();
+    if (!isCurrent(gen)) return true;
+    releasePlayer();
     const player = createAudioPlayer(typeof source === 'number' ? source : { uri: source });
     currentPlayer = player;
     if (onFinish) {
@@ -80,16 +98,18 @@ export async function downloadAudioForOffline(duaId: string, url: string): Promi
 }
 
 export async function playDuaAudio(duaId: string, remoteUrl?: string, onFinish?: () => void): Promise<boolean> {
+  // Claimed before the file lookups, so a stop or another tap during them cancels this request
+  const gen = claimGeneration();
   const local = await getOfflineAudioPath(duaId);
   if (local) {
     try {
       const info = await FileSystem.getInfoAsync(local);
-      if (info.exists) return await playUri(local, onFinish);
+      if (info.exists) return await playUri(local, onFinish, gen);
     } catch {
       /* try remote */
     }
   }
-  if (remoteUrl) return playRemoteAudio(remoteUrl, onFinish);
+  if (remoteUrl) return playUri(remoteUrl, onFinish, gen);
   return false;
 }
 

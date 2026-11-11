@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, useAnimatedValue, View } from 'react-native';
 import { LocationBlockedNotice } from '../components/LocationBlockedNotice';
-import { useApp } from '../context/AppContext';
+import { useAppLocation } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { nextAligned, smoothHeading, turnDelta, wrap360 } from '../services/compass';
@@ -33,7 +33,7 @@ const CARDINALS = [
 ] as const;
 
 export function QiblaScreen() {
-  const { location, refreshLocation } = useApp();
+  const { location, refreshLocation } = useAppLocation();
   const { colors, space, motion } = useTheme();
   const { t, lang } = useTranslation();
   // Rounded values for the text: React re-renders only when a whole degree changes, not per reading

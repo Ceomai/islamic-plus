@@ -12,3 +12,12 @@ export function stepTime(value: string, unit: 'hour' | 'minute', dir: 1 | -1): s
   const total = (hours * 60 + snapped + 24 * 60) % (24 * 60);
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 }
+
+/**
+ * Hours and minutes left until a moment `ms` away (never negative). `round: 'nearest'` is what
+ * the home screen's next-prayer countdown shows; `'up'` never shows 0 minutes before the moment.
+ */
+export function formatRemaining(ms: number, round: 'nearest' | 'up' = 'nearest'): { h: number; m: number } {
+  const minutes = Math.max(0, (round === 'up' ? Math.ceil : Math.round)(ms / 60000));
+  return { h: Math.floor(minutes / 60), m: minutes % 60 };
+}

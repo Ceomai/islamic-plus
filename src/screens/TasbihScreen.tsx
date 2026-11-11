@@ -4,7 +4,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, useAnimatedValue, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useApp } from '../context/AppContext';
+import { useActivity } from '../context/AppContext';
 import { DHIKR, TESBIHAT_COUNT, TESBIHAT_SEQUENCE, getDhikr } from '../data/dhikr';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../hooks/useTheme';
@@ -38,7 +38,7 @@ const PLAY_HAPTIC: Record<TasbihHaptic, () => Promise<void>> = {
 };
 
 export function TasbihScreen({ navigation }: Props) {
-  const { trackActivity } = useApp();
+  const { trackActivity } = useActivity();
   const { colors, radius, space, component, motion, layout } = useTheme();
   const { t, lang } = useTranslation();
   const [mode, setMode] = useState<Mode>('tesbihat');

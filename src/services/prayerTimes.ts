@@ -101,19 +101,32 @@ export function formatClock(date: Date, lang: 'en' | 'tr'): string {
 
 const DAILY: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
+export interface NextPrayer {
+  name: PrayerName;
+  time: Date;
+  /** Today's prayers have all passed: this is tomorrow's Fajr */
+  isTomorrow: boolean;
+}
+
+/** Next obligatory prayer after `now` from already computed times; after Isha, tomorrow's Fajr. */
+export function nextPrayerFrom(today: Record<PrayerName, Date>, tomorrowFajr: Date, now: Date): NextPrayer {
+  const next = DAILY.find((p) => today[p] > now);
+  return next ? { name: next, time: today[next], isTomorrow: false } : { name: 'fajr', time: tomorrowFajr, isTomorrow: true };
+}
+
 /** Next obligatory prayer from now; after Isha this is tomorrow's Fajr. */
 export function getNextPrayer(
   latitude: number,
   longitude: number,
   calculationMethod: CalculationMethodId,
   madhab: Madhab
-): { name: PrayerName; time: Date } | null {
+): NextPrayer {
   const now = new Date();
-  const today = getPrayerDates(latitude, longitude, now, calculationMethod, madhab);
-  const next = DAILY.find((p) => today[p] > now);
-  if (next) return { name: next, time: today[next] };
-
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return { name: 'fajr', time: getPrayerDates(latitude, longitude, tomorrow, calculationMethod, madhab).fajr };
+  return nextPrayerFrom(
+    getPrayerDates(latitude, longitude, now, calculationMethod, madhab),
+    getPrayerDates(latitude, longitude, tomorrow, calculationMethod, madhab).fajr,
+    now
+  );
 }

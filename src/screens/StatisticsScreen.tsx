@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import { useApp } from '../context/AppContext';
+import { useHabits, usePrayerDay, useStats } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { loadPrayerCompletions } from '../services/prayerTracking';
@@ -15,7 +15,9 @@ const CHART_HEIGHT = 120;
 type Props = NativeStackScreenProps<RootStackParamList, 'Statistics'>;
 
 export function StatisticsScreen({ navigation }: Props) {
-  const { stats, habitScore, refreshStats, todayPrayers } = useApp();
+  const { stats, refreshStats } = useStats();
+  const { habitScore } = useHabits();
+  const { todayPrayers } = usePrayerDay();
   const { colors, radius, space } = useTheme();
   const { t, lang } = useTranslation();
 

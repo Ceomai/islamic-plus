@@ -6,20 +6,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeAppIcon } from '../components/HomeAppIcon';
 import { HomeWidgetModule } from '../components/HomeWidgetModule';
+import { NextPrayerRemaining } from '../components/prayer/NextPrayerRemaining';
+import { RamadanCard } from '../components/prayer/RamadanCard';
 import { getHomeFeature } from '../constants/homeFeatures';
-import { useApp } from '../context/AppContext';
+import { useAppLocation, usePrayerDay, useReading, useSettings } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useDayKey } from '../hooks/useClock';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useOptimisticSet } from '../hooks/useOptimisticSet';
+import { useNextPrayer, usePrayerDays } from '../hooks/usePrayerDays';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { gregorianToHijri } from '../services/hijriCalendar';
-import { fastCountdown, formatDuration, ramadanWindow } from '../services/ramadan';
+import { ramadanWindow } from '../services/ramadan';
 import { launcherColumns } from '../theme/tokens';
 import { confirm } from '../utils/confirm';
-import { addDays } from '../utils/date';
-import { formatClock, getNextPrayer, getPrayerDates } from '../services/prayerTimes';
+import { dateFromKey } from '../utils/date';
+import { formatClock } from '../services/prayerTimes';
 import type { HomeFeatureId, PrayerName } from '../types';
 import { AppText, Button, Enter, ListRow, PopIn, SectionHeader, SkeletonBlock, SkeletonGroup, Surface } from '../ui';
 
@@ -36,17 +40,10 @@ const SKELETON_HERO = 132;
 const SKELETON_SLOT = 76;
 
 export function HomeScreen({ navigation }: Props) {
-  const {
-    location,
-    refreshLocation,
-    loading,
-    settings,
-    quranProgress,
-    hadithProgress,
-    todayPrayers,
-    togglePrayerComplete,
-    refreshTodayPrayers,
-  } = useApp();
+  const { location, refreshLocation } = useAppLocation();
+  const { loading, settings } = useSettings();
+  const { quranProgress, hadithProgress } = useReading();
+  const { todayPrayers, togglePrayerComplete, refreshTodayPrayers } = usePrayerDay();
   const { canAccess } = useFeatureAccess();
   const { logout } = useAuth();
   const { colors, radius, space, layout, motion } = useTheme();
@@ -54,18 +51,11 @@ export function HomeScreen({ navigation }: Props) {
   const stacked = fontScale > STACK_FONT_SCALE;
   const columns = launcherColumns(width);
   const { t, prayer, lang } = useTranslation();
-  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     // A city chosen by hand stays until the user picks "use my location" again
     if (!location?.cityId) void refreshLocation();
     void refreshTodayPrayers();
-  }, []);
-
-  // Keep the countdown (and the day's schedule after midnight) current
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), COUNTDOWN_TICK_MS);
-    return () => clearInterval(id);
   }, []);
 
   const openFeature = (id: HomeFeatureId) => {
@@ -87,18 +77,13 @@ export function HomeScreen({ navigation }: Props) {
     navigation.navigate(def.route, def.routeParams);
   };
 
-  const today = new Date(now).toDateString();
-  const hijri = useMemo(() => gregorianToHijri(new Date(now), lang), [today, lang]);
-
-  const prayerDates = useMemo(() => {
-    if (!location) return null;
-    return getPrayerDates(location.latitude, location.longitude, new Date(now), settings.calculationMethod, settings.madhab);
-  }, [location, settings.calculationMethod, settings.madhab, today]);
-
-  const nextPrayer = useMemo(() => {
-    if (!location) return null;
-    return getNextPrayer(location.latitude, location.longitude, settings.calculationMethod, settings.madhab);
-  }, [location, settings.calculationMethod, settings.madhab, now]);
+  // The day's schedule is recomputed when the day changes; the countdown ticks in its own component
+  const dayKey = useDayKey();
+  const hijri = useMemo(() => gregorianToHijri(dateFromKey(dayKey), lang), [dayKey, lang]);
+  const prayerDays = usePrayerDays(location, settings.calculationMethod, settings.madhab, dayKey);
+  const prayerDates = prayerDays?.today ?? null;
+  // Re-renders the screen only when the next prayer changes (after Isha: tomorrow's Fajr)
+  const nextPrayer = useNextPrayer(prayerDays, COUNTDOWN_TICK_MS);
 
   const storedPrayers = useMemo(() => new Set(todayPrayers.map((p) => p.prayer)), [todayPrayers]);
   // A tap shows the prayer as prayed at once; storage and the day's count catch up behind it
@@ -113,31 +98,13 @@ export function HomeScreen({ navigation }: Props) {
   if (loading && !showedSkeleton) setShowedSkeleton(true);
 
   // After Isha the day's times are all past: show tomorrow's under them (today's stay markable)
-  const tomorrowDates = useMemo(() => {
-    if (!location || !prayerDates || now < prayerDates.isha.getTime()) return null;
-    return getPrayerDates(location.latitude, location.longitude, addDays(new Date(now), 1), settings.calculationMethod, settings.madhab);
-  }, [location, prayerDates, now, settings.calculationMethod, settings.madhab]);
+  const tomorrowDates = nextPrayer?.isTomorrow ? (prayerDays?.tomorrow ?? null) : null;
 
   // Ramadan card: suhoor/iftar countdown during Ramadan, days left in the month before it
-  const ramadan = useMemo(() => ramadanWindow(new Date(now)), [today]);
-  const fast = useMemo(() => {
-    if (!location || !prayerDates || !ramadan.inRamadan) return null;
-    const tomorrow = getPrayerDates(location.latitude, location.longitude, addDays(new Date(now), 1), settings.calculationMethod, settings.madhab);
-    return fastCountdown(new Date(now), prayerDates, tomorrow.fajr);
-  }, [location, prayerDates, ramadan.inRamadan, now, settings.calculationMethod, settings.madhab]);
+  const ramadan = useMemo(() => ramadanWindow(dateFromKey(dayKey)), [dayKey]);
   const showRamadan = ramadan.inRamadan || ramadan.daysUntil <= 30;
 
   if (loading) return <HomeSkeleton label={t('common.loading')} />;
-
-  const remainingLabel = (() => {
-    if (!nextPrayer) return '';
-    const minutes = Math.max(0, Math.round((nextPrayer.time.getTime() - now) / 60000));
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return h > 0
-      ? t('home.remaining', { h: String(h), m: String(m) })
-      : t('home.remainingMin', { m: String(m) });
-  })();
 
   const order = settings.homeLauncher.order;
   const modules = order.filter((id) => getHomeFeature(id)?.isModule);
@@ -173,9 +140,7 @@ export function HomeScreen({ navigation }: Props) {
             </AppText>
           </View>
           <View style={styles.heroFooter}>
-            <AppText variant="calloutStrong" tone="onHeroAccent" numeric>
-              {remainingLabel}
-            </AppText>
+            <NextPrayerRemaining target={nextPrayer.time} tickMs={COUNTDOWN_TICK_MS} />
             {/* Today's count instead of a streak: one missed prayer no longer wipes out the progress */}
             <View
               accessible
@@ -334,32 +299,7 @@ export function HomeScreen({ navigation }: Props) {
             )
           )}
 
-          {showRamadan && (
-            <Surface
-              variant="soft"
-              onPress={() => openFeature('imsakiye')}
-              accessibilityLabel={t('nav.imsakiye')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[4] }}
-            >
-              <Ionicons name={fast?.kind === 'iftar' ? 'restaurant-outline' : 'moon-outline'} size={26} color={colors.onPrimarySoft} />
-              <View style={{ flex: 1 }}>
-                <AppText variant="captionStrong" tone="onPrimarySoft">
-                  {ramadan.inRamadan ? t('ramadan.dayOf', { n: String(ramadan.dayOfRamadan), total: String(ramadan.length) }) : t('nav.imsakiye')}
-                </AppText>
-                <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
-                  {fast
-                    ? (() => {
-                        const { h, m } = formatDuration(fast.target.getTime() - now);
-                        return `${fast.kind === 'iftar' ? t('ramadan.untilIftar') : t('ramadan.untilSahur')}: ${t('ramadan.left', { h: String(h), m: String(m) })}`;
-                      })()
-                    : ramadan.inRamadan
-                      ? t('ramadan.needLocation')
-                      : t('ramadan.daysUntil', { n: String(ramadan.daysUntil) })}
-                </AppText>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.onPrimarySoft} />
-            </Surface>
-          )}
+          {showRamadan && <RamadanCard ramadan={ramadan} days={prayerDays} tickMs={COUNTDOWN_TICK_MS} onPress={() => openFeature('imsakiye')} />}
 
           {(quranProgress.lastRead || hadithProgress.lastRead) && (
             <>

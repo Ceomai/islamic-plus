@@ -1,47 +1,35 @@
-import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
-import { useApp } from '../context/AppContext';
+import { FastCountdownCard } from '../components/prayer/FastCountdownCard';
+import { useAppLocation, useSettings } from '../context/AppContext';
+import { useDayKey } from '../hooks/useClock';
+import { usePrayerDays } from '../hooks/usePrayerDays';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { gregorianToHijri } from '../services/hijriCalendar';
-import { formatClock, getPrayerDates } from '../services/prayerTimes';
-import { buildImsakiye, fastCountdown, formatDuration, ramadanWindow } from '../services/ramadan';
+import { formatClock } from '../services/prayerTimes';
+import { buildImsakiye, ramadanWindow } from '../services/ramadan';
 import { AppText, Button, Screen, Surface } from '../ui';
-import { addDays, localDateKey } from '../utils/date';
+import { dateFromKey } from '../utils/date';
 
 const COLS = ['day', 'date', 'imsak', 'sunrise', 'iftar', 'isha'] as const;
 
 export function ImsakiyeScreen() {
-  const { location, settings, refreshLocation } = useApp();
+  const { location, refreshLocation } = useAppLocation();
+  const { settings } = useSettings();
   const { colors, space } = useTheme();
   const { t, lang } = useTranslation();
   const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
-  const [now, setNow] = useState(() => new Date());
-
-  // Countdown ticks once a minute
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(id);
-  }, []);
-
-  const dayKey = localDateKey(now);
-  // Recomputed once a day, not on every minute tick
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const ramadan = useMemo(() => ramadanWindow(now), [dayKey]);
+  // Recomputed once a day; only the countdown card ticks
+  const todayKey = useDayKey();
+  const today = useMemo(() => dateFromKey(todayKey), [todayKey]);
+  const ramadan = useMemo(() => ramadanWindow(today), [today]);
   const days = useMemo(
     () => (location ? buildImsakiye(location.latitude, location.longitude, settings.calculationMethod, settings.madhab, ramadan) : []),
     [location?.latitude, location?.longitude, settings.calculationMethod, settings.madhab, ramadan]
   );
-  const todayKey = localDateKey(now);
   const clock = (d: Date) => formatClock(d, lang);
-
-  const countdown = useMemo(() => {
-    if (!location || !ramadan.inRamadan) return null;
-    const today = getPrayerDates(location.latitude, location.longitude, now, settings.calculationMethod, settings.madhab);
-    const tomorrow = getPrayerDates(location.latitude, location.longitude, addDays(now, 1), settings.calculationMethod, settings.madhab);
-    return fastCountdown(now, today, tomorrow.fajr);
-  }, [location, now, ramadan.inRamadan, settings.calculationMethod, settings.madhab]);
+  const prayerDays = usePrayerDays(location, settings.calculationMethod, settings.madhab, todayKey);
 
   const range = `${ramadan.start.toLocaleDateString(locale, { day: 'numeric', month: 'long' })} – ${ramadan.end.toLocaleDateString(locale, {
     day: 'numeric',
@@ -63,22 +51,7 @@ export function ImsakiyeScreen() {
           : t('ramadan.daysUntil', { n: String(ramadan.daysUntil) })}
       </AppText>
 
-      {countdown && (
-        <Surface variant="soft" style={{ marginTop: space[4], flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-          <Ionicons name={countdown.kind === 'iftar' ? 'restaurant-outline' : 'moon-outline'} size={28} color={colors.onPrimarySoft} />
-          <View style={{ flex: 1 }}>
-            <AppText variant="captionStrong" tone="onPrimarySoft">
-              {countdown.kind === 'iftar' ? t('ramadan.untilIftar') : t('ramadan.untilSahur')} · {clock(countdown.target)}
-            </AppText>
-            <AppText variant="display" tone="onPrimarySoft" numeric>
-              {(() => {
-                const { h, m } = formatDuration(countdown.target.getTime() - now.getTime());
-                return t('ramadan.left', { h: String(h), m: String(m) });
-              })()}
-            </AppText>
-          </View>
-        </Surface>
-      )}
+      {prayerDays && ramadan.inRamadan && <FastCountdownCard days={prayerDays} />}
 
       {!location ? (
         <Surface variant="muted" style={{ marginTop: space[5], alignItems: 'center', gap: space[3] }}>
@@ -147,7 +120,7 @@ export function ImsakiyeScreen() {
       )}
 
       <AppText variant="caption" tone="muted" style={{ marginTop: space[3] }}>
-        {t('ramadan.note', { hijri: gregorianToHijri(now, lang).formatted })}
+        {t('ramadan.note', { hijri: gregorianToHijri(today, lang).formatted })}
       </AppText>
     </Screen>
   );

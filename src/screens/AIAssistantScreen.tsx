@@ -2,20 +2,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
-import { useApp } from '../context/AppContext';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View, type ScrollViewInstance } from 'react-native';
+import { ChatBubble } from '../components/assistant/ChatBubble';
+import { ChatComposer } from '../components/assistant/ChatComposer';
+import { useAIChat, useAppLocation, useSettings } from '../context/AppContext';
+import { useEventCallback } from '../hooks/useEventCallback';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { askAssistant, getAIWelcome } from '../services/aiAssistant';
-import { askRemoteAssistant, isRemoteAssistantAvailable } from '../services/assistantRemote';
-import { trackFeatureAction } from '../services/cloudAnalytics';
+import { getAIWelcome } from '../services/aiAssistant';
+import { getReply, spokenReply } from '../services/assistantSession';
 import { formatClock, getNextPrayer } from '../services/prayerTimes';
-import type { AssistantAction, AssistantTarget } from '../types';
-import { AppText, Chip, Enter, IconButton } from '../ui';
+import type { AssistantTarget } from '../types';
+import { AppText, Chip } from '../ui';
 import { announce } from '../utils/announce';
 import { localDateKey } from '../utils/date';
 import { confirmDestructive } from '../utils/confirm';
@@ -25,39 +27,20 @@ const SUGGESTIONS: Record<'tr' | 'en', string[]> = {
   en: ['Open Surah Yasin', 'Explain the travel dua', 'When is the next prayer?', 'What breaks the fast?', 'Show qibla', 'Bittgebet vor dem Schlafen'],
 };
 
-/**
- * Replies mark headings as **bold**; they used to show with the asterisks. Bold parts become bold
- * text and stray `code` backticks are dropped.
- */
-function renderInline(text: string): React.ReactNode[] {
-  return text
-    .replace(/`/g, '')
-    .split(/(\*\*[^*]+\*\*)/g)
-    .filter(Boolean)
-    .map((part, i) =>
-      part.startsWith('**') && part.endsWith('**') ? (
-        <AppText key={i} variant="bodyStrong">
-          {part.slice(2, -2)}
-        </AppText>
-      ) : (
-        part
-      )
-    );
-}
-
 /** Screens that only live in the Learn tab; everything else is in the Home stack. */
 const LEARN_ONLY = new Set(['Education', 'EducationDetail']);
 const AUTO_NAVIGATE_DELAY = 1200;
 
 export function AIAssistantScreen() {
-  const { aiMessages, sendAIMessage, clearAIChat, settings, location } = useApp();
+  const { aiMessages, sendAIMessage, clearAIChat } = useAIChat();
+  const { settings } = useSettings();
+  const { location } = useAppLocation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { canAccess } = useFeatureAccess();
-  const { colors, radius, space, type, layout, motion } = useTheme();
+  const { colors, radius, space, layout } = useTheme();
   const reduced = useReducedMotion();
   const headerHeight = useHeaderHeight();
   const { t, lang } = useTranslation();
-  const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const pendingNav = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,7 +68,7 @@ export function AIAssistantScreen() {
 
   // The assistant screen is mounted in several stacks; open the target in this stack when it
   // exists here, otherwise in the tab that owns it.
-  const open = (target: AssistantTarget) => {
+  const open = useEventCallback((target: AssistantTarget) => {
     if (pendingNav.current) clearTimeout(pendingNav.current);
     // Targets come from stored chat JSON, so the route/params pairing is checked by the assistant, not the type system
     const nav = navigation as unknown as { navigate: (screen: string, params?: object) => void };
@@ -97,56 +80,40 @@ export function AIAssistantScreen() {
     const parent = navigation.getParent() as unknown as typeof nav | undefined;
     // initial: false keeps the tab's first screen underneath, so the back button returns to it
     parent?.navigate(tab, { screen: target.screen, params: target.params, initial: false });
-  };
+  });
 
-  const send = async (raw: string) => {
+  /** Starts answering; false when the question is not taken (empty, or another is on its way) */
+  const send = (raw: string): boolean => {
     const text = raw.trim();
-    if (!text || busy || sending.current) return;
+    if (!text || busy || sending.current) return false;
     sending.current = true;
-    try {
-      await sendNow(text);
-    } finally {
+    void sendNow(text).finally(() => {
       sending.current = false;
-    }
+    });
+    return true;
   };
 
   const sendNow = async (text: string) => {
-    setInput('');
     const next = location ? getNextPrayer(location.latitude, location.longitude, settings.calculationMethod, settings.madhab) : null;
-    const nextPrayer = next ? { name: next.name, time: formatClock(next.time, lang) } : null;
-
-    let reply: { text: string; actions: AssistantAction[]; autoNavigate?: AssistantTarget } | null = null;
-    let note = '';
-    if (await isRemoteAssistantAvailable()) {
+    const ctx = {
+      appLang: lang,
+      quranEdition: settings.quranEditionId,
+      nextPrayer: next ? { name: next.name, time: formatClock(next.time, lang) } : null,
+      today: localDateKey(),
+      history: aiMessages.filter((m) => m.content.length > 0),
+      limitedNote: t('ai.limited'),
+    };
+    const reply = await getReply(text, ctx, async () => {
       // Show the question right away; the server answer can take a few seconds
-      const history = aiMessages.filter((m) => m.content.length > 0);
       await sendAIMessage(text, '');
       setBusy(true);
       // Android reads the "thinking" bubble through its live region
       announce(t('ai.thinking'));
-      const remote = await askRemoteAssistant(text, history, {
-        appLang: lang,
-        quranEdition: settings.quranEditionId,
-        nextPrayer,
-        today: localDateKey(),
-      });
-      setBusy(false);
-      if (remote?.limited) note = `\n\n${t('ai.limited')}`;
-      else if (remote) reply = remote;
-      if (!reply) {
-        const local = askAssistant(text, { appLang: lang, quranEdition: settings.quranEditionId, nextPrayer });
-        reply = { ...local, text: local.text + note };
-      }
-      await sendAIMessage('', reply.text, reply.actions);
-    } else {
-      const local = askAssistant(text, { appLang: lang, quranEdition: settings.quranEditionId, nextPrayer });
-      // Unanswered questions show which words the on-device vocabulary still lacks
-      if (local.matched === false) void trackFeatureAction('ai', 'unmatched', { lang: local.lang });
-      reply = local;
-      await sendAIMessage(text, reply.text, reply.actions);
-    }
+    });
+    setBusy(false);
+    await sendAIMessage(reply.questionPosted ? '' : text, reply.text, reply.actions);
     // The new reply is not in a live region (the whole chat would be re-read), so announce it
-    announce(reply.text.replace(/\*\*|`/g, ''), { hasLiveRegion: false });
+    announce(spokenReply(reply.text), { hasLiveRegion: false });
     // Let the reply be read for a moment, then open the page; the chat stays when coming back
     const target = reply.autoNavigate;
     if (target && navigation.isFocused()) {
@@ -157,6 +124,13 @@ export function AIAssistantScreen() {
     }
   };
 
+  const clearChat = async () => {
+    const ok = await confirmDestructive({ title: t('ai.clearTitle'), message: t('ai.clearBody'), confirm: t('ai.clear'), cancel: t('account.cancel') });
+    if (ok) await clearAIChat();
+  };
+
+  const messages = useMemo(() => aiMessages.filter((m) => m.content.length > 0), [aiMessages]);
+
   if (!canAccess('ai_assistant')) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6], backgroundColor: colors.background }}>
@@ -166,9 +140,6 @@ export function AIAssistantScreen() {
       </View>
     );
   }
-
-  const messages = aiMessages.filter((m) => m.content.length > 0);
-  const canSend = input.trim().length > 0 && !busy;
 
   return (
     <KeyboardAvoidingView
@@ -191,52 +162,9 @@ export function AIAssistantScreen() {
         // Follows the chat to its newest message once it is laid out (no timer guessing when that is)
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: !reduced })}
       >
-        {messages.map((m) => {
-          const mine = m.role === 'user';
-          // Arabic replies read right to left
-          const rtl = !mine && /[؀-ۿ]/.test(m.content.slice(0, 40));
-          return (
-            <Enter
-              key={m.id}
-              animate={!initialIds.has(m.id)}
-              duration={motion.duration.fast}
-              offsetY={motion.enterOffset.bubble}
-              style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '88%' }}
-            >
-              <View
-                style={{
-                  maxWidth: layout.bubbleMaxWidth,
-                  backgroundColor: mine ? colors.primary : colors.surface,
-                  borderColor: colors.border,
-                  borderWidth: mine ? 0 : 1,
-                  borderRadius: radius.lg,
-                  borderBottomRightRadius: mine ? 4 : radius.lg,
-                  borderBottomLeftRadius: mine ? radius.lg : 4,
-                  paddingHorizontal: space[4],
-                  paddingVertical: space[3],
-                }}
-              >
-                <AppText variant="body" color={mine ? colors.onPrimary : colors.text} style={rtl ? { writingDirection: 'rtl', textAlign: 'right' } : undefined}>
-                  {mine ? m.content : renderInline(m.content)}
-                </AppText>
-              </View>
-              {m.actions?.length ? (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[2] }}>
-                  {m.actions.map((a, i) => (
-                    <Chip
-                      key={`${a.target.screen}-${i}`}
-                      label={a.label}
-                      icon={(a.icon as keyof typeof Ionicons.glyphMap | undefined) ?? 'arrow-forward'}
-                      // Highlighted as the suggested next step; not a selected state
-                      emphasis={i === 0}
-                      onPress={() => open(a.target)}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </Enter>
-          );
-        })}
+        {messages.map((m) => (
+          <ChatBubble key={m.id} message={m} animate={!initialIds.has(m.id)} onOpen={open} />
+        ))}
         {busy && (
           <View
             accessible
@@ -271,70 +199,7 @@ export function AIAssistantScreen() {
         )}
       </ScrollView>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          gap: space[2],
-          padding: space[3],
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          backgroundColor: colors.surface,
-        }}
-      >
-        <IconButton
-          name="trash-outline"
-          size={20}
-          color={colors.textMuted}
-          onPress={async () => {
-            const ok = await confirmDestructive({ title: t('ai.clearTitle'), message: t('ai.clearBody'), confirm: t('ai.clear'), cancel: t('account.cancel') });
-            if (ok) await clearAIChat();
-          }}
-          accessibilityLabel={t('ai.clear')}
-        />
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder={t('ai.placeholder')}
-          placeholderTextColor={colors.textMuted}
-          accessibilityLabel={t('ai.inputLabel')}
-          multiline
-          maxLength={500}
-          blurOnSubmit
-          onSubmitEditing={() => send(input)}
-          returnKeyType="send"
-          style={[
-            type.body,
-            {
-              flex: 1,
-              maxHeight: 120,
-              color: colors.text,
-              backgroundColor: colors.background,
-              borderRadius: radius.md,
-              paddingHorizontal: space[3],
-              paddingVertical: space[2],
-            },
-          ]}
-        />
-        <Pressable
-          onPress={() => send(input)}
-          disabled={!canSend}
-          accessibilityRole="button"
-          accessibilityLabel={t('ai.send')}
-          accessibilityState={{ disabled: !canSend }}
-          style={({ pressed }) => ({
-            width: layout.minTouch,
-            height: layout.minTouch,
-            borderRadius: layout.minTouch / 2,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: pressed ? colors.primaryPressed : colors.primary,
-            opacity: canSend ? 1 : 0.5,
-          })}
-        >
-          <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
-        </Pressable>
-      </View>
+      <ChatComposer busy={busy} onSend={send} onClear={() => void clearChat()} />
     </KeyboardAvoidingView>
   );
 }

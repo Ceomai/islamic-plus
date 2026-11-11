@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { haversineKm } from '../utils/geo';
 import { getJson, setJson, storageKeys } from './storage';
 
 export interface StoredLocation {
@@ -12,6 +13,22 @@ export interface StoredLocation {
 }
 
 const GPS_TIMEOUT_MS = 15000;
+/** A new fix closer than this to the current place (same city) is not treated as a move */
+const SAME_PLACE_KM = 1;
+
+/**
+ * True when `next` is the place already in use: within ~1 km, same city name and the same way of
+ * choosing it (GPS or a city from the list). Prayer times, notifications and the cloud copy then
+ * stay as they are.
+ */
+export function isSameLocation(current: StoredLocation | null, next: StoredLocation): boolean {
+  return (
+    !!current &&
+    current.city === next.city &&
+    current.cityId === next.cityId &&
+    haversineKm(current.latitude, current.longitude, next.latitude, next.longitude) < SAME_PLACE_KM
+  );
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([promise, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);

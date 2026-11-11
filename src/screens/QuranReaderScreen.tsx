@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, ScrollView, Share, View, type ListViewToken, type TextStyle } from 'react-native';
+import { FlatList, Pressable, ScrollView, Share, View, type ListRenderItem, type ListViewToken, type TextStyle } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AyahRow } from '../components/quran/AyahRow';
+import { MushafRow } from '../components/quran/MushafRow';
 import { QURAN_AUDIO_BASE, QURAN_EDITIONS } from '../constants/defaults';
-import { useApp } from '../context/AppContext';
+import { useActivity, useReading, useSettings } from '../context/AppContext';
+import { useEventCallback } from '../hooks/useEventCallback';
 import { useOptimisticSet } from '../hooks/useOptimisticSet';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
@@ -13,7 +16,7 @@ import { playRemoteAudio, stopAudio } from '../services/audio';
 import { fetchSurahReading, type ReaderAyah } from '../services/quranApi';
 import { addQuranBookmark, removeQuranBookmark, updateQuranLastRead } from '../services/readingProgress';
 import type { QuranView } from '../types';
-import { AppText, Button, Chip, Enter, IconBadge, IconButton, SkeletonBlock, SkeletonGroup, Surface } from '../ui';
+import { AppText, Button, Chip, Enter, IconBadge, SkeletonBlock, SkeletonGroup, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuranReader'>;
 
@@ -31,11 +34,18 @@ const MUSHAF_CHUNK = 8;
 /** Loading placeholder: a few ayahs, each an Arabic line and two translation lines */
 const SKELETON_AYAHS = 4;
 const SKELETON_LINE_WIDTHS = ['100%', '92%', '64%'] as const;
-const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => ARABIC_DIGITS[Number(d)]);
+/** An ayah counts as read once this much of it has been on screen */
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 40 };
 
 /** A list row: one ayah, or a block of ayahs in the continuous mushaf view */
 type Row = { key: string; ayahs: ReaderAyah[] };
+
+/** The reader's own font-size setting scales the shared type tokens */
+const scaled = (style: TextStyle, scale: number): TextStyle => ({
+  ...style,
+  fontSize: (style.fontSize ?? 0) * scale,
+  lineHeight: (style.lineHeight ?? 0) * scale,
+});
 
 export function QuranReaderScreen({ navigation, route }: Props) {
   const { surahNumber, edition: routeEdition, surahName, startAyah } = route.params;
@@ -44,7 +54,9 @@ export function QuranReaderScreen({ navigation, route }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({ title: surahName ? `${surahNumber}. ${surahName}` : String(surahNumber) });
   }, [navigation, surahNumber, surahName]);
-  const { settings, updateSettings, quranProgress, refreshReadingProgress, trackActivity } = useApp();
+  const { settings, updateSettings } = useSettings();
+  const { quranProgress, refreshReadingProgress } = useReading();
+  const { trackActivity } = useActivity();
   const { colors, radius, space, type, layout, motion } = useTheme();
   const { t } = useTranslation();
   const view = settings.quranView;
@@ -60,26 +72,42 @@ export function QuranReaderScreen({ navigation, route }: Props) {
   const [playing, setPlaying] = useState<number | null>(null);
   const listRef = useRef<FlatList<Row>>(null);
   const lastAyahRef = useRef(1);
+  // The unmount cleanup below runs with the values of its first render, so the ayah count lives in a ref
+  const ayahCountRef = useRef(0);
   const scrolledToResume = useRef(false);
 
-  const needs = {
-    arabic: view !== 'translation',
-    transliteration: view === 'study',
-    translation: view === 'arabic' || view === 'mushaf' ? null : translationId,
-  };
+  // What the view shows decides what is fetched; switching between views that need the same parts does not refetch
+  const needArabic = view !== 'translation';
+  const needTransliteration = view === 'study';
+  const needTranslation = view === 'arabic' || view === 'mushaf' ? null : translationId;
+  const needs = useMemo(
+    () => ({ arabic: needArabic, transliteration: needTransliteration, translation: needTranslation }),
+    [needArabic, needTransliteration, needTranslation]
+  );
 
+  // Only the latest request may fill the screen: switching views quickly let an older, slower
+  // answer arrive last and show the wrong parts
+  const requestId = useRef(0);
   const load = useCallback(() => {
+    const id = ++requestId.current;
+    const isLatest = () => id === requestId.current;
     setLoading(true);
     setFailed(false);
     fetchSurahReading(surahNumber, needs)
       .then((r) => {
+        if (!isLatest()) return;
+        ayahCountRef.current = r.ayahs.length;
         setAyahs(r.ayahs);
         setHasBismillah(r.hasBismillahHeader);
         if (r.ayahs.length === 0) setFailed(true);
       })
-      .catch(() => setFailed(true))
-      .finally(() => setLoading(false));
-  }, [surahNumber, needs.arabic, needs.transliteration, needs.translation]);
+      .catch(() => {
+        if (isLatest()) setFailed(true);
+      })
+      .finally(() => {
+        if (isLatest()) setLoading(false);
+      });
+  }, [surahNumber, needs]);
 
   useEffect(load, [load]);
 
@@ -102,10 +130,6 @@ export function QuranReaderScreen({ navigation, route }: Props) {
     const index = rows.findIndex((r) => r.ayahs.some((a) => a.numberInSurah === resumeAyah));
     if (index > 0) requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: false }));
   }, [rows.length]);
-
-  // The cleanup below runs with the values of its first render, so the ayah count lives in a ref
-  const ayahCountRef = useRef(0);
-  ayahCountRef.current = ayahs.length;
 
   useEffect(() => {
     return () => {
@@ -140,13 +164,14 @@ export function QuranReaderScreen({ navigation, route }: Props) {
   // The icon changes on the tap; storage and the bookmark list catch up behind it
   const { shown: bookmarked, toggle: toggleBookmarkShown } = useOptimisticSet(storedBookmarks);
 
-  const shareAyah = (a: ReaderAyah) => {
+  // Row handlers keep their identity, so the memoized rows re-render only when their own ayah changes
+  const shareAyah = useEventCallback((a: ReaderAyah) => {
     const text = [a.arabic, a.translation, `— ${surahName} ${surahNumber}:${a.numberInSurah}`].filter(Boolean).join('\n\n');
     void Share.share({ message: text });
-  };
+  });
 
   // The bookmark button toggles: a second tap removes the bookmark
-  const bookmarkAyah = (ayahNumber: number) => {
+  const bookmarkAyah = useEventCallback((ayahNumber: number) => {
     lastAyahRef.current = ayahNumber;
     const adding = !bookmarked.has(ayahNumber);
     if (adding) void Haptics.selectionAsync();
@@ -164,7 +189,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
       }
       await refreshReadingProgress();
     });
-  };
+  });
 
   // Recitation continues ayah by ayah until the end of the surah or until stopped
   const playFrom = useCallback(
@@ -182,14 +207,14 @@ export function QuranReaderScreen({ navigation, route }: Props) {
     [ayahs]
   );
 
-  const togglePlay = async (numberInSurah: number) => {
+  const togglePlay = useEventCallback(async (numberInSurah: number) => {
     if (playing === numberInSurah) {
       await stopAudio();
       setPlaying(null);
       return;
     }
     await playFrom(ayahs.findIndex((a) => a.numberInSurah === numberInSurah));
-  };
+  });
 
   const setView = (next: QuranView) => {
     void stopAudio();
@@ -203,93 +228,32 @@ export function QuranReaderScreen({ navigation, route }: Props) {
   const scaleText = `${Math.round(scale * 100)}%`;
   const fontButtonStyle = { minWidth: layout.minTouch, minHeight: layout.minTouch, alignItems: 'center', justifyContent: 'center' } as const;
 
-  // The reader's own font-size setting scales the shared type tokens
-  const scaled = (style: TextStyle): TextStyle => ({
-    ...style,
-    fontSize: (style.fontSize ?? 0) * scale,
-    lineHeight: (style.lineHeight ?? 0) * scale,
-  });
-  const arabicStyle = scaled(type.arabicQuran);
-  const translationStyle = scaled(type.body);
+  const arabicStyle = useMemo(() => scaled(type.arabicQuran, scale), [type.arabicQuran, scale]);
+  const translationStyle = useMemo(() => scaled(type.body, scale), [type.body, scale]);
 
-  const renderRow = ({ item }: { item: Row }) => {
-    if (view === 'mushaf') {
+  const renderRow = useCallback<ListRenderItem<Row>>(
+    ({ item }) => {
+      if (view === 'mushaf') {
+        const inBlock = playing !== null && item.ayahs.some((a) => a.numberInSurah === playing);
+        return <MushafRow ayahs={item.ayahs} playing={inBlock ? playing : null} arabicStyle={arabicStyle} />;
+      }
+      const a = item.ayahs[0];
       return (
-        <AppText style={[arabicStyle, { textAlign: 'justify', paddingVertical: space[2] }]}>
-          {item.ayahs.map((a) => (
-            <AppText key={a.numberInSurah} style={arabicStyle} color={playing === a.numberInSurah ? colors.primaryText : undefined}>
-              {a.arabic}{' '}
-              <AppText style={[arabicStyle, { color: colors.accentText }]}>﴿{toArabicDigits(a.numberInSurah)}﴾ </AppText>
-            </AppText>
-          ))}
-        </AppText>
+        <AyahRow
+          ayah={a}
+          marked={bookmarked.has(a.numberInSurah)}
+          isPlaying={playing === a.numberInSurah}
+          arabicStyle={arabicStyle}
+          translationStyle={translationStyle}
+          onTogglePlay={togglePlay}
+          onShare={shareAyah}
+          onBookmark={bookmarkAyah}
+        />
       );
-    }
-
-    const a = item.ayahs[0];
-    const marked = bookmarked.has(a.numberInSurah);
-    const isPlaying = playing === a.numberInSurah;
-    return (
-      <View
-        style={{
-          paddingVertical: space[4],
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          backgroundColor: isPlaying ? colors.primarySoft : 'transparent',
-          marginHorizontal: -space[4],
-          paddingHorizontal: space[4],
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: space[1], gap: space[1] }}>
-          <View
-            style={{
-              minWidth: 32,
-              height: 28,
-              paddingHorizontal: space[2],
-              borderRadius: radius.pill,
-              backgroundColor: colors.accentSoft,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <AppText variant="captionStrong" tone="accent" numeric>
-              {a.numberInSurah}
-            </AppText>
-          </View>
-          <View style={{ flex: 1 }} />
-          <IconButton
-            name={isPlaying ? 'stop-circle' : 'play-circle-outline'}
-            onPress={() => togglePlay(a.numberInSurah)}
-            accessibilityLabel={`${isPlaying ? t('duas.stop') : t('duas.listen')} ${a.numberInSurah}`}
-          />
-          <IconButton
-            name="share-outline"
-            size={20}
-            onPress={() => shareAyah(a)}
-            accessibilityLabel={`${t('quran.share')} ${a.numberInSurah}`}
-          />
-          <IconButton
-            name={marked ? 'bookmark' : 'bookmark-outline'}
-            size={20}
-            onPress={() => bookmarkAyah(a.numberInSurah)}
-            accessibilityLabel={`${marked ? t('reading.removeBookmark') : t('reading.bookmark')} ${a.numberInSurah}`}
-            accessibilityState={{ selected: marked }}
-            popWhen={marked}
-            popFrom={motion.popFromSubtle}
-          />
-        </View>
-        {a.arabic ? <AppText style={arabicStyle}>{a.arabic}</AppText> : null}
-        {a.transliteration ? (
-          <AppText tone="secondary" style={[translationStyle, { fontStyle: 'italic', marginTop: space[2] }]}>
-            {a.transliteration}
-          </AppText>
-        ) : null}
-        {a.translation ? (
-          <AppText style={[translationStyle, { marginTop: a.arabic ? space[2] : 0 }]}>{a.translation}</AppText>
-        ) : null}
-      </View>
-    );
-  };
+    },
+    [view, playing, bookmarked, arabicStyle, translationStyle, togglePlay, shareAyah, bookmarkAyah]
+  );
+  const extraData = useMemo(() => ({ bookmarked, playing, scale }), [bookmarked, playing, scale]);
 
   const header = (
     <View>
@@ -385,9 +349,9 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             data={rows}
             keyExtractor={(r) => r.key}
             renderItem={renderRow}
-            extraData={{ bookmarked, playing, scale }}
+            extraData={extraData}
             onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={{ itemVisiblePercentThreshold: 40 }}
+            viewabilityConfig={VIEWABILITY_CONFIG}
             // Reaching the bottom (or a short surah that fits on screen) means the last ayah was read
             onEndReached={() => {
               const last = ayahs[ayahs.length - 1];

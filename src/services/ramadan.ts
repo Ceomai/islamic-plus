@@ -1,5 +1,6 @@
 import type { CalculationMethodId, Madhab } from '../types';
 import { addDays, localDateKey } from '../utils/date';
+import { formatRemaining } from '../utils/time';
 import { gregorianToHijri, hijriToGregorian } from './hijriCalendar';
 import { getPrayerDates } from './prayerTimes';
 
@@ -90,7 +91,7 @@ export function fastCountdown(now: Date, today: { fajr: Date; maghrib: Date }, t
   return { kind: 'sahur', target: tomorrowFajr };
 }
 
+/** Time left for the Ramadan countdowns: rounded up, so it reads 0 minutes only once the moment has come. */
 export function formatDuration(ms: number): { h: number; m: number } {
-  const totalMin = Math.max(0, Math.ceil(ms / 60000));
-  return { h: Math.floor(totalMin / 60), m: totalMin % 60 };
+  return formatRemaining(ms, 'up');
 }

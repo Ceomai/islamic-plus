@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator, type NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import React from 'react';
-import { useApp } from '../context/AppContext';
+import { useAppearance } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigationAnalytics } from '../hooks/useNavigationAnalytics';
@@ -146,7 +146,7 @@ function MoreStack() {
 }
 
 export function AppNavigator() {
-  const { darkMode } = useApp();
+  const { darkMode } = useAppearance();
   const { t } = useTranslation();
   const { colors, type, component } = useTheme();
   const { onNavigationStateChange } = useNavigationAnalytics();
