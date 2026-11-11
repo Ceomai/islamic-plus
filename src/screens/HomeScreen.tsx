@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeAppIcon } from '../components/HomeAppIcon';
@@ -9,6 +10,7 @@ import { getHomeFeature } from '../constants/homeFeatures';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { useOptimisticSet } from '../hooks/useOptimisticSet';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
@@ -19,7 +21,7 @@ import { confirm } from '../utils/confirm';
 import { addDays } from '../utils/date';
 import { formatClock, getNextPrayer, getPrayerDates } from '../services/prayerTimes';
 import type { HomeFeatureId, PrayerName } from '../types';
-import { AppText, Button, ListRow, SectionHeader, Surface } from '../ui';
+import { AppText, Button, Enter, ListRow, PopIn, SectionHeader, SkeletonBlock, SkeletonGroup, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -29,6 +31,9 @@ const PROGRESS_DOT = 7;
 const ICON_BUTTON = 44;
 /** Above this text scale the five prayers no longer fit side by side and are listed instead */
 const STACK_FONT_SCALE = 1.3;
+/** Loading placeholder heights: the next-prayer card and one prayer slot */
+const SKELETON_HERO = 132;
+const SKELETON_SLOT = 76;
 
 export function HomeScreen({ navigation }: Props) {
   const {
@@ -44,7 +49,7 @@ export function HomeScreen({ navigation }: Props) {
   } = useApp();
   const { canAccess } = useFeatureAccess();
   const { logout } = useAuth();
-  const { colors, radius, space, layout } = useTheme();
+  const { colors, radius, space, layout, motion } = useTheme();
   const { width, fontScale } = useWindowDimensions();
   const stacked = fontScale > STACK_FONT_SCALE;
   const columns = launcherColumns(width);
@@ -95,7 +100,17 @@ export function HomeScreen({ navigation }: Props) {
     return getNextPrayer(location.latitude, location.longitude, settings.calculationMethod, settings.madhab);
   }, [location, settings.calculationMethod, settings.madhab, now]);
 
-  const completedPrayers = useMemo(() => new Set(todayPrayers.map((p) => p.prayer)), [todayPrayers]);
+  const storedPrayers = useMemo(() => new Set(todayPrayers.map((p) => p.prayer)), [todayPrayers]);
+  // A tap shows the prayer as prayed at once; storage and the day's count catch up behind it
+  const { shown: completedPrayers, toggle: togglePrayerShown } = useOptimisticSet(storedPrayers);
+  const markPrayer = (p: PrayerName) => {
+    if (!completedPrayers.has(p)) void Haptics.selectionAsync();
+    void togglePrayerShown(p, () => togglePrayerComplete(p));
+  };
+
+  // Content that replaces the loading placeholder fades in; content that was there from the start doesn't
+  const [showedSkeleton, setShowedSkeleton] = useState(loading);
+  if (loading && !showedSkeleton) setShowedSkeleton(true);
 
   // After Isha the day's times are all past: show tomorrow's under them (today's stay markable)
   const tomorrowDates = useMemo(() => {
@@ -112,13 +127,7 @@ export function HomeScreen({ navigation }: Props) {
   }, [location, prayerDates, ramadan.inRamadan, now, settings.calculationMethod, settings.madhab]);
   const showRamadan = ramadan.inRamadan || ramadan.daysUntil <= 30;
 
-  if (loading) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} accessibilityLabel={t('common.loading')} />
-      </View>
-    );
-  }
+  if (loading) return <HomeSkeleton label={t('common.loading')} />;
 
   const remainingLabel = (() => {
     if (!nextPrayer) return '';
@@ -203,7 +212,7 @@ export function HomeScreen({ navigation }: Props) {
               return (
                 <Pressable
                   key={p}
-                  onPress={() => togglePrayerComplete(p)}
+                  onPress={() => markPrayer(p)}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: done }}
                   aria-checked={done}
@@ -236,12 +245,9 @@ export function HomeScreen({ navigation }: Props) {
                       {formatClock(prayerDates[p], lang).slice(-2)}
                     </AppText>
                   )}
-                  <Ionicons
-                    name={done ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={16}
-                    color={done ? colors.onPrimarySoft : colors.textMuted}
-                    style={stacked ? null : { marginTop: space[1] }}
-                  />
+                  <PopIn active={done} style={stacked ? null : { marginTop: space[1] }}>
+                    <Ionicons name={done ? 'checkmark-circle' : 'ellipse-outline'} size={16} color={done ? colors.onPrimarySoft : colors.textMuted} />
+                  </PopIn>
                 </Pressable>
               );
             })}
@@ -282,132 +288,152 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={{ paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[8] }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.header, { marginBottom: space[5] }]}>
-          <View style={{ flex: 1 }}>
-            <AppText variant="callout" tone="secondary">
-              {t('home.greeting')}
-            </AppText>
-            <Pressable
-              onPress={() => navigation.navigate('CityPicker')}
-              accessibilityRole="button"
-              accessibilityHint={t('city.title')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: space[1], minHeight: layout.minTouch }}
-            >
-              <AppText variant="title" numberOfLines={1} tone={location ? 'default' : 'brand'} style={{ flexShrink: 1 }}>
-                {location ? location.city ?? t('home.yourLocation') : t('home.tapLocation')}
-              </AppText>
-              <Ionicons name="chevron-down" size={18} color={location ? colors.textSecondary : colors.primaryText} />
-            </Pressable>
-            <AppText variant="caption" tone="secondary">
-              {hijri.formatted}
-            </AppText>
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate('Settings')}
-            accessibilityRole="button"
-            accessibilityLabel={t('home.openSettings')}
-            style={({ pressed }) => [
-              styles.iconButton,
-              { backgroundColor: pressed ? colors.surfaceMuted : colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <Ionicons name="settings-outline" size={20} color={colors.text} />
-          </Pressable>
-        </View>
-
-        {modules.map((id) =>
-          id === 'module_prayer_times' ? (
-            renderPrayerModule()
-          ) : (
-            <HomeWidgetModule key={id} onOpenDua={(duaId) => navigation.navigate('DuaDetail', { duaId })} />
-          )
-        )}
-
-        {showRamadan && (
-          <Surface
-            variant="soft"
-            onPress={() => openFeature('imsakiye')}
-            accessibilityLabel={t('nav.imsakiye')}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[4] }}
-          >
-            <Ionicons name={fast?.kind === 'iftar' ? 'restaurant-outline' : 'moon-outline'} size={26} color={colors.onPrimarySoft} />
+      <Enter animate={showedSkeleton} duration={motion.duration.medium} style={styles.container}>
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: space[4], paddingTop: space[3], paddingBottom: space[8] }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.header, { marginBottom: space[5] }]}>
             <View style={{ flex: 1 }}>
-              <AppText variant="captionStrong" tone="onPrimarySoft">
-                {ramadan.inRamadan ? t('ramadan.dayOf', { n: String(ramadan.dayOfRamadan), total: String(ramadan.length) }) : t('nav.imsakiye')}
+              <AppText variant="callout" tone="secondary">
+                {t('home.greeting')}
               </AppText>
-              <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
-                {fast
-                  ? (() => {
-                      const { h, m } = formatDuration(fast.target.getTime() - now);
-                      return `${fast.kind === 'iftar' ? t('ramadan.untilIftar') : t('ramadan.untilSahur')}: ${t('ramadan.left', { h: String(h), m: String(m) })}`;
-                    })()
-                  : ramadan.inRamadan
-                    ? t('ramadan.needLocation')
-                    : t('ramadan.daysUntil', { n: String(ramadan.daysUntil) })}
+              <Pressable
+                onPress={() => navigation.navigate('CityPicker')}
+                accessibilityRole="button"
+                accessibilityHint={t('city.title')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space[1], minHeight: layout.minTouch }}
+              >
+                <AppText variant="title" numberOfLines={1} tone={location ? 'default' : 'brand'} style={{ flexShrink: 1 }}>
+                  {location ? location.city ?? t('home.yourLocation') : t('home.tapLocation')}
+                </AppText>
+                <Ionicons name="chevron-down" size={18} color={location ? colors.textSecondary : colors.primaryText} />
+              </Pressable>
+              <AppText variant="caption" tone="secondary">
+                {hijri.formatted}
               </AppText>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.onPrimarySoft} />
-          </Surface>
-        )}
+            <Pressable
+              onPress={() => navigation.navigate('Settings')}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.openSettings')}
+              style={({ pressed }) => [
+                styles.iconButton,
+                { backgroundColor: pressed ? colors.surfaceMuted : colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <Ionicons name="settings-outline" size={20} color={colors.text} />
+            </Pressable>
+          </View>
 
-        {(quranProgress.lastRead || hadithProgress.lastRead) && (
-          <>
-            <SectionHeader title={t('home.continueReading')} />
-            <Surface padding={space[1]} style={{ paddingHorizontal: space[4] }}>
-              {quranProgress.lastRead && (
-                <ListRow
-                  icon="book-outline"
-                  title={quranProgress.lastRead.surahName}
-                  subtitle={`${t('reading.ayah')} ${quranProgress.lastRead.ayahNumber}`}
-                  onPress={() => openFeature('quran')}
-                  divider={!!hadithProgress.lastRead}
-                />
-              )}
-              {hadithProgress.lastRead && (
-                <ListRow
-                  icon="document-text-outline"
-                  title={hadithProgress.lastRead.collectionName}
-                  subtitle={t('reading.continueHadith')}
-                  onPress={() => openFeature('hadith')}
-                />
-              )}
+          {modules.map((id) =>
+            id === 'module_prayer_times' ? (
+              renderPrayerModule()
+            ) : (
+              <HomeWidgetModule key={id} onOpenDua={(duaId) => navigation.navigate('DuaDetail', { duaId })} />
+            )
+          )}
+
+          {showRamadan && (
+            <Surface
+              variant="soft"
+              onPress={() => openFeature('imsakiye')}
+              accessibilityLabel={t('nav.imsakiye')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], marginTop: space[4] }}
+            >
+              <Ionicons name={fast?.kind === 'iftar' ? 'restaurant-outline' : 'moon-outline'} size={26} color={colors.onPrimarySoft} />
+              <View style={{ flex: 1 }}>
+                <AppText variant="captionStrong" tone="onPrimarySoft">
+                  {ramadan.inRamadan ? t('ramadan.dayOf', { n: String(ramadan.dayOfRamadan), total: String(ramadan.length) }) : t('nav.imsakiye')}
+                </AppText>
+                <AppText variant="bodyStrong" color={colors.onPrimarySoft}>
+                  {fast
+                    ? (() => {
+                        const { h, m } = formatDuration(fast.target.getTime() - now);
+                        return `${fast.kind === 'iftar' ? t('ramadan.untilIftar') : t('ramadan.untilSahur')}: ${t('ramadan.left', { h: String(h), m: String(m) })}`;
+                      })()
+                    : ramadan.inRamadan
+                      ? t('ramadan.needLocation')
+                      : t('ramadan.daysUntil', { n: String(ramadan.daysUntil) })}
+                </AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.onPrimarySoft} />
             </Surface>
-          </>
-        )}
+          )}
 
-        <SectionHeader
-          title={t('home.myApps')}
-          actionLabel={t('home.editApps')}
-          onAction={() => navigation.navigate('HomeLauncherEdit')}
-        />
-        <View style={[styles.grid, { marginHorizontal: -4 }]}>
-          {apps.map((id) => {
-            const def = getHomeFeature(id)!;
-            return (
-              <HomeAppIcon
-                key={id}
-                icon={def.icon}
-                category={def.category}
-                label={t(def.titleKey)}
-                locked={!canAccess(id)}
-                columns={columns}
-                onPress={() => openFeature(id)}
-              />
-            );
-          })}
+          {(quranProgress.lastRead || hadithProgress.lastRead) && (
+            <>
+              <SectionHeader title={t('home.continueReading')} />
+              <Surface padding={space[1]} style={{ paddingHorizontal: space[4] }}>
+                {quranProgress.lastRead && (
+                  <ListRow
+                    icon="book-outline"
+                    title={quranProgress.lastRead.surahName}
+                    subtitle={`${t('reading.ayah')} ${quranProgress.lastRead.ayahNumber}`}
+                    onPress={() => openFeature('quran')}
+                    divider={!!hadithProgress.lastRead}
+                  />
+                )}
+                {hadithProgress.lastRead && (
+                  <ListRow
+                    icon="document-text-outline"
+                    title={hadithProgress.lastRead.collectionName}
+                    subtitle={t('reading.continueHadith')}
+                    onPress={() => openFeature('hadith')}
+                  />
+                )}
+              </Surface>
+            </>
+          )}
+
+          <SectionHeader
+            title={t('home.myApps')}
+            actionLabel={t('home.editApps')}
+            onAction={() => navigation.navigate('HomeLauncherEdit')}
+          />
+          <View style={[styles.grid, { marginHorizontal: -4 }]}>
+            {apps.map((id) => {
+              const def = getHomeFeature(id)!;
+              return (
+                <HomeAppIcon
+                  key={id}
+                  icon={def.icon}
+                  category={def.category}
+                  label={t(def.titleKey)}
+                  locked={!canAccess(id)}
+                  columns={columns}
+                  onPress={() => openFeature(id)}
+                />
+              );
+            })}
+          </View>
+        </ScrollView>
+      </Enter>
+    </SafeAreaView>
+  );
+}
+
+/** Loading placeholder in the shape of the home screen: header, next-prayer card and the five prayers. */
+function HomeSkeleton({ label }: { label: string }) {
+  const { colors, radius, space } = useTheme();
+  return (
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <SkeletonGroup accessibilityLabel={label} style={{ paddingHorizontal: space[4], paddingTop: space[3] }}>
+        <SkeletonBlock width="35%" height={space[4]} />
+        <SkeletonBlock width="60%" height={space[6]} style={{ marginTop: space[2], marginBottom: space[5] }} />
+        <SkeletonBlock height={SKELETON_HERO} radius={radius.lg} style={{ marginBottom: space[3] }} />
+        <View style={[styles.strip, { gap: space[2] }]}>
+          {DAILY_PRAYERS.map((p) => (
+            <SkeletonBlock key={p} width="auto" height={SKELETON_SLOT} radius={radius.md} style={styles.grow} />
+          ))}
         </View>
-      </ScrollView>
+      </SkeletonGroup>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'flex-start' },
   iconButton: {
     width: ICON_BUTTON,

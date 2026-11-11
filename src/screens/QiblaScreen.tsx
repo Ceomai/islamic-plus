@@ -1,20 +1,29 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
-import React, { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, useAnimatedValue, View } from 'react-native';
 import { LocationBlockedNotice } from '../components/LocationBlockedNotice';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { nextAligned, smoothHeading, turnDelta, wrap360 } from '../services/compass';
 import { getDistanceToKaaba, getQiblaBearing } from '../services/qibla';
 import { AppText, Button, Screen, Surface } from '../ui';
+import { timing } from '../ui/motion';
 import { announce } from '../utils/announce';
 
 const DIAL = 260;
 const KAABA_MARKER = 36;
 const DIAL_HUB = 12;
-const ALIGN_TOLERANCE_DEG = 5;
+const DIAL_RING = 6;
+/** Aligned within 5 degrees, and stays aligned until 8 degrees off, so a wobbling hand doesn't flicker */
+const ALIGN_ENTER_DEG = 5;
+const ALIGN_EXIT_DEG = 8;
+/** Low-pass factor for the compass reading (smaller = calmer, slower) */
+const HEADING_SMOOTHING = 0.2;
+const ALIGN_HAPTIC_COOLDOWN_MS = 1500;
 // Compass letters in the app language (Kuzey/Doğu/Güney/Batı in Turkish)
 const CARDINALS = [
   { key: 'n', tr: 'K', en: 'N', deg: 0 },
@@ -23,18 +32,14 @@ const CARDINALS = [
   { key: 'w', tr: 'B', en: 'W', deg: 270 },
 ] as const;
 
-/** Signed shortest turn from `from` to `to`, in degrees (-180..180). Positive = turn right. */
-function turnDelta(from: number, to: number): number {
-  return ((to - from + 540) % 360) - 180;
-}
-
 export function QiblaScreen() {
   const { location, refreshLocation } = useApp();
-  const { colors, space } = useTheme();
+  const { colors, space, motion } = useTheme();
   const { t, lang } = useTranslation();
-  const [heading, setHeading] = useState<number | null>(null);
+  // Rounded values for the text: React re-renders only when a whole degree changes, not per reading
+  const [reading, setReading] = useState<{ heading: number; delta: number | null } | null>(null);
+  const [aligned, setAligned] = useState(false);
   const [compassUnavailable, setCompassUnavailable] = useState(false);
-  const wasAligned = useRef(false);
   const [locationTries, setLocationTries] = useState(0);
   const retryLocation = async () => {
     await refreshLocation();
@@ -46,34 +51,84 @@ export function QiblaScreen() {
     if (!location?.cityId) void refreshLocation();
   }, []);
 
-  // OS heading is tilt-compensated and, when location is known, referenced to true north
-  useEffect(() => {
-    let sub: Location.LocationSubscription | null = null;
-    let cancelled = false;
-    Location.watchHeadingAsync((h) => {
-      const value = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
-      setHeading(value);
-    })
-      .then((s) => {
-        if (cancelled) s.remove();
-        else sub = s;
-      })
-      .catch(() => setCompassUnavailable(true));
-    return () => {
-      cancelled = true;
-      sub?.remove();
-    };
-  }, []);
-
   const qiblaBearing = location ? getQiblaBearing(location.latitude, location.longitude) : null;
   const distance = location ? getDistanceToKaaba(location.latitude, location.longitude) : null;
-  const delta = qiblaBearing !== null && heading !== null ? turnDelta(heading, qiblaBearing) : null;
-  const aligned = delta !== null && Math.abs(delta) <= ALIGN_TOLERANCE_DEG;
 
+  // The dial turns by -heading. The heading lives in an Animated value set straight from the sensor
+  // callback (no React render per reading), unwrapped so crossing north never spins the dial around
+  const dialRotation = useAnimatedValue(0);
+  const alignedGlow = useAnimatedValue(0);
+  const compass = useRef({ heading: null as number | null, aligned: false, lastHapticAt: 0, bearing: qiblaBearing });
   useEffect(() => {
-    if (aligned && !wasAligned.current) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    wasAligned.current = aligned;
-  }, [aligned]);
+    compass.current.bearing = qiblaBearing;
+  }, [qiblaBearing]);
+  // Hand the angle to the native driver once: from then on each setValue goes straight to the view
+  useEffect(() => {
+    timing(dialRotation, 0, 0).start();
+  }, [dialRotation]);
+
+  // OS heading is tilt-compensated and, when location is known, referenced to true north.
+  // The sensor runs only while the screen is in front
+  useFocusEffect(
+    useCallback(() => {
+      let sub: Location.LocationSubscription | null = null;
+      let cancelled = false;
+      const state = compass.current;
+      Location.watchHeadingAsync((h) => {
+        const raw = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
+        state.heading = smoothHeading(state.heading, raw, HEADING_SMOOTHING);
+        dialRotation.setValue(-state.heading);
+
+        const heading = wrap360(state.heading);
+        const delta = state.bearing === null ? null : turnDelta(heading, state.bearing);
+        const nowAligned = delta !== null && nextAligned(state.aligned, delta, ALIGN_ENTER_DEG, ALIGN_EXIT_DEG);
+        if (nowAligned !== state.aligned) {
+          state.aligned = nowAligned;
+          setAligned(nowAligned);
+          const now = Date.now();
+          if (nowAligned && now - state.lastHapticAt >= ALIGN_HAPTIC_COOLDOWN_MS) {
+            state.lastHapticAt = now;
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        }
+
+        const rounded = { heading: Math.round(heading) % 360, delta: delta === null ? null : Math.round(delta) };
+        setReading((prev) => (prev?.heading === rounded.heading && prev.delta === rounded.delta ? prev : rounded));
+      })
+        .then((s) => {
+          if (cancelled) s.remove();
+          else sub = s;
+        })
+        .catch(() => setCompassUnavailable(true));
+      return () => {
+        cancelled = true;
+        sub?.remove();
+      };
+    }, [dialRotation])
+  );
+
+  // The aligned ring color fades in and out instead of switching
+  useEffect(() => {
+    timing(alignedGlow, aligned ? 1 : 0, motion.duration.medium).start();
+  }, [aligned, alignedGlow, motion.duration.medium]);
+
+  // The dial turns so that its "N" tracks real north; the Kaaba marker sits at the qibla bearing on it.
+  // Derived rotations (native driver): the dial, and the letters and marker turned back to stay upright
+  const rotate = useMemo(() => {
+    const by = (offset: number, sign: 1 | -1) =>
+      dialRotation.interpolate({
+        inputRange: [0, 360],
+        outputRange: [`${offset}deg`, `${offset + sign * 360}deg`],
+        extrapolate: 'extend',
+      });
+    return {
+      dial: by(0, 1),
+      letters: CARDINALS.map((c) => by(-c.deg, -1)),
+      kaaba: by(-(qiblaBearing ?? 0), -1),
+    };
+  }, [dialRotation, qiblaBearing]);
+
+  const delta = reading?.delta ?? null;
 
   // The degree text changes with every compass reading, so a live region would talk non-stop.
   // Screen readers hear only the changes that matter: aligned, or which way to turn.
@@ -102,10 +157,6 @@ export function QiblaScreen() {
     );
   }
 
-  // The dial turns so that its "N" tracks real north; the Kaaba marker sits at the qibla bearing on the dial
-  const dialRotation = heading !== null ? -heading : 0;
-  const ringColor = aligned ? colors.success : colors.border;
-
   const status = compassUnavailable
     ? t('qibla.noCompass')
     : delta === null
@@ -113,8 +164,8 @@ export function QiblaScreen() {
       : aligned
         ? t('qibla.aligned')
         : delta > 0
-          ? t('qibla.turnRight', { d: String(Math.round(Math.abs(delta))) })
-          : t('qibla.turnLeft', { d: String(Math.round(Math.abs(delta))) });
+          ? t('qibla.turnRight', { d: String(Math.abs(delta)) })
+          : t('qibla.turnLeft', { d: String(Math.abs(delta)) });
 
   return (
     <Screen contentStyle={{ alignItems: 'center' }}>
@@ -122,7 +173,7 @@ export function QiblaScreen() {
         {status}
       </AppText>
       <AppText variant="callout" tone="secondary" align="center" style={{ marginTop: space[1], marginBottom: space[6] }}>
-        {t('qibla.qibla')}: {Math.round(qiblaBearing!)}°{heading !== null ? ` · ${t('qibla.heading')}: ${Math.round(heading)}°` : ''}
+        {t('qibla.qibla')}: {Math.round(qiblaBearing!)}°{reading ? ` · ${t('qibla.heading')}: ${reading.heading}°` : ''}
       </AppText>
 
       {/* Purely visual: the status line above already says where to turn */}
@@ -147,36 +198,34 @@ export function QiblaScreen() {
             zIndex: 2,
           }}
         />
-        <View
+        <Animated.View
           style={{
             width: DIAL,
             height: DIAL,
             borderRadius: DIAL / 2,
-            borderWidth: 6,
-            borderColor: ringColor,
+            borderWidth: DIAL_RING,
+            borderColor: colors.border,
             backgroundColor: colors.surface,
-            transform: [{ rotate: `${dialRotation}deg` }],
+            transform: [{ rotate: rotate.dial }],
           }}
         >
-          {CARDINALS.map((c) => (
+          {CARDINALS.map((c, i) => (
             <View
               key={c.key}
               style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', transform: [{ rotate: `${c.deg}deg` }] }}
             >
-              <AppText
-                variant="captionStrong"
-                tone={c.key === 'n' ? 'danger' : 'secondary'}
-                style={{ marginTop: space[2], transform: [{ rotate: `${-c.deg - dialRotation}deg` }] }}
-              >
-                {lang === 'tr' ? c.tr : c.en}
-              </AppText>
+              <Animated.View style={{ marginTop: space[2], transform: [{ rotate: rotate.letters[i] }] }}>
+                <AppText variant="captionStrong" tone={c.key === 'n' ? 'danger' : 'secondary'}>
+                  {lang === 'tr' ? c.tr : c.en}
+                </AppText>
+              </Animated.View>
             </View>
           ))}
           {/* Kaaba marker on the rim at the qibla bearing */}
           <View
             style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', transform: [{ rotate: `${qiblaBearing}deg` }] }}
           >
-            <View
+            <Animated.View
               style={{
                 marginTop: space[6],
                 width: KAABA_MARKER,
@@ -185,14 +234,26 @@ export function QiblaScreen() {
                 backgroundColor: aligned ? colors.success : colors.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
-                transform: [{ rotate: `${-(qiblaBearing ?? 0) - dialRotation}deg` }],
+                transform: [{ rotate: rotate.kaaba }],
               }}
             >
               <Ionicons name="cube" size={18} color={colors.onPrimary} />
-            </View>
+            </Animated.View>
             <View style={{ width: 3, height: DIAL / 2 - 70, backgroundColor: aligned ? colors.success : colors.primary, opacity: 0.35 }} />
           </View>
-        </View>
+        </Animated.View>
+        {/* Aligned ring: the same ring in the success color, faded in over the plain one */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            width: DIAL,
+            height: DIAL,
+            borderRadius: DIAL / 2,
+            borderWidth: DIAL_RING,
+            borderColor: colors.success,
+            opacity: alignedGlow,
+          }}
+        />
         <View style={{ position: 'absolute', width: DIAL_HUB, height: DIAL_HUB, borderRadius: DIAL_HUB / 2, backgroundColor: colors.text }} />
       </View>
 

@@ -9,6 +9,7 @@ import { getDayNames } from '../i18n';
 import { normalizeReminderTime } from '../services/advancedReminders';
 import type { CustomReminder } from '../types';
 import { AppText, Button, Chip, IconBadge, Screen, SectionHeader, Surface, TextField, TimeStepper } from '../ui';
+import { animateNextLayout } from '../ui/motion';
 
 const TYPES: { id: CustomReminder['type']; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
   { id: 'dhikr', icon: 'ellipse-outline' },
@@ -38,6 +39,7 @@ export function AdvancedRemindersScreen() {
       return;
     }
     if (!title.trim() || days.length === 0) return;
+    animateNextLayout();
     void addCustomReminder({ title: title.trim(), time: normalized, daysOfWeek: days, type, enabled: true, sound: 'default' });
     setTitle('');
   };
@@ -128,7 +130,9 @@ export function AdvancedRemindersScreen() {
             <Pressable
               onPress={async () => {
                 const ok = await confirmDestructive({ title: t('reminders.deleteTitle'), message: r.title, confirm: t('reminders.delete'), cancel: t('account.cancel') });
-                if (ok) await removeCustomReminder(r.id);
+                if (!ok) return;
+                animateNextLayout();
+                await removeCustomReminder(r.id);
               }}
               hitSlop={10}
               accessibilityRole="button"

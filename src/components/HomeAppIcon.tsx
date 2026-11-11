@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { HomeCategory } from '../theme/tokens';
 import { AppText } from '../ui/AppText';
 import { IconBadge } from '../ui/IconBadge';
+import { PressableScale } from '../ui/PressableScale';
 
 const LOCK_SIZE = 18;
 
@@ -23,7 +24,7 @@ export function HomeAppIcon(props: {
   const { t } = useTranslation();
   return (
     <View style={{ width: `${100 / (props.columns ?? 4)}%`, padding: space[1] }}>
-      <Pressable
+      <PressableScale
         onPress={props.onPress}
         accessibilityRole="button"
         accessibilityLabel={props.label}
@@ -55,7 +56,7 @@ export function HomeAppIcon(props: {
         <AppText variant="caption" numberOfLines={2} align="center" style={{ marginTop: space[2] }}>
           {props.label}
         </AppText>
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }

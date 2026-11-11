@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { FamilyMember } from '../types';
 import { AppText, Button, Chip, IconButton, ListRow, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { animateNextLayout } from '../ui/motion';
 import { confirmDestructive } from '../utils/confirm';
 
 const EMOJIS = ['👨', '👩', '👦', '👧', '🧑', '👴', '👵'];
@@ -14,7 +15,7 @@ const EMOJI_OPTION = 44;
 
 export function FamilyModeScreen() {
   const { family, addFamilyMember, removeFamilyMember, settings, updateSettings, setActiveFamilyMember } = useApp();
-  const { colors, radius, space } = useTheme();
+  const { colors, radius, space, motion } = useTheme();
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('👨');
@@ -23,6 +24,7 @@ export function FamilyModeScreen() {
 
   const handleAdd = () => {
     if (!name.trim()) return;
+    animateNextLayout();
     void addFamilyMember({ name: name.trim(), avatarEmoji: emoji, role });
     setName('');
   };
@@ -83,7 +85,7 @@ export function FamilyModeScreen() {
                     alignItems: 'center',
                     gap: space[3],
                     paddingVertical: space[3],
-                    opacity: pressed ? 0.6 : 1,
+                    opacity: pressed ? motion.pressedOpacity : 1,
                     borderBottomWidth: i < family.length - 1 ? 1 : 0,
                     borderBottomColor: colors.border,
                   })}

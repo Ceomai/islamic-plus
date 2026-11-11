@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { AppText } from './AppText';
+import { PressableScale } from './PressableScale';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -35,7 +36,7 @@ export function Button({
     primary: { bg: colors.primary, pressed: colors.primaryPressed, fg: colors.onPrimary, border: 'transparent' },
     secondary: { bg: colors.surface, pressed: colors.surfaceMuted, fg: colors.text, border: colors.borderStrong },
     ghost: { bg: 'transparent', pressed: colors.primarySoft, fg: colors.primaryText, border: 'transparent' },
-    danger: { bg: colors.errorSoft, pressed: colors.errorSoft, fg: colors.error, border: 'transparent' },
+    danger: { bg: colors.errorSoft, pressed: colors.errorSoftPressed, fg: colors.error, border: 'transparent' },
   }[variant];
 
   // Platform minimum: 44pt on iOS, 48dp on Android
@@ -43,7 +44,7 @@ export function Button({
   const inactive = disabled || loading;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={inactive}
       accessibilityRole="button"
@@ -74,7 +75,7 @@ export function Button({
           </AppText>
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -16,7 +16,7 @@ const fold = (s: string) => s.toLocaleLowerCase('tr').replace(/ı/g, 'i');
 
 export function HadithScreen({ navigation }: Props) {
   const { settings, hadithProgress } = useApp();
-  const { colors, space } = useTheme();
+  const { colors, space, motion } = useTheme();
   const { t, lang } = useTranslation();
   const lastRead = hadithProgress.lastRead;
 
@@ -127,7 +127,7 @@ export function HadithScreen({ navigation }: Props) {
               paddingVertical: space[3],
               borderBottomWidth: i < sections.length - 1 ? 1 : 0,
               borderBottomColor: colors.border,
-              opacity: pressed ? 0.6 : 1,
+              opacity: pressed ? motion.pressedOpacity : 1,
             })}
           >
             <AppText variant="caption" tone="muted" style={{ minWidth: space[8] }}>

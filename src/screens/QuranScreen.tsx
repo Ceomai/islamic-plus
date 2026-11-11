@@ -10,16 +10,20 @@ import type { RootStackParamList } from '../navigation/types';
 import { SURAHS } from '../data/surahs';
 import { fold } from '../services/aiAssistant';
 import type { SurahListItem } from '../services/quranApi';
+import type { QuranBookmark } from '../types';
 import { removeQuranBookmark, startNewKhatm } from '../services/readingProgress';
 import { AppText, Button, IconBadge, SearchField, Surface } from '../ui';
+import { animateNextLayout } from '../ui/motion';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quran'>;
 
 export function QuranScreen({ navigation }: Props) {
   const { settings, quranProgress, refreshReadingProgress } = useApp();
-  const { colors, radius, space } = useTheme();
+  const { colors, radius, space, motion } = useTheme();
   const { t, lang } = useTranslation();
   const [query, setQuery] = useState('');
+  // Bookmarks being removed leave the list at once (animated) while storage catches up
+  const [removing, setRemoving] = useState<ReadonlySet<string>>(() => new Set());
   const edition = settings.quranEditionId;
   const editionMeta = QURAN_EDITIONS.find((e) => e.id === edition);
 
@@ -44,6 +48,23 @@ export function QuranScreen({ navigation }: Props) {
 
   const lastRead = quranProgress.lastRead;
   const completed = useMemo(() => new Set(quranProgress.completedSurahs ?? []), [quranProgress.completedSurahs]);
+  const bookmarks = quranProgress.bookmarks.filter((b) => !removing.has(b.id));
+  const removeBookmark = async (b: QuranBookmark) => {
+    animateNextLayout();
+    setRemoving((prev) => new Set(prev).add(b.id));
+    try {
+      await removeQuranBookmark(settings.activeFamilyMemberId, b.surahNumber, b.ayahNumber);
+      await refreshReadingProgress();
+    } finally {
+      // Gone from storage now (or, on failure, shown again)
+      setRemoving((prev) => {
+        const next = new Set(prev);
+        next.delete(b.id);
+        return next;
+      });
+    }
+  };
+
   const newKhatm = async () => {
     await startNewKhatm(settings.activeFamilyMemberId);
     await refreshReadingProgress();
@@ -98,12 +119,12 @@ export function QuranScreen({ navigation }: Props) {
       </Surface>
 
       {/* Bookmarks saved in the reader: open one, or remove it */}
-      {quranProgress.bookmarks.length > 0 && (
+      {bookmarks.length > 0 && (
         <Surface padding={space[1]} style={{ marginBottom: space[4], paddingHorizontal: space[3] }}>
           <AppText variant="bodyStrong" style={{ paddingVertical: space[2] }}>
-            {t('reading.bookmarks')} ({quranProgress.bookmarks.length})
+            {t('reading.bookmarks')} ({bookmarks.length})
           </AppText>
-          {quranProgress.bookmarks.map((b) => (
+          {bookmarks.map((b) => (
             <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border }}>
               <Pressable
                 onPress={() => navigation.navigate('QuranReader', { surahNumber: b.surahNumber, edition: b.edition, surahName: b.surahName, startAyah: b.ayahNumber })}
@@ -116,14 +137,11 @@ export function QuranScreen({ navigation }: Props) {
                 </AppText>
               </Pressable>
               <Pressable
-                onPress={async () => {
-                  await removeQuranBookmark(settings.activeFamilyMemberId, b.surahNumber, b.ayahNumber);
-                  await refreshReadingProgress();
-                }}
+                onPress={() => void removeBookmark(b)}
                 accessibilityRole="button"
                 accessibilityLabel={`${t('reading.removeBookmark')}: ${b.surahName} ${b.ayahNumber}`}
                 hitSlop={8}
-                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+                style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? motion.pressedOpacity : 1 })}
               >
                 <Ionicons name="close" size={20} color={colors.textSecondary} />
               </Pressable>
@@ -169,7 +187,7 @@ export function QuranScreen({ navigation }: Props) {
             paddingVertical: space[3],
             borderBottomWidth: 1,
             borderBottomColor: colors.border,
-            opacity: pressed ? 0.6 : 1,
+            opacity: pressed ? motion.pressedOpacity : 1,
           })}
         >
           <View

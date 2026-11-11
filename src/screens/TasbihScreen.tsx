@@ -2,14 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Animated, Pressable, ScrollView, useAnimatedValue, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../context/AppContext';
 import { DHIKR, TESBIHAT_COUNT, TESBIHAT_SEQUENCE, getDhikr } from '../data/dhikr';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { trackFeatureAction } from '../services/cloudAnalytics';
+import { tasbihHaptic, type TasbihHaptic } from '../services/tasbihFeedback';
 import {
   incrementTasbih,
   loadTasbihData,
@@ -17,7 +19,8 @@ import {
   setTasbihGoal,
   summarizeTasbih,
 } from '../services/tasbihStorage';
-import { AppText, Button, Chip, Screen, Surface } from '../ui';
+import { AppText, Button, Chip, PressableScale, ProgressBar, Screen, Surface } from '../ui';
+import { easeInOut, timing } from '../ui/motion';
 import { announce } from '../utils/announce';
 import { confirmDestructive } from '../utils/confirm';
 
@@ -28,6 +31,11 @@ const MODES: Mode[] = ['tesbihat', 33, 99, 100];
 const GOALS = [0, 100, 300, 500, 1000];
 const COUNTER_SIZE = 220;
 const KEEP_AWAKE_TAG = 'tasbih';
+const PLAY_HAPTIC: Record<TasbihHaptic, () => Promise<void>> = {
+  tap: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+  step: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+  success: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+};
 
 export function TasbihScreen({ navigation }: Props) {
   const { trackActivity } = useApp();
@@ -42,6 +50,9 @@ export function TasbihScreen({ navigation }: Props) {
   const [today, setToday] = useState(0);
   const [goal, setGoal] = useState(0);
   const [editGoal, setEditGoal] = useState(false);
+  const reduced = useReducedMotion();
+  // One-shot pulse of the counter when a round completes (on top of the press scale)
+  const pulse = useAnimatedValue(1);
 
   const tesbihat = mode === 'tesbihat';
   const target = tesbihat ? TESBIHAT_COUNT : mode;
@@ -77,8 +88,17 @@ export function TasbihScreen({ navigation }: Props) {
     });
   }, []);
 
+  const playPulse = () => {
+    if (reduced) return;
+    pulse.stopAnimation();
+    pulse.setValue(1);
+    Animated.sequence([
+      timing(pulse, motion.pulseScale, motion.duration.fast),
+      timing(pulse, 1, motion.duration.fast, easeInOut),
+    ]).start();
+  };
+
   const increment = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setJustFinished(false);
     touched.current = true;
     const state = live.current;
@@ -86,8 +106,8 @@ export function TasbihScreen({ navigation }: Props) {
 
     state.today += 1;
     setToday(state.today);
-    if (goal > 0 && state.today === goal) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const goalReached = goal > 0 && state.today === goal;
+    if (goalReached) {
       void trackFeatureAction('tasbih', 'goal_reached', { goal });
       // The goal line changes on every tap, so it is not a live region: announce only the goal itself
       announce(t('tasbih.goalReached', { n: String(state.today) }), { hasLiveRegion: false });
@@ -110,31 +130,29 @@ export function TasbihScreen({ navigation }: Props) {
       });
     void trackActivity('tasbih', false);
 
-    if (state.count + 1 < target) {
+    const roundComplete = state.count + 1 >= target;
+    let setComplete = false;
+    if (!roundComplete) {
       state.count += 1;
       setCount(state.count);
-      return;
-    }
-
-    // Round complete: move on to the next phrase (tesbihat) or the next round
-    void trackFeatureAction('tasbih', 'round_completed', { target, dhikr: tapDhikrId });
-    state.count = 0;
-    setCount(0);
-    if (tesbihat) {
-      state.step = (state.step + 1) % TESBIHAT_SEQUENCE.length;
-      setStep(state.step);
-      if (state.step === 0) {
+    } else {
+      // Round complete: move on to the next phrase (tesbihat) or the next round
+      void trackFeatureAction('tasbih', 'round_completed', { target, dhikr: tapDhikrId });
+      state.count = 0;
+      setCount(0);
+      if (tesbihat) {
+        state.step = (state.step + 1) % TESBIHAT_SEQUENCE.length;
+        setStep(state.step);
+      }
+      setComplete = !tesbihat || state.step === 0;
+      if (setComplete) {
         setRounds((r) => r + 1);
         setJustFinished(true);
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       }
-    } else {
-      setRounds((r) => r + 1);
-      setJustFinished(true);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playPulse();
     }
+    // Exactly one haptic per tap, in the same frame as the number changes
+    void PLAY_HAPTIC[tasbihHaptic({ tesbihat, roundComplete, setComplete, goalReached })]();
   };
 
   const clearSession = async () => {
@@ -241,36 +259,41 @@ export function TasbihScreen({ navigation }: Props) {
         )}
       </Surface>
 
-      <Pressable
-        onPress={increment}
-        accessibilityRole="button"
-        accessibilityLabel={`${dhikr.transliteration}: ${count} / ${target}`}
-        accessibilityHint={t('tasbih.tapHint')}
-        style={({ pressed }) => ({
-          width: COUNTER_SIZE,
-          height: COUNTER_SIZE,
-          borderRadius: COUNTER_SIZE / 2,
-          borderWidth: 10,
-          borderColor: justFinished ? colors.accent : colors.primarySoft,
-          backgroundColor: pressed ? colors.primaryPressed : colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: space[6],
-          transform: [{ scale: pressed ? motion.pressedScale : 1 }],
-        })}
-      >
-        {/* The circle is a fixed size: very large text sizes would push "1000" out of it */}
-        <AppText style={component.tasbihCounter} tone="onPrimary" numeric maxFontSizeMultiplier={1.3}>
-          {count}
-        </AppText>
-        <AppText variant="callout" tone="onHeroMuted" numeric maxFontSizeMultiplier={1.3}>
-          / {target}
-        </AppText>
-      </Pressable>
+      <Animated.View style={{ marginTop: space[6], transform: [{ scale: pulse }] }}>
+        <PressableScale
+          onPress={increment}
+          scaleTo={motion.pressedScaleLarge}
+          accessibilityRole="button"
+          accessibilityLabel={`${dhikr.transliteration}: ${count} / ${target}`}
+          accessibilityHint={t('tasbih.tapHint')}
+          style={({ pressed }) => ({
+            width: COUNTER_SIZE,
+            height: COUNTER_SIZE,
+            borderRadius: COUNTER_SIZE / 2,
+            borderWidth: 10,
+            borderColor: justFinished ? colors.accent : colors.primarySoft,
+            backgroundColor: pressed ? colors.primaryPressed : colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          })}
+        >
+          {/* The circle is a fixed size: very large text sizes would push "1000" out of it */}
+          <AppText style={component.tasbihCounter} tone="onPrimary" numeric maxFontSizeMultiplier={1.3}>
+            {count}
+          </AppText>
+          <AppText variant="callout" tone="onHeroMuted" numeric maxFontSizeMultiplier={1.3}>
+            / {target}
+          </AppText>
+        </PressableScale>
+      </Animated.View>
 
-      <View style={{ alignSelf: 'stretch', height: 6, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted, marginTop: space[5], overflow: 'hidden' }}>
-        <View style={{ width: `${progress * 100}%`, height: '100%', backgroundColor: colors.primary }} />
-      </View>
+      <ProgressBar
+        progress={progress}
+        fadeOnReset
+        fillColor={colors.primary}
+        trackColor={colors.surfaceMuted}
+        style={{ alignSelf: 'stretch', marginTop: space[5] }}
+      />
 
       <AppText
         variant={justFinished ? 'calloutStrong' : 'callout'}
@@ -299,9 +322,13 @@ export function TasbihScreen({ navigation }: Props) {
           <Ionicons name={editGoal ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
         </Pressable>
         {goal > 0 && (
-          <View style={{ height: 4, borderRadius: radius.pill, backgroundColor: colors.surface, marginTop: space[2], overflow: 'hidden' }}>
-            <View style={{ width: `${Math.min(today / goal, 1) * 100}%`, height: '100%', backgroundColor: colors.primary }} />
-          </View>
+          <ProgressBar
+            progress={today / goal}
+            height={4}
+            fillColor={colors.primary}
+            trackColor={colors.surface}
+            style={{ marginTop: space[2] }}
+          />
         )}
         {editGoal && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[3] }}>

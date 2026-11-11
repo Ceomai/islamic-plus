@@ -50,6 +50,7 @@ import type {
   ThemeMode,
   UserSettings,
 } from '../types';
+import { animateNextLayout } from '../ui/motion';
 
 interface AppContextValue {
   settings: UserSettings;
@@ -410,6 +411,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const removeHabit = useCallback(async (id: string) => {
     await recordDeletion('habits', id);
+    // The row is removed after the await above, so the list animation is set up here, right before it
+    animateNextLayout();
     setHabits((prev) => {
       const next = prev.filter((h) => h.id !== id);
       void setJson(storageKeys.habits, next);
@@ -434,6 +437,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const removeFamilyMember = useCallback(async (id: string) => {
     await recordDeletion('family', id);
+    animateNextLayout();
     setFamily((prev) => {
       const next = prev.filter((m) => m.id !== id);
       void setJson(storageKeys.family, next);

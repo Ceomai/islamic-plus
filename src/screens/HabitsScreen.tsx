@@ -1,18 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import { FlatList, Pressable, View } from 'react-native';
+import { FlatList, View } from 'react-native';
+import { HabitCard } from '../components/HabitCard';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { confirmDestructive } from '../utils/confirm';
 import type { SpiritualHabit } from '../types';
-import { AppText, Button, Chip, IconButton, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { AppText, Button, Chip, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { animateNextLayout } from '../ui/motion';
 import { lastDayKeys, localDateKey } from '../utils/date';
 
 const CATEGORIES: SpiritualHabit['category'][] = ['prayer', 'quran', 'dhikr', 'charity', 'fasting', 'other'];
 const TARGETS = [1, 3, 5, 7];
-const CHECKBOX = 32;
-const DAY_DOT = 10;
 const CATEGORY_ICONS: Record<SpiritualHabit['category'], React.ComponentProps<typeof Ionicons>['name']> = {
   prayer: 'moon-outline',
   quran: 'book-outline',
@@ -24,7 +25,7 @@ const CATEGORY_ICONS: Record<SpiritualHabit['category'], React.ComponentProps<ty
 
 export function HabitsScreen() {
   const { habits, addHabit, toggleHabitToday, removeHabit, settings } = useApp();
-  const { colors, radius, space } = useTheme();
+  const { space } = useTheme();
   const { t, lang } = useTranslation();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<SpiritualHabit['category']>('dhikr');
@@ -37,8 +38,20 @@ export function HabitsScreen() {
 
   const handleAdd = () => {
     if (!title.trim()) return;
+    animateNextLayout();
     void addHabit({ title: title.trim(), targetPerWeek: target, category });
     setTitle('');
+  };
+
+  // Marking today: a selection tick, or a success when it completes this week's target
+  const toggleToday = (h: SpiritualHabit) => {
+    const dates = new Set(h.completedDates);
+    if (!dates.has(today)) {
+      const weekDone = week.filter((k) => dates.has(k)).length;
+      if (weekDone + 1 === h.targetPerWeek) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      else void Haptics.selectionAsync();
+    }
+    void toggleHabitToday(h.id);
   };
 
   const confirmRemove = async (h: SpiritualHabit) => {
@@ -113,77 +126,16 @@ export function HabitsScreen() {
             </AppText>
           ) : undefined
         }
-        renderItem={({ item: h }) => {
-              const dates = new Set(h.completedDates);
-              const doneToday = dates.has(today);
-              const weekDone = week.filter((k) => dates.has(k)).length;
-              const progress = Math.min(1, weekDone / h.targetPerWeek);
-              return (
-                <Surface key={h.id} style={{ marginBottom: space[3] }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-                    <Pressable
-                      onPress={() => toggleHabitToday(h.id)}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: doneToday }}
-                      aria-checked={doneToday}
-                      accessibilityLabel={h.title}
-                      hitSlop={8}
-                      style={{
-                        width: CHECKBOX,
-                        height: CHECKBOX,
-                        borderRadius: CHECKBOX / 2,
-                        borderWidth: 2,
-                        borderColor: colors.primary,
-                        backgroundColor: doneToday ? colors.primary : 'transparent',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {doneToday ? <Ionicons name="checkmark" size={18} color={colors.onPrimary} /> : null}
-                    </Pressable>
-                    <View style={{ flex: 1 }}>
-                      <AppText variant="bodyStrong">{h.title}</AppText>
-                      <AppText variant="caption" tone="secondary">
-                        {t(`habits.cat.${h.category}`)} · {weekDone}/{h.targetPerWeek} {t('habits.thisWeek')}
-                      </AppText>
-                    </View>
-                    <IconButton
-                      name="trash-outline"
-                      size={18}
-                      color={colors.textMuted}
-                      onPress={() => confirmRemove(h)}
-                      accessibilityLabel={`${t('habits.delete')}: ${h.title}`}
-                      style={{ margin: -space[2] }}
-                    />
-                  </View>
-
-                  <View style={{ height: 6, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted, marginTop: space[3], overflow: 'hidden' }}>
-                    <View style={{ width: `${progress * 100}%`, height: '100%', backgroundColor: progress >= 1 ? colors.success : colors.primary }} />
-                  </View>
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: space[3] }}>
-                    {week.map((k, i) => {
-                      const done = dates.has(k);
-                      return (
-                        <View key={k} style={{ alignItems: 'center', gap: 4 }}>
-                          <AppText variant="caption" tone={k === today ? 'brand' : 'muted'}>
-                            {dayInitials[i]}
-                          </AppText>
-                          <View
-                            style={{
-                              width: DAY_DOT,
-                              height: DAY_DOT,
-                              borderRadius: DAY_DOT / 2,
-                              backgroundColor: done ? colors.primary : colors.surfaceMuted,
-                            }}
-                          />
-                        </View>
-                      );
-                    })}
-                  </View>
-                </Surface>
-              );
-        }}
+        renderItem={({ item }) => (
+          <HabitCard
+            habit={item}
+            week={week}
+            dayInitials={dayInitials}
+            today={today}
+            onToggleToday={toggleToday}
+            onRemove={confirmRemove}
+          />
+        )}
       />
     </Screen>
   );

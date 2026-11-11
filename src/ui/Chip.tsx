@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { AppText } from './AppText';
+import { PressableScale } from './PressableScale';
 
 interface Props {
   label: string;
@@ -19,7 +20,7 @@ export function Chip({ label, selected, icon, onPress, emphasis }: Props) {
   const filled = selected || emphasis;
   const fg = filled ? colors.onPrimary : colors.text;
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected }}
@@ -42,6 +43,6 @@ export function Chip({ label, selected, icon, onPress, emphasis }: Props) {
           {label}
         </AppText>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }

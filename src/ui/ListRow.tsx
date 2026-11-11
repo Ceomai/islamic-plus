@@ -32,7 +32,7 @@ export function ListRow({
   divider,
   destructive,
 }: Props) {
-  const { colors, space } = useTheme();
+  const { colors, space, motion } = useTheme();
 
   const content = (
     <View
@@ -71,7 +71,7 @@ export function ListRow({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+      style={({ pressed }) => ({ opacity: pressed ? motion.pressedOpacity : 1 })}
     >
       {content}
     </Pressable>

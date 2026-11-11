@@ -14,7 +14,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'HomeLauncherEdit'>;
 
 export function HomeLauncherEditScreen({ navigation }: Props) {
   const { settings, updateHomeLauncher } = useApp();
-  const { colors, space } = useTheme();
+  const { colors, space, motion } = useTheme();
   const { t } = useTranslation();
   const [order, setOrder] = useState<HomeFeatureId[]>([...settings.homeLauncher.order]);
   const available = useMemo(() => HOME_FEATURE_CATALOG.filter((f) => !order.includes(f.id)), [order]);
@@ -106,7 +106,7 @@ export function HomeLauncherEditScreen({ navigation }: Props) {
                   alignItems: 'center',
                   gap: space[2],
                   paddingVertical: space[3],
-                  opacity: pressed ? 0.6 : 1,
+                  opacity: pressed ? motion.pressedOpacity : 1,
                   borderBottomWidth: i < available.length - 1 ? 1 : 0,
                   borderBottomColor: colors.border,
                 })}

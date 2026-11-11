@@ -15,7 +15,7 @@ export function DuaDetailScreen({ route, navigation }: Props) {
   const { duaId } = route.params;
   const dua = DUAS.find((d) => d.id === duaId);
   const { settings, markDuaRead } = useApp();
-  const { colors, radius, space } = useTheme();
+  const { colors, radius, space, motion } = useTheme();
   const { t, appLanguage: lang } = useTranslation();
   const [playing, setPlaying] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
@@ -132,7 +132,7 @@ export function DuaDetailScreen({ route, navigation }: Props) {
             borderRadius: radius.lg,
             padding: space[4],
             marginTop: space[4],
-            opacity: pressed ? 0.8 : 1,
+            opacity: pressed ? motion.pressedOpacity : 1,
           })}
         >
           <View>

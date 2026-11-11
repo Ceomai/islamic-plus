@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, View, type ListViewToken, type TextStyle } from 'react-native';
+import { FlatList, Pressable, ScrollView, Share, View, type ListViewToken, type TextStyle } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QURAN_AUDIO_BASE, QURAN_EDITIONS } from '../constants/defaults';
 import { useApp } from '../context/AppContext';
+import { useOptimisticSet } from '../hooks/useOptimisticSet';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
@@ -11,7 +13,7 @@ import { playRemoteAudio, stopAudio } from '../services/audio';
 import { fetchSurahReading, type ReaderAyah } from '../services/quranApi';
 import { addQuranBookmark, removeQuranBookmark, updateQuranLastRead } from '../services/readingProgress';
 import type { QuranView } from '../types';
-import { AppText, Button, Chip, IconBadge, IconButton, Surface } from '../ui';
+import { AppText, Button, Chip, Enter, IconBadge, IconButton, SkeletonBlock, SkeletonGroup, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuranReader'>;
 
@@ -26,6 +28,9 @@ const FONT_STEP = 0.15;
 const MIN_SCALE = 0.85;
 const MAX_SCALE = 1.6;
 const MUSHAF_CHUNK = 8;
+/** Loading placeholder: a few ayahs, each an Arabic line and two translation lines */
+const SKELETON_AYAHS = 4;
+const SKELETON_LINE_WIDTHS = ['100%', '92%', '64%'] as const;
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => ARABIC_DIGITS[Number(d)]);
 
@@ -40,7 +45,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
     navigation.setOptions({ title: surahName ? `${surahNumber}. ${surahName}` : String(surahNumber) });
   }, [navigation, surahNumber, surahName]);
   const { settings, updateSettings, quranProgress, refreshReadingProgress, trackActivity } = useApp();
-  const { colors, radius, space, type, layout } = useTheme();
+  const { colors, radius, space, type, layout, motion } = useTheme();
   const { t } = useTranslation();
   const view = settings.quranView;
   const scale = settings.quranFontScale;
@@ -128,10 +133,12 @@ export function QuranReaderScreen({ navigation, route }: Props) {
     if (visible.length > 0) lastAyahRef.current = Math.max(...visible);
   }).current;
 
-  const bookmarked = useMemo(
+  const storedBookmarks = useMemo(
     () => new Set(quranProgress.bookmarks.filter((b) => b.surahNumber === surahNumber).map((b) => b.ayahNumber)),
     [quranProgress.bookmarks, surahNumber]
   );
+  // The icon changes on the tap; storage and the bookmark list catch up behind it
+  const { shown: bookmarked, toggle: toggleBookmarkShown } = useOptimisticSet(storedBookmarks);
 
   const shareAyah = (a: ReaderAyah) => {
     const text = [a.arabic, a.translation, `— ${surahName} ${surahNumber}:${a.numberInSurah}`].filter(Boolean).join('\n\n');
@@ -139,21 +146,24 @@ export function QuranReaderScreen({ navigation, route }: Props) {
   };
 
   // The bookmark button toggles: a second tap removes the bookmark
-  const bookmarkAyah = async (ayahNumber: number) => {
+  const bookmarkAyah = (ayahNumber: number) => {
     lastAyahRef.current = ayahNumber;
-    if (bookmarked.has(ayahNumber)) {
-      await removeQuranBookmark(settings.activeFamilyMemberId, surahNumber, ayahNumber);
+    const adding = !bookmarked.has(ayahNumber);
+    if (adding) void Haptics.selectionAsync();
+    void toggleBookmarkShown(ayahNumber, async () => {
+      if (adding) {
+        await addQuranBookmark(settings.activeFamilyMemberId, {
+          surahNumber,
+          surahName,
+          edition: translationId,
+          ayahNumber,
+          label: `${surahName} ${ayahNumber}`,
+        });
+      } else {
+        await removeQuranBookmark(settings.activeFamilyMemberId, surahNumber, ayahNumber);
+      }
       await refreshReadingProgress();
-      return;
-    }
-    await addQuranBookmark(settings.activeFamilyMemberId, {
-      surahNumber,
-      surahName,
-      edition: translationId,
-      ayahNumber,
-      label: `${surahName} ${ayahNumber}`,
     });
-    await refreshReadingProgress();
   };
 
   // Recitation continues ayah by ayah until the end of the surah or until stopped
@@ -264,6 +274,8 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             onPress={() => bookmarkAyah(a.numberInSurah)}
             accessibilityLabel={`${marked ? t('reading.removeBookmark') : t('reading.bookmark')} ${a.numberInSurah}`}
             accessibilityState={{ selected: marked }}
+            popWhen={marked}
+            popFrom={motion.popFromSubtle}
           />
         </View>
         {a.arabic ? <AppText style={arabicStyle}>{a.arabic}</AppText> : null}
@@ -337,9 +349,20 @@ export function QuranReaderScreen({ navigation, route }: Props) {
       </View>
 
       {loading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={colors.primary} accessibilityLabel={t('common.loading')} />
-        </View>
+        <SkeletonGroup
+          accessibilityLabel={t('common.loading')}
+          style={{ padding: space[4], gap: space[6], width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' }}
+        >
+          {Array.from({ length: SKELETON_AYAHS }, (_, i) => (
+            <View key={i} style={{ gap: space[2] }}>
+              <SkeletonBlock width={space[8]} height={space[6]} radius={radius.pill} />
+              <SkeletonBlock height={type.arabicQuran.fontSize ?? space[6]} style={{ marginVertical: space[2] }} />
+              {SKELETON_LINE_WIDTHS.map((w) => (
+                <SkeletonBlock key={w} width={w} height={space[3]} />
+              ))}
+            </View>
+          ))}
+        </SkeletonGroup>
       ) : failed ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6] }}>
           <IconBadge name="cloud-offline-outline" size="lg" tone="neutral" />
@@ -349,38 +372,40 @@ export function QuranReaderScreen({ navigation, route }: Props) {
           <Button label={t('common.retry')} onPress={load} variant="secondary" icon="refresh" />
         </View>
       ) : (
-        <FlatList
-          ref={listRef}
-          contentContainerStyle={{
-            padding: space[4],
-            paddingBottom: space[10],
-            width: '100%',
-            maxWidth: layout.contentMaxWidth,
-            alignSelf: 'center',
-          }}
-          data={rows}
-          keyExtractor={(r) => r.key}
-          renderItem={renderRow}
-          extraData={{ bookmarked, playing, scale }}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={{ itemVisiblePercentThreshold: 40 }}
-          // Reaching the bottom (or a short surah that fits on screen) means the last ayah was read
-          onEndReached={() => {
-            const last = ayahs[ayahs.length - 1];
-            if (last) lastAyahRef.current = Math.max(lastAyahRef.current, last.numberInSurah);
-          }}
-          onEndReachedThreshold={0.1}
-          onScrollToIndexFailed={({ index, averageItemLength }) =>
-            listRef.current?.scrollToOffset({ offset: index * averageItemLength, animated: false })
-          }
-          ListHeaderComponent={header}
-          // Tanzil's terms ask for the source to be named wherever its text is shown
-          ListFooterComponent={
-            <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[4], marginBottom: space[6] }}>
-              {t('quran.source', { translation: translationName })}
-            </AppText>
-          }
-        />
+        <Enter duration={motion.duration.medium} style={{ flex: 1 }}>
+          <FlatList
+            ref={listRef}
+            contentContainerStyle={{
+              padding: space[4],
+              paddingBottom: space[10],
+              width: '100%',
+              maxWidth: layout.contentMaxWidth,
+              alignSelf: 'center',
+            }}
+            data={rows}
+            keyExtractor={(r) => r.key}
+            renderItem={renderRow}
+            extraData={{ bookmarked, playing, scale }}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 40 }}
+            // Reaching the bottom (or a short surah that fits on screen) means the last ayah was read
+            onEndReached={() => {
+              const last = ayahs[ayahs.length - 1];
+              if (last) lastAyahRef.current = Math.max(lastAyahRef.current, last.numberInSurah);
+            }}
+            onEndReachedThreshold={0.1}
+            onScrollToIndexFailed={({ index, averageItemLength }) =>
+              listRef.current?.scrollToOffset({ offset: index * averageItemLength, animated: false })
+            }
+            ListHeaderComponent={header}
+            // Tanzil's terms ask for the source to be named wherever its text is shown
+            ListFooterComponent={
+              <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[4], marginBottom: space[6] }}>
+                {t('quran.source', { translation: translationName })}
+              </AppText>
+            }
+          />
+        </Enter>
       )}
     </View>
   );

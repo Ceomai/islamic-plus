@@ -25,6 +25,7 @@ const PAIRS: [ColorKey, ColorKey, number][] = [
   ['success', 'successSoft', 4.5],
   ['warning', 'warningSoft', 4.5],
   ['error', 'errorSoft', 4.5],
+  ['error', 'errorSoftPressed', 4.5],
   ['onError', 'error', 4.5],
   ['inputBorder', 'surface', 3],
 ];

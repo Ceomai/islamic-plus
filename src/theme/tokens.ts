@@ -53,7 +53,9 @@ export const primitive = {
   },
   red: {
     soft: '#FCE9E7',
+    softPressed: '#F7D5D1',
     softDark: '#3A1A16',
+    softDarkPressed: '#4A221C',
     700: '#B42318',
     300: '#F2867A',
   },
@@ -123,15 +125,37 @@ export const layout = {
 
 /** Motion — keep animations short and interruptible; respect Reduce Motion at the call site. */
 export const motion = {
-  duration: { fast: 150, base: 250, slow: 350 },
+  /** `medium` is for small state changes: progress fills, fades of a reset, a crossfade */
+  duration: { fast: 150, medium: 200, base: 250, slow: 350 },
+  /** Cubic-bezier control points (pass to Easing.bezier) */
+  easing: {
+    /** Strong ease-out: things entering or settling */
+    out: [0.23, 1, 0.32, 1],
+    /** On-screen movement and loops */
+    inOut: [0.77, 0, 0.175, 1],
+  },
   spring: {
     /** Animated.spring config for press feedback */
     press: { speed: 40, bounciness: 0 },
     /** Animated.spring config for elements coming to rest */
     settle: { damping: 15, stiffness: 220 },
   },
+  /** LayoutAnimation spring for rows closing a gap after an insert or removal */
+  listSpringDamping: 0.85,
   pressedOpacity: 0.7,
   pressedScale: 0.97,
+  /** Large press targets (the tasbih counter) travel a little further */
+  pressedScaleLarge: 0.96,
+  /** One-shot pulse when something completes */
+  pulseScale: 1.04,
+  /** A checkmark that just turned on grows in from this scale */
+  popFrom: 0.6,
+  /** A toolbar icon that just turned on (bookmark) grows in from this, subtler, scale */
+  popFromSubtle: 0.8,
+  /** Entering content travels this far (onboarding step: x, chat bubble: y) */
+  enterOffset: { step: 16, bubble: 8 },
+  /** Loading placeholders pulse between these opacities, one way per `pulseHalfPeriod` */
+  skeleton: { minOpacity: 0.5, pulseHalfPeriod: 500 },
 } as const;
 
 /* ───────────────────────── Typography ───────────────────────── */
@@ -237,6 +261,8 @@ export interface NeutralPalette {
   /** Text on a solid error fill */
   onError: string;
   errorSoft: string;
+  /** errorSoft while pressed (danger button) */
+  errorSoftPressed: string;
   overlay: string;
   /** Home launcher icon colors per feature category */
   category: Record<HomeCategory, { bg: string; fg: string }>;
@@ -259,6 +285,7 @@ export const neutralLight: NeutralPalette = {
   error: primitive.red[700],
   onError: primitive.white,
   errorSoft: primitive.red.soft,
+  errorSoftPressed: primitive.red.softPressed,
   overlay: 'rgba(14, 20, 18, 0.45)',
   category: {
     reading: { bg: primitive.category.readingBg, fg: primitive.category.readingFg },
@@ -287,6 +314,7 @@ export const neutralDark: NeutralPalette = {
   // The light red of dark mode needs dark text
   onError: primitive.slate[900],
   errorSoft: primitive.red.softDark,
+  errorSoftPressed: primitive.red.softDarkPressed,
   overlay: 'rgba(0, 0, 0, 0.6)',
   category: {
     reading: { bg: primitive.category.readingBgDark, fg: primitive.category.readingFgDark },

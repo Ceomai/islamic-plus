@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
@@ -14,7 +15,7 @@ import { askRemoteAssistant, isRemoteAssistantAvailable } from '../services/assi
 import { trackFeatureAction } from '../services/cloudAnalytics';
 import { formatClock, getNextPrayer } from '../services/prayerTimes';
 import type { AssistantAction, AssistantTarget } from '../types';
-import { AppText, Chip, IconButton } from '../ui';
+import { AppText, Chip, Enter, IconButton } from '../ui';
 import { announce } from '../utils/announce';
 import { localDateKey } from '../utils/date';
 import { confirmDestructive } from '../utils/confirm';
@@ -52,7 +53,8 @@ export function AIAssistantScreen() {
   const { aiMessages, sendAIMessage, clearAIChat, settings, location } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { canAccess } = useFeatureAccess();
-  const { colors, radius, space, type, layout } = useTheme();
+  const { colors, radius, space, type, layout, motion } = useTheme();
+  const reduced = useReducedMotion();
   const headerHeight = useHeaderHeight();
   const { t, lang } = useTranslation();
   const [input, setInput] = useState('');
@@ -61,6 +63,8 @@ export function AIAssistantScreen() {
   const pendingNav = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guards against a double tap sending the same question twice (busy is only set later)
   const sending = useRef(false);
+  // Messages already in the chat when the screen opened appear in place; new ones fade up
+  const [initialIds] = useState(() => new Set(aiMessages.map((m) => m.id)));
 
   // Leaving the screen cancels a pending jump, so the user is not pulled to a page from elsewhere
   useEffect(
@@ -110,7 +114,6 @@ export function AIAssistantScreen() {
     setInput('');
     const next = location ? getNextPrayer(location.latitude, location.longitude, settings.calculationMethod, settings.madhab) : null;
     const nextPrayer = next ? { name: next.name, time: formatClock(next.time, lang) } : null;
-    const scrollDown = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
     let reply: { text: string; actions: AssistantAction[]; autoNavigate?: AssistantTarget } | null = null;
     let note = '';
@@ -118,7 +121,6 @@ export function AIAssistantScreen() {
       // Show the question right away; the server answer can take a few seconds
       const history = aiMessages.filter((m) => m.content.length > 0);
       await sendAIMessage(text, '');
-      scrollDown();
       setBusy(true);
       // Android reads the "thinking" bubble through its live region
       announce(t('ai.thinking'));
@@ -143,7 +145,6 @@ export function AIAssistantScreen() {
       reply = local;
       await sendAIMessage(text, reply.text, reply.actions);
     }
-    scrollDown();
     // The new reply is not in a live region (the whole chat would be re-read), so announce it
     announce(reply.text.replace(/\*\*|`/g, ''), { hasLiveRegion: false });
     // Let the reply be read for a moment, then open the page; the chat stays when coming back
@@ -187,13 +188,21 @@ export function AIAssistantScreen() {
         ref={scrollRef}
         contentContainerStyle={{ padding: space[4], gap: space[3], width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' }}
         keyboardShouldPersistTaps="handled"
+        // Follows the chat to its newest message once it is laid out (no timer guessing when that is)
+        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: !reduced })}
       >
         {messages.map((m) => {
           const mine = m.role === 'user';
           // Arabic replies read right to left
           const rtl = !mine && /[؀-ۿ]/.test(m.content.slice(0, 40));
           return (
-            <View key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
+            <Enter
+              key={m.id}
+              animate={!initialIds.has(m.id)}
+              duration={motion.duration.fast}
+              offsetY={motion.enterOffset.bubble}
+              style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '88%' }}
+            >
               <View
                 style={{
                   maxWidth: layout.bubbleMaxWidth,
@@ -225,7 +234,7 @@ export function AIAssistantScreen() {
                   ))}
                 </View>
               ) : null}
-            </View>
+            </Enter>
           );
         })}
         {busy && (
