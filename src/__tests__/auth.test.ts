@@ -9,6 +9,8 @@ jest.mock('../config/supabase', () => ({
   getSupabase: () => ({ auth: { getSession: () => mockGetSession() } }),
 }));
 
+jest.mock('expo-notifications', () => ({ setNotificationHandler: jest.fn() }));
+
 import { getAuthSession } from '../services/auth';
 import { setLocalAuthSession } from '../services/localAuth';
 

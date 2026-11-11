@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, I18nManager, Pressable, useAnimatedValue, View, type LayoutChangeEvent } from 'react-native';
+import { Animated, I18nManager, Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { useAnimatedValue } from '../hooks/useAnimatedValue';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../hooks/useTheme';
 import { AppText } from './AppText';

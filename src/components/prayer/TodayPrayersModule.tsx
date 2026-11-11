@@ -160,6 +160,11 @@ export function TodayPrayersModule({ hasLocation, nextPrayer, today, tomorrow, c
                     <AppText variant={p === 'fajr' ? 'calloutStrong' : 'callout'} tone={p === 'fajr' ? 'brand' : 'secondary'} numeric>
                       {formatClock(tomorrow[p], lang).replace(/ (AM|PM)$/, '')}
                     </AppText>
+                    {!stacked && lang === 'en' && (
+                      <AppText variant="caption" tone="muted">
+                        {formatClock(tomorrow[p], lang).slice(-2)}
+                      </AppText>
+                    )}
                   </View>
                 ))}
               </View>

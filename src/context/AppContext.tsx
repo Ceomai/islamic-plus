@@ -33,6 +33,7 @@ import { useHabitsState } from './app/useHabitsState';
 import { useInitialLoad } from './app/useInitialLoad';
 import { useLocationState } from './app/useLocationState';
 import { usePrayerDayState } from './app/usePrayerDayState';
+import { useNotificationPermissionPrompt } from './app/useNotificationPermissionPrompt';
 import { usePrayerSchedule } from './app/usePrayerSchedule';
 import { useReadingState } from './app/useReadingState';
 import { useSettingsState } from './app/useSettingsState';
@@ -88,6 +89,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
 
   usePrayerSchedule(settings, locationState.location, settingsRef, locationState.locationRef);
+  useNotificationPermissionPrompt(
+    !!session && !loading,
+    settings,
+    !!locationState.location,
+    settingsRef,
+    locationState.locationRef
+  );
 
   const syncValue = useCloudSync({
     session,

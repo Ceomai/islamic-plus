@@ -105,6 +105,25 @@ export function ackPendingPrayerMarks(done: PendingPrayerMark[]): Promise<void> 
   });
 }
 
+/**
+ * Hands marks queued for one storage scope to another (a guest who creates an account: the account
+ * starts with the guest's data, so "Prayed" taps made as a guest belong to it too). Returns how many moved.
+ */
+export function retagPendingPrayerMarks(from: string, to: string): Promise<number> {
+  return serial(async () => {
+    const list = await readQueue();
+    let moved = 0;
+    const next: PendingPrayerMark[] = [];
+    for (const m of list) {
+      const mark = m.scope === from ? { ...m, scope: to } : m;
+      if (mark !== m) moved++;
+      if (!next.some((n) => sameMark(n, mark))) next.push(mark);
+    }
+    if (moved > 0) await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(next));
+    return moved;
+  });
+}
+
 /** Queues the mark when the response is a "Prayed" tap and clears the notification. */
 export async function handlePrayerResponse(response: Notifications.NotificationResponse): Promise<boolean> {
   const mark = markFrom(response);

@@ -23,6 +23,8 @@ const KEYS = {
   kaza: '@islamic/kaza',
   /** Deleted habits, family members and prayer marks (see tombstones.ts) */
   deleted: '@islamic/deleted',
+  /** Set once the app has shown the system notification prompt on this device (see notifications.ts) */
+  notificationPermissionAsked: '@islamic/notificationPermissionAsked',
 };
 
 /** Device-wide keys — everything else belongs to the signed-in account. */
@@ -31,8 +33,14 @@ const DEVICE_KEYS = new Set<string>([
   KEYS.offlineAudio,
   KEYS.deviceLanguage,
   KEYS.firstRunDone,
+  KEYS.notificationPermissionAsked,
   '@islamic/auth/users',
+  // Written by headless tasks, which run without a signed-in account (prayerAction.ts, widgetBackground.ts)
+  '@islamic/pending-prayer-marks',
+  '@islamic/widget-input',
 ]);
+/** Device-wide key families: the error log and its upload queue (errorLog.ts) */
+const DEVICE_KEY_PREFIXES = ['@islamic/error-'];
 export const LEGACY_MIGRATED_KEY = '@islamic/legacyMigratedTo';
 
 let storageUser: string | null = null;
@@ -53,7 +61,12 @@ export function getStorageUser(): string | null {
 }
 
 function isUserKey(key: string): boolean {
-  return key.startsWith('@islamic/') && !DEVICE_KEYS.has(key) && key !== LEGACY_MIGRATED_KEY;
+  return (
+    key.startsWith('@islamic/') &&
+    !DEVICE_KEYS.has(key) &&
+    !DEVICE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)) &&
+    key !== LEGACY_MIGRATED_KEY
+  );
 }
 
 function resolveKey(key: string): string {

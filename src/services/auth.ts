@@ -3,6 +3,9 @@ import type { AuthSession } from '../types';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { isSupabaseConfigured } from '../config/supabase';
 import { resetAIChatSessionId } from './cloudAnalytics';
+import { fireAndForget } from './fireAndForget';
+import { cancelPrayerScheduling } from './notifications';
+import { retagPendingPrayerMarks } from './prayerAction';
 import {
   continueLocalGuest,
   deleteLocalUser,
@@ -74,7 +77,12 @@ export async function getAuthSession(): Promise<AuthSession | null> {
 export async function registerUser(email: string, password: string): Promise<AuthResult> {
   const result = isSupabaseConfigured ? await registerSupabaseUser(email, password) : await registerLocalUser(email, password);
   // A new account starts with what was recorded as a guest on this device (prayers, tasbih, kaza…)
-  if (result.ok) await copyScopeIfMissing('guest', result.session.userId).catch(() => 0);
+  if (result.ok) {
+    const scope = storageScopeFor(result.session) ?? result.session.userId;
+    await copyScopeIfMissing('guest', scope).catch(() => 0);
+    // "Prayed" taps made as a guest while the app was closed are applied to the new account
+    await retagPendingPrayerMarks('guest', scope).catch(() => 0);
+  }
   return activateResult(result);
 }
 
@@ -85,9 +93,8 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 
 export async function continueAsGuest(): Promise<AuthSession> {
   const session = await continueLocalGuest();
-  if (isSupabaseConfigured) {
-    await logGuestStartSupabase(session.userId);
-  }
+  // Analytics only: the guest session (and the first launch's start-up) never waits for the network
+  if (isSupabaseConfigured) fireAndForget(logGuestStartSupabase(session.userId), 'auth.guestStart');
   return activateSession(session);
 }
 
@@ -104,7 +111,9 @@ export async function logoutUser(): Promise<void> {
 }
 
 async function endLocalSession(): Promise<void> {
-  // Reminders carry the previous user's titles and schedule — the next session reschedules its own
+  // Reminders carry the previous user's titles and schedule — the next session reschedules its own.
+  // A scheduling run still under way is stopped first, or it would add them back after the cancel
+  await cancelPrayerScheduling().catch(() => undefined);
   await Notifications.cancelAllScheduledNotificationsAsync().catch(() => undefined);
   resetAIChatSessionId();
   setStorageUser(null);

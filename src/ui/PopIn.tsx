@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef } from 'react';
-import { Animated, useAnimatedValue, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, type StyleProp, type ViewStyle } from 'react-native';
+import { useAnimatedValue } from '../hooks/useAnimatedValue';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { motion } from '../theme/tokens';
 import { settle } from './motion';

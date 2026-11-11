@@ -55,4 +55,24 @@ describe('first-run flag', () => {
     expect(await AsyncStorage.getItem('@islamic/firstRunDone')).toBe('1');
     expect(await AsyncStorage.getItem('@islamic/firstRunDone@@user-1')).toBeNull();
   });
+
+  it('leaves device-wide queues and logs in place when legacy data is handed to an account', async () => {
+    const deviceWide = [
+      '@islamic/pending-prayer-marks',
+      '@islamic/widget-input',
+      '@islamic/error-log',
+      '@islamic/error-pending',
+      '@islamic/notificationPermissionAsked',
+    ];
+    for (const key of deviceWide) await AsyncStorage.setItem(key, '[]');
+    await AsyncStorage.setItem('@islamic/kaza', '{}');
+    await migrateLegacyStorage('user-1');
+    for (const key of deviceWide) {
+      expect(await AsyncStorage.getItem(key)).toBe('[]');
+      expect(await AsyncStorage.getItem(`${key}@@user-1`)).toBeNull();
+    }
+    // Account data written before per-account storage still moves to the account
+    expect(await AsyncStorage.getItem('@islamic/kaza')).toBeNull();
+    expect(await AsyncStorage.getItem('@islamic/kaza@@user-1')).toBe('{}');
+  });
 });

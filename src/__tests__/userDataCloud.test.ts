@@ -17,6 +17,8 @@ const mockRpc = jest.fn(async (name: string, _args: unknown) => {
 jest.mock('../config/supabase', () => ({ isSupabaseConfigured: true, getSupabase: () => ({ rpc: mockRpc }) }));
 jest.mock('../services/cloudUser', () => ({ isCloudUserActive: async () => true }));
 
+import { buildSyncPayload } from '../services/cloudSync';
+import { getJson, setJson, storageKeys } from '../services/storage';
 import { cancelUserDataCloudSync, notifyAppDataChanged, registerAppDataPayloadBuilder, syncUserDataFromCloud } from '../services/userDataCloud';
 
 const STATS = { tasbihTotal: 0, habitsCompletedTotal: 0, duasReadCount: 0, quranSessions: 0, prayerStreakDays: 0, lastActiveDate: '', weeklyActivity: [0, 0, 0, 0, 0, 0, 0] };
@@ -83,5 +85,27 @@ describe('pulling from the cloud at start-up (Y2)', () => {
     cancelUserDataCloudSync();
 
     expect(result.habits.map((h) => h.id).sort()).toEqual(['a', 'added-during-push', 'cloud']);
+  });
+
+  it('does not overwrite a tasbih tap stored after the local copy was read', async () => {
+    await setJson(storageKeys.tasbih, { count: 1, total: 1, sessions: [] });
+    mockRemote = payload(['cloud']);
+    mockDuringPull = () => undefined;
+    let reads = 0;
+    registerAppDataPayloadBuilder(async () => {
+      const local = await buildSyncPayload({ ...DEFAULT_SETTINGS }, [], [], STATS, false, null);
+      // A tap lands right after the first read, before the merge is written
+      if (++reads === 1) {
+        await setJson(storageKeys.tasbih, { count: 2, total: 2, sessions: [] });
+        notifyAppDataChanged();
+      }
+      return local;
+    });
+
+    const { payload: result } = await syncUserDataFromCloud({ ...DEFAULT_SETTINGS }, [], [], STATS, false, null);
+    cancelUserDataCloudSync();
+
+    expect(result.tasbih.total).toBe(2);
+    expect((await getJson(storageKeys.tasbih, { count: 0, total: 0, sessions: [] })).total).toBe(2);
   });
 });

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
-import { schedulePrayerNotifications } from '../services/notifications';
+import { cancelPrayerScheduling, schedulePrayerNotifications } from '../services/notifications';
 import { prayerScheduleKey } from '../services/prayerScheduleKey';
 import { loadStats, recordActivity, updatePrayerStreak } from '../services/statistics';
 import { setStorageUser } from '../services/storage';
@@ -98,6 +98,14 @@ describe('prayer notification schedule', () => {
     const last = schedulePrayerNotifications(istanbul.latitude, istanbul.longitude, { ...on, globalNotificationsEnabled: false });
     await Promise.all([first, second, last]);
     // Notifications switched off last: nothing is left from the earlier runs
+    expect(mockScheduled.size).toBe(0);
+
+    // Signing out stops a run under way: nothing is added back after its cancel
+    const running = schedulePrayerNotifications(istanbul.latitude, istanbul.longitude, on);
+    while (mockScheduled.size === 0) await tick();
+    await cancelPrayerScheduling();
+    mockScheduled.clear();
+    await running;
     expect(mockScheduled.size).toBe(0);
 
     await schedulePrayerNotifications(istanbul.latitude, istanbul.longitude, on);

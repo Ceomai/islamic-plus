@@ -15,6 +15,8 @@ import type {
 import type { StoredLocation } from './location';
 
 const SYNC_DEBOUNCE_MS = 3000;
+/** Re-merges before the import while local writes keep arriving (each tap would otherwise restart it) */
+const MAX_PRE_IMPORT_MERGES = 3;
 /**
  * App data (settings, habits, prayers, tasbih, kaza…) is stored once per account on the device, not
  * per family member, so it is synced under one scope. Syncing it per member mixed one member's
@@ -103,12 +105,19 @@ export async function syncUserDataFromCloud(
   }
 
   const remote = row.payload as SyncPayload;
-  const merged = mergeSyncPayloads({ ...remote, version: 2, profileScope: APP_DATA_SCOPE }, local);
+  let merged = mergeSyncPayloads({ ...remote, version: 2, profileScope: APP_DATA_SCOPE }, local);
+  // A write that landed after `local` was read (a tasbih tap, a prayer mark) would be overwritten by
+  // the import below: merge once more with what is stored now
+  let changesSeen = changesBefore;
+  for (let attempt = 0; attempt < MAX_PRE_IMPORT_MERGES && localChanges !== changesSeen; attempt++) {
+    changesSeen = localChanges;
+    merged = mergeSyncPayloads(merged, await localNow());
+  }
 
   await importSyncPayloadToStorage(merged);
   // Push the merged result itself: the app's state still holds the pre-merge values at this point
   const ok = await pushUserDataNow(merged);
-  if (localChanges === changesBefore) return { payload: merged, ok };
+  if (localChanges === changesSeen) return { payload: merged, ok };
 
   // Something changed on this device while the merge was written and pushed: the app's state has
   // the change but not the merge, storage may have either. Merge again so neither is lost (the

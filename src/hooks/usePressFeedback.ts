@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useAnimatedValue } from 'react-native';
+import { useAnimatedValue } from './useAnimatedValue';
 import { motion } from '../theme/tokens';
 import { pressSpring, settle, timing } from '../ui/motion';
 import { useReducedMotion } from './useReducedMotion';

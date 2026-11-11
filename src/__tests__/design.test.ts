@@ -8,6 +8,7 @@ import {
   marksForScope,
   peekPendingPrayerMarks,
   PRAYED_ACTION,
+  retagPendingPrayerMarks,
 } from '../services/prayerAction';
 import { loadPrayerCompletions, markPrayerCompleted } from '../services/prayerTracking';
 import { countPrayersInDays } from '../services/statistics';
@@ -105,6 +106,21 @@ describe('"Prayed" notification button', () => {
     await ackPendingPrayerMarks([other]);
     // The other account's mark waits for that account
     expect(await peekPendingPrayerMarks('user-a')).toEqual([asr]);
+  });
+
+  it('hands a guest’s waiting marks to the account the guest creates', async () => {
+    await AsyncStorage.clear();
+    const guestAsr = { ...asr, scope: 'guest' } as const;
+    const guestIsha = { ...asr, prayer: 'isha', scope: 'guest' } as const;
+    const other = { ...asr, scope: 'user-b' } as const;
+    for (const mark of [guestAsr, guestIsha, other, asr]) await handlePrayerResponse(response(PRAYED_ACTION, mark));
+
+    expect(await retagPendingPrayerMarks('guest', 'user-a')).toBe(2);
+    expect(await peekPendingPrayerMarks('guest')).toEqual([]);
+    // The asr mark the account already had is kept once
+    expect(await peekPendingPrayerMarks('user-a')).toEqual([asr, { ...guestIsha, scope: 'user-a' }]);
+    expect(await peekPendingPrayerMarks('user-b')).toEqual([other]);
+    expect(await retagPendingPrayerMarks('guest', 'user-a')).toBe(0);
   });
 
   it('matches marks by scope, and none without a session', () => {

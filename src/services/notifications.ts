@@ -2,9 +2,10 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { UserSettings } from '../types';
 import { createSerialQueue } from '../utils/serial';
+import { shouldAskNotificationPermission, type NotificationPromptInputs } from './notificationPrompt';
 import { setupPrayerCategory } from './prayerAction';
 import { ADHAN_CHANNEL_ID, ADHAN_SOUND_FILE, PRAYER_CHANNEL_ID, SILENT_CHANNEL_ID, buildPrayerTriggers } from './prayerTriggers';
-import { getStorageUser } from './storage';
+import { getJson, getStorageUser, setJson, storageKeys } from './storage';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -21,8 +22,41 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   if (!notificationsSupported) return false;
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === 'granted') return true;
+  await markNotificationPermissionAsked();
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
+}
+
+const markNotificationPermissionAsked = () =>
+  setJson(storageKeys.notificationPermissionAsked, true).catch(() => undefined);
+
+let promptInFlight: Promise<boolean> | null = null;
+
+/**
+ * Shows the system notification prompt once on this device when the introduction ended without it
+ * (see shouldAskNotificationPermission). Resolves true when notifications became allowed.
+ */
+export function askNotificationPermissionOnce(
+  context: Pick<NotificationPromptInputs, 'onboardingDone' | 'hasLocation' | 'notificationsEnabled'>
+): Promise<boolean> {
+  if (!notificationsSupported) return Promise.resolve(false);
+  if (!promptInFlight) {
+    promptInFlight = askOnceNow(context).finally(() => {
+      promptInFlight = null;
+    });
+  }
+  return promptInFlight;
+}
+
+async function askOnceNow(
+  context: Pick<NotificationPromptInputs, 'onboardingDone' | 'hasLocation' | 'notificationsEnabled'>
+): Promise<boolean> {
+  const alreadyAsked = await getJson(storageKeys.notificationPermissionAsked, false);
+  const { status, canAskAgain } = await Notifications.getPermissionsAsync();
+  if (!shouldAskNotificationPermission({ ...context, alreadyAsked, status, canAskAgain })) return false;
+  // Remembered before the prompt opens, so a crash or a second call never asks twice
+  await markNotificationPermissionAsked();
+  return (await Notifications.requestPermissionsAsync()).granted;
 }
 
 /** Whether the system lets the app show notifications (no prompt) */
@@ -78,6 +112,15 @@ export function schedulePrayerNotifications(latitude: number, longitude: number,
   const generation = ++scheduleGeneration;
   const isStale = () => generation !== scheduleGeneration;
   return scheduleQueue(() => scheduleNow(latitude, longitude, settings, isStale));
+}
+
+/**
+ * Stops a scheduling run that is under way (sign-out: it would add the previous account's
+ * notifications back after they were cancelled). Resolves once that run has stopped.
+ */
+export function cancelPrayerScheduling(): Promise<void> {
+  ++scheduleGeneration;
+  return scheduleQueue(async () => undefined);
 }
 
 async function scheduleNow(

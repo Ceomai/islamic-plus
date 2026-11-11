@@ -21,7 +21,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { gregorianToHijri } from '../services/hijriCalendar';
 import { ramadanWindow } from '../services/ramadan';
-import { launcherColumns } from '../theme/tokens';
+import { launcherColumns, layout as layoutTokens } from '../theme/tokens';
 import { confirm } from '../utils/confirm';
 import { dateFromKey } from '../utils/date';
 import type { HomeFeatureId, PrayerName } from '../types';
@@ -30,7 +30,7 @@ import { AppText, Enter, ListRow, SectionHeader, Surface } from '../ui';
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 const COUNTDOWN_TICK_MS = 30_000;
-const ICON_BUTTON = 44;
+const ICON_BUTTON = layoutTokens.minTouch;
 
 export function HomeScreen({ navigation }: Props) {
   const { location, refreshLocation } = useAppLocation();
