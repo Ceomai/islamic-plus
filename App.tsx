@@ -1,5 +1,6 @@
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
@@ -13,6 +14,7 @@ import { initialRoute } from './src/services/firstRun';
 import { flushPendingErrors, installGlobalErrorHandler } from './src/services/errorLog';
 import { definePrayerActionTask } from './src/services/prayerAction';
 import { defineWidgetTask } from './src/services/widgetBackground';
+import { useAppFonts } from './src/theme/fonts';
 
 function Root() {
   const { darkMode, loading, settings } = useApp();
@@ -68,8 +70,18 @@ void flushPendingErrors().catch(() => undefined);
 // Background tasks must be defined when the JS bundle loads, before any screen renders
 defineWidgetTask();
 definePrayerActionTask();
+// Keep the splash screen up until the Arabic fonts are ready (or failed), so text never reflows
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export default function App() {
+  const fontsReady = useAppFonts();
+
+  useEffect(() => {
+    if (fontsReady) void SplashScreen.hideAsync().catch(() => undefined);
+  }, [fontsReady]);
+
+  if (!fontsReady) return null;
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>

@@ -145,11 +145,15 @@ export const fontWeight = {
 
 /**
  * Font families. `undefined` = platform default (SF Pro / Roboto). Set a family here once a font is
- * bundled and every variant picks it up.
+ * bundled and every variant picks it up. The Arabic files live in assets/fonts (SIL OFL 1.1) and are
+ * loaded at start-up by useAppFonts(); if loading fails the variants fall back to the system font.
  */
-export const fontFamily: { ui?: string; arabic?: string } = {
+export const fontFamily: { ui?: string; arabic?: string; quran?: string } = {
   ui: undefined,
-  arabic: undefined,
+  /** Noto Naskh Arabic — duas, hadith, previews */
+  arabic: 'NotoNaskhArabic',
+  /** Amiri Quran — Quran text (Uthmani script, tall stacked marks) */
+  quran: 'AmiriQuran',
 };
 
 export type TypeVariant =
@@ -168,13 +172,17 @@ export type TypeVariant =
   | 'arabicPreview';
 
 const ui = (style: TextStyle): TextStyle => (fontFamily.ui ? { fontFamily: fontFamily.ui, ...style } : style);
-const arabic = (style: TextStyle): TextStyle => ({
-  ...(fontFamily.arabic ? { fontFamily: fontFamily.arabic } : null),
+const arabic = (style: TextStyle, family = fontFamily.arabic): TextStyle => ({
+  ...(family ? { fontFamily: family } : null),
+  // Android's extra font padding pushes Arabic lines apart unevenly; the line heights below leave room for marks
+  ...Platform.select<TextStyle>({ android: { includeFontPadding: false }, default: {} }),
   fontWeight: fontWeight.regular,
   writingDirection: 'rtl',
   textAlign: 'right',
   ...style,
 });
+
+const ARABIC_VARIANTS = ['arabicQuran', 'arabicDua', 'arabicPreview'] as const;
 
 /** Elderly-friendly scale: caption (13) is the floor — nothing in the app is smaller. */
 export const type: Record<TypeVariant, TextStyle> = {
@@ -188,10 +196,19 @@ export const type: Record<TypeVariant, TextStyle> = {
   caption: ui({ fontSize: 13, lineHeight: 18, fontWeight: fontWeight.regular }),
   captionStrong: ui({ fontSize: 13, lineHeight: 18, fontWeight: fontWeight.semibold }),
   overline: ui({ fontSize: 12, lineHeight: 16, fontWeight: fontWeight.semibold, letterSpacing: 0.5 }),
-  arabicQuran: arabic({ fontSize: 28, lineHeight: 52 }),
-  arabicDua: arabic({ fontSize: 26, lineHeight: 46 }),
+  // Amiri Quran stacks marks high above and below the letters: 2× keeps them from clipping
+  arabicQuran: arabic({ fontSize: 28, lineHeight: 56 }, fontFamily.quran),
+  arabicDua: arabic({ fontSize: 26, lineHeight: 48 }),
   arabicPreview: arabic({ fontSize: 20, lineHeight: 36 }),
 };
+
+/** The bundled Arabic fonts could not load: show Arabic text in the system font instead. */
+export function fallBackToSystemArabicFont(): void {
+  for (const variant of ARABIC_VARIANTS) {
+    const { fontFamily: _bundled, ...systemFont } = type[variant];
+    type[variant] = systemFont;
+  }
+}
 
 /** Tabular figures so prayer times, countdowns and counters don't jitter as digits change. */
 export const numeric: TextStyle = { fontVariant: ['tabular-nums'] };

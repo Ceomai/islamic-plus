@@ -382,7 +382,7 @@ export const tr = {
   },
   quran: {
     surahRead: 'okundu',
-    source: "Arapça metin: Tanzil Kur’an Metni (tanzil.net, CC BY 3.0) · Meal: {{translation}} · Ses: Mişari Raşid el-Afasi",
+    source: "Arapça metin: Tanzil Kur’an Metni (tanzil.net, CC BY 3.0) · Meal: {{translation}} · Ses: Mişari Raşid el-Afasi · Yazı tipi: Amiri Quran (SIL OFL 1.1)",
     share: "Paylaş",
     khatm: "Hatim",
     khatmHint: "Bir sureyi son ayetine kadar okuyunca işaretlenir. Tamamlanan hatim: {{n}}",

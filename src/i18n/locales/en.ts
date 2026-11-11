@@ -382,7 +382,7 @@ export const en = {
   },
   quran: {
     surahRead: 'read',
-    source: "Arabic text: Tanzil Quran Text (tanzil.net, CC BY 3.0) · Translation: {{translation}} · Audio: Mishary Rashid Alafasy",
+    source: "Arabic text: Tanzil Quran Text (tanzil.net, CC BY 3.0) · Translation: {{translation}} · Audio: Mishary Rashid Alafasy · Font: Amiri Quran (SIL OFL 1.1)",
     share: "Share",
     khatm: "Khatm",
     khatmHint: "A surah is ticked when you read it to its last ayah. Khatms completed: {{n}}",
