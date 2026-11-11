@@ -3,11 +3,13 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { LocationBlockedNotice } from '../components/LocationBlockedNotice';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { getDistanceToKaaba, getQiblaBearing } from '../services/qibla';
 import { AppText, Button, Screen, Surface } from '../ui';
+import { announce } from '../utils/announce';
 
 const DIAL = 260;
 const KAABA_MARKER = 36;
@@ -33,6 +35,11 @@ export function QiblaScreen() {
   const [heading, setHeading] = useState<number | null>(null);
   const [compassUnavailable, setCompassUnavailable] = useState(false);
   const wasAligned = useRef(false);
+  const [locationTries, setLocationTries] = useState(0);
+  const retryLocation = async () => {
+    await refreshLocation();
+    setLocationTries((n) => n + 1);
+  };
 
   useEffect(() => {
     // Keep a city chosen by hand; the list's coordinates are close enough for the Qibla bearing
@@ -68,6 +75,20 @@ export function QiblaScreen() {
     wasAligned.current = aligned;
   }, [aligned]);
 
+  // The degree text changes with every compass reading, so a live region would talk non-stop.
+  // Screen readers hear only the changes that matter: aligned, or which way to turn.
+  const guidance = delta === null ? null : aligned ? 'aligned' : delta > 0 ? 'right' : 'left';
+  const lastGuidance = useRef<string | null>(null);
+  useEffect(() => {
+    if (!guidance || delta === null || guidance === lastGuidance.current) return;
+    lastGuidance.current = guidance;
+    const d = String(Math.round(Math.abs(delta)));
+    announce(
+      guidance === 'aligned' ? t('qibla.aligned') : guidance === 'right' ? t('qibla.turnRight', { d }) : t('qibla.turnLeft', { d }),
+      { hasLiveRegion: false }
+    );
+  }, [guidance, delta, t]);
+
   if (!location) {
     return (
       <Screen contentStyle={{ alignItems: 'center', paddingTop: space[10] }}>
@@ -75,7 +96,8 @@ export function QiblaScreen() {
         <AppText variant="body" tone="secondary" align="center" style={{ marginVertical: space[4] }}>
           {t('qibla.enableLocation')}
         </AppText>
-        <Button label={t('qibla.useLocation')} icon="locate" onPress={refreshLocation} />
+        <Button label={t('qibla.useLocation')} icon="locate" onPress={retryLocation} />
+        <LocationBlockedNotice recheckKey={locationTries} />
       </Screen>
     );
   }
@@ -103,7 +125,12 @@ export function QiblaScreen() {
         {t('qibla.qibla')}: {Math.round(qiblaBearing!)}°{heading !== null ? ` · ${t('qibla.heading')}: ${Math.round(heading)}°` : ''}
       </AppText>
 
-      <View style={{ width: DIAL, height: DIAL, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Purely visual: the status line above already says where to turn */}
+      <View
+        style={{ width: DIAL, height: DIAL, alignItems: 'center', justifyContent: 'center' }}
+        importantForAccessibility="no-hide-descendants"
+        accessibilityElementsHidden
+      >
         {/* Fixed pointer: the direction the phone faces */}
         <View
           style={{

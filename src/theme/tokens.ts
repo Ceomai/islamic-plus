@@ -1,4 +1,4 @@
-import type { TextStyle } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 
 /**
  * Islamic+ design tokens — "Sakin modern" direction.
@@ -107,6 +107,18 @@ export const radius = {
   lg: 16,
   xl: 24,
   pill: 999,
+} as const;
+
+/**
+ * Layout limits. `minTouch` is the platform minimum tap target (44pt HIG / 48dp Material);
+ * `contentMaxWidth` keeps text columns readable on iPad and wide windows.
+ */
+export const layout = {
+  minTouch: Platform.select({ android: 48, default: 44 }),
+  contentMaxWidth: 680,
+  bubbleMaxWidth: 560,
+  /** Width breakpoints (dp) for denser grids on tablets */
+  breakpoint: { tablet: 700, wide: 1000 },
 } as const;
 
 /** Motion — keep animations short and interruptible; respect Reduce Motion at the call site. */
@@ -275,3 +287,10 @@ export const component = {
   /** The big number inside the tasbih counter */
   tasbihCounter: ui({ fontSize: 64, lineHeight: 72, fontWeight: fontWeight.bold }),
 } as const;
+
+/** Home launcher grid columns for a window width: 4 on phones, 6 on small tablets, 8 on wide windows. */
+export function launcherColumns(width: number): number {
+  if (width >= layout.breakpoint.wide) return 8;
+  if (width >= layout.breakpoint.tablet) return 6;
+  return 4;
+}

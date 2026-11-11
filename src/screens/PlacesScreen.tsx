@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Platform, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { LocationBlockedNotice } from '../components/LocationBlockedNotice';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
@@ -42,6 +43,12 @@ function searchInMaps(query: string, lat: number, lon: number) {
 export function PlacesScreen({ route, navigation }: Props) {
   const { type } = route.params;
   const { location, refreshLocation } = useApp();
+  // Bumped after each location request so the "blocked" notice checks the permission again
+  const [locationTries, setLocationTries] = useState(0);
+  const retryLocation = async () => {
+    await refreshLocation();
+    setLocationTries((n) => n + 1);
+  };
   const { colors, space } = useTheme();
   const { t, lang } = useTranslation();
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
@@ -115,7 +122,7 @@ export function PlacesScreen({ route, navigation }: Props) {
   if (status === 'loading') {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.primary} accessibilityLabel={t('common.loading')} />
         <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[3], paddingHorizontal: space[6] }}>
           {t('places.loading')}
         </AppText>
@@ -133,10 +140,11 @@ export function PlacesScreen({ route, navigation }: Props) {
         <Button
           label={status === 'error' ? t('common.retry') : t('qibla.useLocation')}
           icon={status === 'error' ? 'refresh' : 'locate'}
-          onPress={status === 'error' ? search : refreshLocation}
+          onPress={status === 'error' ? search : retryLocation}
           variant="secondary"
         />
         {status === 'error' && mapsButton}
+        {status === 'noLocation' && <LocationBlockedNotice recheckKey={locationTries} />}
       </View>
     );
   }

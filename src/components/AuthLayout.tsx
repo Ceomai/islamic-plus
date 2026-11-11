@@ -15,12 +15,19 @@ interface Props {
 
 /** Shared frame for sign-in, sign-up and password reset. */
 export function AuthLayout({ title, subtitle, note, children }: Props) {
-  const { colors, space } = useTheme();
+  const { colors, space, layout } = useTheme();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, padding: space[6], paddingTop: space[10] }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            padding: space[6],
+            paddingTop: space[10],
+            width: '100%',
+            maxWidth: layout.contentMaxWidth,
+            alignSelf: 'center',
+          }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

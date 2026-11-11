@@ -6,7 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { confirmDestructive } from '../utils/confirm';
 import type { SpiritualHabit } from '../types';
-import { AppText, Button, Chip, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { AppText, Button, Chip, IconButton, Screen, SectionHeader, Surface, TextField } from '../ui';
 import { lastDayKeys, localDateKey } from '../utils/date';
 
 const CATEGORIES: SpiritualHabit['category'][] = ['prayer', 'quran', 'dhikr', 'charity', 'fasting', 'other'];
@@ -147,9 +147,14 @@ export function HabitsScreen() {
                         {t(`habits.cat.${h.category}`)} · {weekDone}/{h.targetPerWeek} {t('habits.thisWeek')}
                       </AppText>
                     </View>
-                    <Pressable onPress={() => confirmRemove(h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${t('habits.delete')}: ${h.title}`}>
-                      <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                    </Pressable>
+                    <IconButton
+                      name="trash-outline"
+                      size={18}
+                      color={colors.textMuted}
+                      onPress={() => confirmRemove(h)}
+                      accessibilityLabel={`${t('habits.delete')}: ${h.title}`}
+                      style={{ margin: -space[2] }}
+                    />
                   </View>
 
                   <View style={{ height: 6, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted, marginTop: space[3], overflow: 'hidden' }}>

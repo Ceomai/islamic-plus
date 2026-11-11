@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useRef, useState } from 'react';
@@ -13,7 +14,8 @@ import { askRemoteAssistant, isRemoteAssistantAvailable } from '../services/assi
 import { trackFeatureAction } from '../services/cloudAnalytics';
 import { formatClock, getNextPrayer } from '../services/prayerTimes';
 import type { AssistantAction, AssistantTarget } from '../types';
-import { AppText, Chip } from '../ui';
+import { AppText, Chip, IconButton } from '../ui';
+import { announce } from '../utils/announce';
 import { localDateKey } from '../utils/date';
 import { confirmDestructive } from '../utils/confirm';
 
@@ -45,13 +47,13 @@ function renderInline(text: string): React.ReactNode[] {
 /** Screens that only live in the Learn tab; everything else is in the Home stack. */
 const LEARN_ONLY = new Set(['Education', 'EducationDetail']);
 const AUTO_NAVIGATE_DELAY = 1200;
-const SEND_BUTTON = 40;
 
 export function AIAssistantScreen() {
   const { aiMessages, sendAIMessage, clearAIChat, settings, location } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { canAccess } = useFeatureAccess();
-  const { colors, radius, space, type } = useTheme();
+  const { colors, radius, space, type, layout } = useTheme();
+  const headerHeight = useHeaderHeight();
   const { t, lang } = useTranslation();
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -118,6 +120,8 @@ export function AIAssistantScreen() {
       await sendAIMessage(text, '');
       scrollDown();
       setBusy(true);
+      // Android reads the "thinking" bubble through its live region
+      announce(t('ai.thinking'));
       const remote = await askRemoteAssistant(text, history, {
         appLang: lang,
         quranEdition: settings.quranEditionId,
@@ -140,6 +144,8 @@ export function AIAssistantScreen() {
       await sendAIMessage(text, reply.text, reply.actions);
     }
     scrollDown();
+    // The new reply is not in a live region (the whole chat would be re-read), so announce it
+    announce(reply.text.replace(/\*\*|`/g, ''), { hasLiveRegion: false });
     // Let the reply be read for a moment, then open the page; the chat stays when coming back
     const target = reply.autoNavigate;
     if (target && navigation.isFocused()) {
@@ -161,12 +167,14 @@ export function AIAssistantScreen() {
   }
 
   const messages = aiMessages.filter((m) => m.content.length > 0);
+  const canSend = input.trim().length > 0 && !busy;
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      // The native header sits above this view; its height differs per device and orientation
+      keyboardVerticalOffset={headerHeight}
     >
       <View style={{ flexDirection: 'row', gap: space[2], padding: space[3], backgroundColor: colors.surfaceMuted }}>
         <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
@@ -175,7 +183,11 @@ export function AIAssistantScreen() {
         </AppText>
       </View>
 
-      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: space[4], gap: space[3] }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ padding: space[4], gap: space[3], width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' }}
+        keyboardShouldPersistTaps="handled"
+      >
         {messages.map((m) => {
           const mine = m.role === 'user';
           // Arabic replies read right to left
@@ -184,6 +196,7 @@ export function AIAssistantScreen() {
             <View key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
               <View
                 style={{
+                  maxWidth: layout.bubbleMaxWidth,
                   backgroundColor: mine ? colors.primary : colors.surface,
                   borderColor: colors.border,
                   borderWidth: mine ? 0 : 1,
@@ -205,7 +218,8 @@ export function AIAssistantScreen() {
                       key={`${a.target.screen}-${i}`}
                       label={a.label}
                       icon={(a.icon as keyof typeof Ionicons.glyphMap | undefined) ?? 'arrow-forward'}
-                      selected={i === 0}
+                      // Highlighted as the suggested next step; not a selected state
+                      emphasis={i === 0}
                       onPress={() => open(a.target)}
                     />
                   ))}
@@ -216,6 +230,9 @@ export function AIAssistantScreen() {
         })}
         {busy && (
           <View
+            accessible
+            accessibilityLiveRegion="polite"
+            accessibilityLabel={t('ai.thinking')}
             style={{
               alignSelf: 'flex-start',
               flexDirection: 'row',
@@ -256,19 +273,22 @@ export function AIAssistantScreen() {
           backgroundColor: colors.surface,
         }}
       >
-        <Pressable
+        <IconButton
+          name="trash-outline"
+          size={20}
+          color={colors.textMuted}
           onPress={async () => {
             const ok = await confirmDestructive({ title: t('ai.clearTitle'), message: t('ai.clearBody'), confirm: t('ai.clear'), cancel: t('account.cancel') });
             if (ok) await clearAIChat();
           }}
-          hitSlop={8} accessibilityRole="button" accessibilityLabel={t('ai.clear')} style={{ padding: space[2] }}>
-          <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
-        </Pressable>
+          accessibilityLabel={t('ai.clear')}
+        />
         <TextInput
           value={input}
           onChangeText={setInput}
           placeholder={t('ai.placeholder')}
           placeholderTextColor={colors.textMuted}
+          accessibilityLabel={t('ai.inputLabel')}
           multiline
           maxLength={500}
           blurOnSubmit
@@ -289,16 +309,18 @@ export function AIAssistantScreen() {
         />
         <Pressable
           onPress={() => send(input)}
+          disabled={!canSend}
           accessibilityRole="button"
           accessibilityLabel={t('ai.send')}
+          accessibilityState={{ disabled: !canSend }}
           style={({ pressed }) => ({
-            width: SEND_BUTTON,
-            height: SEND_BUTTON,
-            borderRadius: SEND_BUTTON / 2,
+            width: layout.minTouch,
+            height: layout.minTouch,
+            borderRadius: layout.minTouch / 2,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: pressed ? colors.primaryPressed : colors.primary,
-            opacity: input.trim() && !busy ? 1 : 0.5,
+            opacity: canSend ? 1 : 0.5,
           })}
         >
           <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />

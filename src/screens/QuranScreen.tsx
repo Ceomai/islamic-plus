@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, TextInput, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { FlatList, Pressable, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QURAN_EDITIONS } from '../constants/defaults';
 import { useApp } from '../context/AppContext';
@@ -11,13 +11,13 @@ import { SURAHS } from '../data/surahs';
 import { fold } from '../services/aiAssistant';
 import type { SurahListItem } from '../services/quranApi';
 import { removeQuranBookmark, startNewKhatm } from '../services/readingProgress';
-import { AppText, Button, IconBadge, Surface } from '../ui';
+import { AppText, Button, IconBadge, SearchField, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quran'>;
 
 export function QuranScreen({ navigation }: Props) {
   const { settings, quranProgress, refreshReadingProgress } = useApp();
-  const { colors, radius, space, type } = useTheme();
+  const { colors, radius, space } = useTheme();
   const { t, lang } = useTranslation();
   const [query, setQuery] = useState('');
   const edition = settings.quranEditionId;
@@ -132,33 +132,7 @@ export function QuranScreen({ navigation }: Props) {
         </Surface>
       )}
 
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderWidth: 1,
-          borderRadius: radius.md,
-          paddingHorizontal: space[3],
-          marginBottom: space[2],
-        }}
-      >
-        <Ionicons name="search" size={18} color={colors.textMuted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('quran.search')}
-          placeholderTextColor={colors.textMuted}
-          autoCorrect={false}
-          style={[type.body, { flex: 1, color: colors.text, paddingVertical: space[3], marginLeft: space[2] }]}
-        />
-        {query ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel={t('quran.clearSearch')}>
-            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-      </View>
+      <SearchField value={query} onChangeText={setQuery} placeholder={t('quran.search')} style={{ marginBottom: space[2] }} />
       <AppText variant="caption" tone="muted">
         {t('quran.edition')}: {editionMeta?.name ?? edition}
       </AppText>
@@ -182,6 +156,13 @@ export function QuranScreen({ navigation }: Props) {
         <Pressable
           onPress={() => navigation.navigate('QuranReader', { surahNumber: item.number, edition, surahName: item.englishName })}
           accessibilityRole="button"
+          accessibilityLabel={[
+            `${item.number}. ${item.englishName}`,
+            `${item.numberOfAyahs} ${t('quran.ayahs')}`,
+            completed.has(item.number) ? t('quran.surahRead') : null,
+          ]
+            .filter(Boolean)
+            .join(', ')}
           style={({ pressed }) => ({
             flexDirection: 'row',
             alignItems: 'center',
@@ -193,8 +174,10 @@ export function QuranScreen({ navigation }: Props) {
         >
           <View
             style={{
-              width: 40,
-              height: 40,
+              // min sizes, so three-digit numbers at large text sizes grow the box instead of clipping
+              minWidth: space[10],
+              minHeight: space[10],
+              paddingHorizontal: space[1],
               borderRadius: radius.md,
               backgroundColor: colors.primarySoft,
               alignItems: 'center',

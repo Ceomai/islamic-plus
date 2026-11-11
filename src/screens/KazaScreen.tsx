@@ -7,7 +7,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { confirmDestructive } from '../utils/confirm';
 import { getPrayerLabel } from '../i18n';
 import { KAZA_PRAYERS, KAZA_MAX_DAYS, KAZA_MAX_YEARS, addKazaEstimate, changeKaza, kazaRemaining, loadKaza, resetKaza, type KazaData, type KazaPrayer } from '../services/kaza';
-import { AppText, Button, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { AppText, Button, IconButton, Screen, SectionHeader, Surface, TextField } from '../ui';
 
 export function KazaScreen() {
   const { colors, radius, space } = useTheme();
@@ -125,14 +125,12 @@ export function KazaScreen() {
             <AppText variant="heading" numeric style={{ width: 64, textAlign: 'center' }}>
               {num(data.counts[p])}
             </AppText>
-            <Pressable
+            <IconButton
+              name="add-circle-outline"
+              size={26}
               onPress={() => change(p, 1)}
-              hitSlop={8}
-              accessibilityRole="button"
               accessibilityLabel={t('kaza.addOne', { prayer: label(p) })}
-            >
-              <Ionicons name="add-circle-outline" size={26} color={colors.primaryText} />
-            </Pressable>
+            />
           </View>
         ))}
       </Surface>

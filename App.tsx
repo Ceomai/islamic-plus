@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { AppProvider, useApp } from './src/context/AppContext';
+import { useTranslation } from './src/hooks/useTranslation';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthScreen } from './src/screens/AuthScreen';
@@ -15,6 +16,7 @@ import { defineWidgetTask } from './src/services/widgetBackground';
 function Root() {
   const { darkMode, loading, settings } = useApp();
   const { session } = useAuth();
+  const { t } = useTranslation();
 
   let content: React.ReactNode = <AuthScreen />;
   if (session) {
@@ -22,7 +24,7 @@ function Root() {
     if (loading) {
       content = (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" accessibilityLabel={t('common.loading')} />
         </View>
       );
     } else {
@@ -32,6 +34,7 @@ function Root() {
 
   return (
     <>
+      {/* darkMode is the resolved appearance (themeMode applied to the system scheme) */}
       <StatusBar style={darkMode ? 'light' : 'dark'} />
       {content}
     </>

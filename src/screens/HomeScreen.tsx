@@ -1,18 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeAppIcon } from '../components/HomeAppIcon';
 import { HomeWidgetModule } from '../components/HomeWidgetModule';
 import { getHomeFeature } from '../constants/homeFeatures';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { gregorianToHijri } from '../services/hijriCalendar';
 import { fastCountdown, formatDuration, ramadanWindow } from '../services/ramadan';
+import { launcherColumns } from '../theme/tokens';
+import { confirm } from '../utils/confirm';
 import { addDays } from '../utils/date';
 import { formatClock, getNextPrayer, getPrayerDates } from '../services/prayerTimes';
 import type { HomeFeatureId, PrayerName } from '../types';
@@ -24,6 +27,8 @@ const DAILY_PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 const COUNTDOWN_TICK_MS = 30_000;
 const PROGRESS_DOT = 7;
 const ICON_BUTTON = 44;
+/** Above this text scale the five prayers no longer fit side by side and are listed instead */
+const STACK_FONT_SCALE = 1.3;
 
 export function HomeScreen({ navigation }: Props) {
   const {
@@ -38,7 +43,11 @@ export function HomeScreen({ navigation }: Props) {
     refreshTodayPrayers,
   } = useApp();
   const { canAccess } = useFeatureAccess();
-  const { colors, radius, space } = useTheme();
+  const { logout } = useAuth();
+  const { colors, radius, space, layout } = useTheme();
+  const { width, fontScale } = useWindowDimensions();
+  const stacked = fontScale > STACK_FONT_SCALE;
+  const columns = launcherColumns(width);
   const { t, prayer, lang } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
 
@@ -56,7 +65,15 @@ export function HomeScreen({ navigation }: Props) {
 
   const openFeature = (id: HomeFeatureId) => {
     if (!canAccess(id)) {
-      Alert.alert(t('home.guestLocked'), t('auth.guestBanner'));
+      // Only cloud sync is guest-locked; signing in leaves the guest session for the auth screen
+      void confirm({
+        title: t('home.guestLocked'),
+        message: t('auth.guestBanner'),
+        confirm: t('auth.signInOrRegister'),
+        cancel: t('account.cancel'),
+      }).then((ok) => {
+        if (ok) void logout();
+      });
       return;
     }
     const def = getHomeFeature(id);
@@ -98,7 +115,7 @@ export function HomeScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} accessibilityLabel={t('common.loading')} />
       </View>
     );
   }
@@ -179,7 +196,7 @@ export function HomeScreen({ navigation }: Props) {
 
       {prayerDates && (
         <>
-          <View style={[styles.strip, { gap: space[2] }]}>
+          <View style={[stacked ? styles.list : styles.strip, { gap: space[2] }]}>
             {DAILY_PRAYERS.map((p) => {
               const done = completedPrayers.has(p);
               const isNext = nextPrayer?.name === p;
@@ -192,7 +209,7 @@ export function HomeScreen({ navigation }: Props) {
                   aria-checked={done}
                   accessibilityLabel={`${prayer(p)} ${formatClock(prayerDates[p], lang)}`}
                   style={({ pressed }) => [
-                    styles.slot,
+                    stacked ? [styles.listRow, { gap: space[3], paddingHorizontal: space[4], minHeight: layout.minTouch }] : styles.slot,
                     {
                       borderRadius: radius.md,
                       paddingVertical: space[3],
@@ -202,10 +219,15 @@ export function HomeScreen({ navigation }: Props) {
                     },
                   ]}
                 >
-                  <AppText variant="caption" tone={done ? 'onPrimarySoft' : 'secondary'} numberOfLines={1}>
+                  <AppText
+                    variant={stacked ? 'body' : 'caption'}
+                    tone={done ? 'onPrimarySoft' : 'secondary'}
+                    numberOfLines={stacked ? undefined : 1}
+                    style={stacked ? styles.grow : null}
+                  >
                     {prayer(p)}
                   </AppText>
-                  <AppText variant="bodyStrong" tone={done ? 'onPrimarySoft' : 'default'} numeric style={{ marginTop: 2 }}>
+                  <AppText variant="bodyStrong" tone={done ? 'onPrimarySoft' : 'default'} numeric style={stacked ? null : { marginTop: 2 }}>
                     {formatClock(prayerDates[p], lang).replace(/ (AM|PM)$/, '')}
                   </AppText>
                   {/* English times drop AM/PM to fit; shown below so "3:39" is not ambiguous */}
@@ -218,7 +240,7 @@ export function HomeScreen({ navigation }: Props) {
                     name={done ? 'checkmark-circle' : 'ellipse-outline'}
                     size={16}
                     color={done ? colors.onPrimarySoft : colors.textMuted}
-                    style={{ marginTop: space[1] }}
+                    style={stacked ? null : { marginTop: space[1] }}
                   />
                 </Pressable>
               );
@@ -229,14 +251,19 @@ export function HomeScreen({ navigation }: Props) {
               <AppText variant="overline" tone="muted" style={{ marginBottom: space[1] }}>
                 {t('home.tomorrow')}
               </AppText>
-              <View style={[styles.strip, { gap: space[2] }]}>
+              <View style={[stacked ? styles.list : styles.strip, { gap: space[2] }]}>
                 {DAILY_PRAYERS.map((p) => (
                   <View
                     key={p}
                     accessible
                     accessibilityLabel={`${t('home.tomorrow')} ${prayer(p)} ${formatClock(tomorrowDates[p], lang)}`}
-                    style={styles.slot}
+                    style={stacked ? [styles.listRow, { paddingHorizontal: space[4] }] : styles.slot}
                   >
+                    {stacked && (
+                      <AppText variant="callout" tone="secondary" style={styles.grow}>
+                        {prayer(p)}
+                      </AppText>
+                    )}
                     <AppText variant={p === 'fajr' ? 'calloutStrong' : 'callout'} tone={p === 'fajr' ? 'brand' : 'secondary'} numeric>
                       {formatClock(tomorrowDates[p], lang).replace(/ (AM|PM)$/, '')}
                     </AppText>
@@ -268,7 +295,7 @@ export function HomeScreen({ navigation }: Props) {
               onPress={() => navigation.navigate('CityPicker')}
               accessibilityRole="button"
               accessibilityHint={t('city.title')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: space[1] }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space[1], minHeight: layout.minTouch }}
             >
               <AppText variant="title" numberOfLines={1} tone={location ? 'default' : 'brand'} style={{ flexShrink: 1 }}>
                 {location ? location.city ?? t('home.yourLocation') : t('home.tapLocation')}
@@ -367,6 +394,7 @@ export function HomeScreen({ navigation }: Props) {
                 category={def.category}
                 label={t(def.titleKey)}
                 locked={!canAccess(id)}
+                columns={columns}
                 onPress={() => openFeature(id)}
               />
             );
@@ -394,6 +422,9 @@ const styles = StyleSheet.create({
   heroFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   streak: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   strip: { flexDirection: 'row' },
+  list: { flexDirection: 'column' },
+  listRow: { flexDirection: 'row', alignItems: 'center' },
+  grow: { flex: 1 },
   slot: { flex: 1, alignItems: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
 });

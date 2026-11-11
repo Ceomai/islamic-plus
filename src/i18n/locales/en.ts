@@ -53,6 +53,7 @@ export const en = {
     abroad: 'Other countries',
   },
   home: {
+    lockedHint: 'Sign in to use this',
     noLocationTitle: 'No location yet',
     noLocationBody: 'Share your location or choose your city from the list so we can show prayer times.',
     imsakiyeSub: "Suhoor and iftar times",
@@ -236,6 +237,7 @@ export const en = {
     },
   },
   ai: {
+    inputLabel: 'Your question',
     clearTitle: 'Clear the chat?',
     clearBody: 'Your whole conversation with the assistant is removed from this device.',
     disclaimer: 'The assistant runs on your device, takes you to the right page and understands 5 languages. It is not a personal fatwa; consult a qualified scholar for rulings.',
@@ -343,13 +345,16 @@ export const en = {
     },
   },
   settings: {
+    themeMode: 'Theme',
+    themeSystem: 'System',
+    themeLight: 'Light',
+    themeDark: 'Dark',
     feedback: "Send feedback",
     replayIntro: "Show the introduction again",
     supportSection: "Testing and support",
     shareErrors: "Share error report",
     shareErrorsHint: "Recorded errors: {{n}}",
     privacy: "Privacy policy",
-    darkMode: 'Dark mode',
     premiumSection: 'More features',
     themesLink: 'Custom themes',
     cloudLink: 'Cloud sync',
@@ -376,6 +381,7 @@ export const en = {
     applyUpdate: 'An update is ready, restart now',
   },
   quran: {
+    surahRead: 'read',
     source: "Arabic text: Tanzil Quran Text (tanzil.net, CC BY 3.0) · Translation: {{translation}} · Audio: Mishary Rashid Alafasy",
     share: "Share",
     khatm: "Khatm",
@@ -399,6 +405,8 @@ export const en = {
     },
   },
   hadith: {
+    empty: 'There are no hadith to show in this chapter.',
+    arabicError: 'The Arabic text couldn’t be loaded; showing the translation.',
     shiaNote: "Shia hadith sources (e.g. al-Kafi) are not included yet; the collections below are Sunni sources.",
     collectionInfo: "{{n}} hadith · {{s}} chapters",
     englishOnly: "no Turkish translation, shown in English",
@@ -440,6 +448,10 @@ export const en = {
     mapsQuery: { mosque: 'mosque', prayer_room: 'prayer room', halal_restaurant: 'halal restaurant' },
   },
   tasbih: {
+    resetTitle: 'Reset the counter?',
+    resetBody: 'The current count will be cleared. Today’s total is kept.',
+    switchBody: 'Switching starts the count again and clears the current one. Today’s total is kept.',
+    switchConfirm: 'Switch',
     goalReached: "Daily goal reached: {{n}}",
     goalProgress: "Today {{n}} / {{goal}}",
     goalOff: "Set a daily goal",
@@ -573,7 +585,7 @@ export const en = {
     body: 'It is time for {{prayer}}. May Allah accept your prayer.',
     title: '{{prayer}} prayer',
   },
-  common: { add: 'Add', save: 'Save', loading: 'Loading...', retry: 'Try again' },
+  common: { add: 'Add', save: 'Save', loading: 'Loading...', retry: 'Try again', openSettings: 'Open settings', locationBlocked: 'Location access is off for Islamic+. You can allow it in Settings.' },
   madhab: {
     hanafi: 'Hanafi',
     shafi: "Shafi'i",
@@ -596,6 +608,7 @@ export const en = {
     turkey: 'Diyanet (Turkey)',
   },
   onboarding: {
+    progress: 'Step {{n}} of {{total}}',
     welcomeTitle: "Welcome to Islamic+",
     welcomeBody: "Prayer times, Quran, duas and more in one place. Let’s set the app up for you in a few short steps.",
     prayerTitle: "How should prayer times be calculated?",

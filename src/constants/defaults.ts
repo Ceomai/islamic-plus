@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   quranView: 'parallel',
   quranFontScale: 1,
   homeLauncher: { order: [...DEFAULT_HOME_LAUNCHER_ORDER] },
+  themeMode: 'system',
   darkMode: false,
 };
 

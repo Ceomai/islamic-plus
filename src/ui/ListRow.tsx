@@ -44,7 +44,7 @@ export function ListRow({
     >
       {icon ? <IconBadge name={icon} size="sm" tone={destructive ? 'danger' : iconTone} /> : null}
       <View style={styles.text}>
-        <AppText variant="bodyStrong" tone={destructive ? 'danger' : 'default'} numberOfLines={1}>
+        <AppText variant="bodyStrong" tone={destructive ? 'danger' : 'default'} numberOfLines={2}>
           {title}
         </AppText>
         {subtitle ? (

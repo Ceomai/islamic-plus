@@ -53,6 +53,7 @@ export const tr = {
     methodNo: 'Şimdilik değil',
   },
   home: {
+    lockedHint: 'Kullanmak için giriş yapın',
     noLocationTitle: 'Konum seçilmedi',
     noLocationBody: 'Namaz vakitlerini gösterebilmemiz için konumunuzu paylaşın ya da listeden şehrinizi seçin.',
     imsakiyeSub: "Ramazan vakitleri",
@@ -236,6 +237,7 @@ export const tr = {
     },
   },
   ai: {
+    inputLabel: 'Sorunuz',
     clearTitle: 'Sohbet silinsin mi?',
     clearBody: 'Asistanla yaptığınız tüm konuşma bu cihazdan silinir.',
     disclaimer: 'Asistan cihaz üzerinde çalışır; sizi ilgili sayfaya götürür ve 5 dilde anlar. Kişisel fetva değildir, hüküm için ehil bir alime danışın.',
@@ -343,13 +345,16 @@ export const tr = {
     },
   },
   settings: {
+    themeMode: 'Tema',
+    themeSystem: 'Sistem',
+    themeLight: 'Açık',
+    themeDark: 'Koyu',
     feedback: "Geri bildirim gönder",
     replayIntro: "Tanıtımı yeniden göster",
     supportSection: "Test ve destek",
     shareErrors: "Hata raporunu paylaş",
     shareErrorsHint: "Kayıtlı hata: {{n}}",
     privacy: "Gizlilik politikası",
-    darkMode: 'Karanlık mod',
     premiumSection: 'Diğer özellikler',
     themesLink: 'Özel temalar',
     cloudLink: 'Bulut senkron',
@@ -376,6 +381,7 @@ export const tr = {
     applyUpdate: 'Yeni sürüm indirildi, şimdi yükle',
   },
   quran: {
+    surahRead: 'okundu',
     source: "Arapça metin: Tanzil Kur’an Metni (tanzil.net, CC BY 3.0) · Meal: {{translation}} · Ses: Mişari Raşid el-Afasi",
     share: "Paylaş",
     khatm: "Hatim",
@@ -399,6 +405,8 @@ export const tr = {
     },
   },
   hadith: {
+    empty: 'Bu bölümde gösterilecek hadis yok.',
+    arabicError: 'Arapça metin yüklenemedi; çeviri gösteriliyor.',
     shiaNote: "Şii hadis kaynakları (ör. el-Kâfî) henüz eklenmedi; aşağıdaki koleksiyonlar Sünnî kaynaklardır.",
     collectionInfo: "{{n}} hadis · {{s}} bölüm",
     englishOnly: "Türkçe çevirisi yok, İngilizce gösteriliyor",
@@ -440,6 +448,10 @@ export const tr = {
     mapsQuery: { mosque: 'cami', prayer_room: 'mescit', halal_restaurant: 'helal restoran' },
   },
   tasbih: {
+    resetTitle: 'Sayaç sıfırlansın mı?',
+    resetBody: 'Şu anki sayım silinir. Bugünkü toplamınız korunur.',
+    switchBody: 'Değiştirince sayım baştan başlar; şu anki sayım silinir. Bugünkü toplamınız korunur.',
+    switchConfirm: 'Değiştir',
     goalReached: "Günlük hedefe ulaştınız: {{n}}",
     goalProgress: "Bugün {{n}} / {{goal}}",
     goalOff: "Günlük hedef belirleyin",
@@ -573,7 +585,7 @@ export const tr = {
     body: '{{prayer}} vakti geldi. Allah ibadetinizi kabul etsin.',
     title: '{{prayer}} namazı',
   },
-  common: { add: 'Ekle', save: 'Kaydet', loading: 'Yükleniyor...', retry: 'Tekrar dene' },
+  common: { add: 'Ekle', save: 'Kaydet', loading: 'Yükleniyor...', retry: 'Tekrar dene', openSettings: 'Ayarları aç', locationBlocked: 'Islamic+ için konum izni kapalı. Ayarlar’dan izin verebilirsiniz.' },
   madhab: {
     hanafi: 'Hanefi',
     shafi: 'Şafii',
@@ -596,6 +608,7 @@ export const tr = {
     turkey: 'Diyanet (Türkiye)',
   },
   onboarding: {
+    progress: 'Adım {{n}} / {{total}}',
     welcomeTitle: "Islamic+’a hoş geldiniz",
     welcomeBody: "Namaz vakitleri, Kur’an, dualar ve daha fazlası tek yerde. Birkaç kısa adımda uygulamayı size göre ayarlayalım.",
     prayerTitle: "Namaz vakitleri nasıl hesaplansın?",

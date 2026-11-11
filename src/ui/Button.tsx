@@ -29,7 +29,7 @@ export function Button({
   fullWidth,
   style,
 }: Props) {
-  const { colors, radius, space } = useTheme();
+  const { colors, radius, space, layout } = useTheme();
 
   const palette = {
     primary: { bg: colors.primary, pressed: colors.primaryPressed, fg: colors.onPrimary, border: 'transparent' },
@@ -38,7 +38,8 @@ export function Button({
     danger: { bg: colors.errorSoft, pressed: colors.errorSoft, fg: colors.error, border: 'transparent' },
   }[variant];
 
-  const height = size === 'lg' ? 52 : 44;
+  // Platform minimum: 44pt on iOS, 48dp on Android
+  const height = size === 'lg' ? 52 : layout.minTouch;
   const inactive = disabled || loading;
 
   return (
@@ -46,6 +47,8 @@ export function Button({
       onPress={onPress}
       disabled={inactive}
       accessibilityRole="button"
+      // Keeps the name while the label is replaced by the spinner
+      accessibilityLabel={label}
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       style={({ pressed }) => [
         styles.base,

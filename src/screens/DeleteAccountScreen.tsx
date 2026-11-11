@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Card } from '../components/Card';
 import { useAuth } from '../context/AuthContext';
 import { useAuthErrorMessage } from '../hooks/useAuthErrorMessage';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { AppText } from '../ui';
+import { confirmDestructive } from '../utils/confirm';
 
 export function DeleteAccountScreen() {
   const { deleteAccount, session, backend } = useAuth();
@@ -34,10 +35,14 @@ export function DeleteAccountScreen() {
       setError(errorMessage('empty_password'));
       return;
     }
-    Alert.alert(t('account.confirmTitle'), t('account.confirmBody'), [
-      { text: t('account.cancel'), style: 'cancel' },
-      { text: t('account.deleteForever'), style: 'destructive', onPress: () => void runDelete() },
-    ]);
+    void confirmDestructive({
+      title: t('account.confirmTitle'),
+      message: t('account.confirmBody'),
+      confirm: t('account.deleteForever'),
+      cancel: t('account.cancel'),
+    }).then((ok) => {
+      if (ok) void runDelete();
+    });
   };
 
   return (
@@ -109,7 +114,7 @@ export function DeleteAccountScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color={colors.onError} />
+          <ActivityIndicator color={colors.onError} accessibilityLabel={t('common.loading')} />
         ) : (
           <AppText variant="bodyStrong" color={colors.onError}>
             {t('account.deleteForever')}

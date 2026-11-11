@@ -101,6 +101,17 @@ export function ImsakiyeScreen() {
             return (
               <View
                 key={d.key}
+                // One spoken line per day instead of six loose cells: "Day 3, 13 March Thursday, Imsak 05:12, …"
+                accessible
+                accessibilityLabel={[
+                  `${t('ramadan.col.day')} ${d.day}`,
+                  d.date.toLocaleDateString(locale, { day: 'numeric', month: 'long', weekday: 'long' }),
+                  `${t('ramadan.col.imsak')} ${clock(d.imsak)}`,
+                  `${t('ramadan.col.sunrise')} ${clock(d.sunrise)}`,
+                  `${t('ramadan.col.iftar')} ${clock(d.iftar)}`,
+                  `${t('ramadan.col.isha')} ${clock(d.isha)}`,
+                ].join(', ')}
+                accessibilityState={{ selected: isToday }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',

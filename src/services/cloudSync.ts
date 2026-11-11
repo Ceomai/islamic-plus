@@ -11,6 +11,7 @@ import type {
 } from '../types';
 import type { StoredLocation } from './location';
 import { mergePrayerCompletions } from './prayerHistory';
+import { reconcileThemeMode, themeModeFields } from './themeMode';
 import { getJson, setJson, storageKeys } from './storage';
 import { loadTombstones, mergeTombstones, prayerTombstoneKey, saveTombstones, type Tombstones } from './tombstones';
 // Type only: importing kaza.ts here would close the cloudSync ↔ userDataCloud import cycle
@@ -20,6 +21,7 @@ export interface SyncPayload {
   version: 2;
   exportedAt: string;
   profileScope: string;
+  /** Legacy appearance flag read by older clients; newer ones use settings.themeMode */
   darkMode: boolean;
   settings: UserSettings;
   habits: SpiritualHabit[];
@@ -164,6 +166,15 @@ export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): Sync
         ? local.settings.onboardingDone // unstamped copies: the one that went through setup is the real one
         : local.exportedAt >= remote.exportedAt;
 
+  const mergedSettings = useLocalSettings
+    ? { ...remote.settings, ...local.settings, cloudSync: local.settings.cloudSync }
+    : { ...local.settings, ...remote.settings, cloudSync: local.settings.cloudSync };
+  // An older client only writes darkMode (in settings and at the top level); keep both fields agreeing
+  const winner = useLocalSettings ? local : remote;
+  const appearance = themeModeFields(
+    reconcileThemeMode({ themeMode: mergedSettings.themeMode, darkMode: mergedSettings.darkMode ?? winner.darkMode })
+  );
+
   const deleted = mergeTombstones(remote.deleted, local.deleted);
   const prayerAlive = (p: PrayerCompletion) => {
     const removedAt = deleted.prayers[prayerTombstoneKey(p)];
@@ -174,10 +185,8 @@ export function mergeSyncPayloads(remote: SyncPayload, local: SyncPayload): Sync
     version: 2,
     exportedAt: mergedAt,
     profileScope: local.profileScope,
-    darkMode: useLocalSettings ? local.darkMode : remote.darkMode,
-    settings: useLocalSettings
-      ? { ...remote.settings, ...local.settings, cloudSync: local.settings.cloudSync }
-      : { ...local.settings, ...remote.settings, cloudSync: local.settings.cloudSync },
+    darkMode: appearance.darkMode,
+    settings: { ...mergedSettings, ...appearance },
     habits: mergeHabits(remote.habits, local.habits).filter((h) => !deleted.habits[h.id]),
     family: mergeFamily(remote.family, local.family).filter((m) => !deleted.family[m.id]),
     stats: mergeStats(remote.stats, local.stats),

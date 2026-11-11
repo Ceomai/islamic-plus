@@ -11,8 +11,8 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { appVersion, formatErrorReport, getErrorLog } from '../services/errorLog';
-import type { CalculationMethodId, Madhab, SectPreference } from '../types';
-import { AppText, Button, Chip, IconBadge, ListRow, Screen, SectionHeader, Surface } from '../ui';
+import type { CalculationMethodId, Madhab, SectPreference, ThemeMode } from '../types';
+import { AppText, Button, Chip, IconBadge, ListRow, Screen, SectionHeader, SegmentedControl, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -31,7 +31,7 @@ const PRIVACY_URL =
   'https://ceomai.github.io/islamic-plus/privacy/';
 
 export function SettingsScreen({ navigation }: Props) {
-  const { settings, updateSettings, darkMode, toggleDarkMode } = useApp();
+  const { settings, updateSettings, themeMode, setThemeMode } = useApp();
   const { logout, isGuest, session, backend } = useAuth();
   const { colors, space } = useTheme();
   const { t } = useTranslation();
@@ -80,13 +80,20 @@ export function SettingsScreen({ navigation }: Props) {
 
       {/* Appearance */}
       <SectionHeader title={t('settings.appearance')} />
-      <Surface padding={0} style={{ paddingHorizontal: space[4] }}>
-        <ListRow
-          icon="moon-outline"
-          title={t('settings.darkMode')}
-          divider
-          trailing={<Switch value={darkMode} onValueChange={toggleDarkMode} trackColor={switchTrack} accessibilityLabel={t('settings.darkMode')} />}
-        />
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: space[2] }}>
+        {t('settings.themeMode')}
+      </AppText>
+      <SegmentedControl<ThemeMode>
+        accessibilityLabel={t('settings.themeMode')}
+        options={[
+          { value: 'system', label: t('settings.themeSystem') },
+          { value: 'light', label: t('settings.themeLight') },
+          { value: 'dark', label: t('settings.themeDark') },
+        ]}
+        value={themeMode}
+        onChange={(mode) => void setThemeMode(mode)}
+      />
+      <Surface padding={0} style={{ paddingHorizontal: space[4], marginTop: space[3] }}>
         <ListRow
           icon="color-palette-outline"
           title={t('settings.themesLink')}

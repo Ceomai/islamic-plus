@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../hooks/useTranslation';
 import type { HomeCategory } from '../theme/tokens';
 import { AppText } from '../ui/AppText';
 import { IconBadge } from '../ui/IconBadge';
@@ -14,15 +15,19 @@ export function HomeAppIcon(props: {
   label: string;
   category: HomeCategory;
   locked?: boolean;
+  /** Tiles per row (4 on phones, more on tablets) */
+  columns?: number;
   onPress: () => void;
 }) {
   const { colors, radius, space } = useTheme();
+  const { t } = useTranslation();
   return (
-    <View style={[styles.cell, { padding: space[1] }]}>
+    <View style={{ width: `${100 / (props.columns ?? 4)}%`, padding: space[1] }}>
       <Pressable
         onPress={props.onPress}
         accessibilityRole="button"
         accessibilityLabel={props.label}
+        accessibilityHint={props.locked ? t('home.lockedHint') : undefined}
         style={({ pressed }) => [
           styles.tile,
           {
@@ -56,7 +61,6 @@ export function HomeAppIcon(props: {
 }
 
 const styles = StyleSheet.create({
-  cell: { width: '25%' },
   tile: { alignItems: 'center', borderWidth: 1, minHeight: 96 },
   lock: {
     position: 'absolute',

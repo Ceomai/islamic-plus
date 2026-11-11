@@ -1,6 +1,6 @@
 import { localDateKey } from '../utils/date';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, useColorScheme } from 'react-native';
 import { updatePrayerWidget, type WidgetInput } from '../services/homeWidget';
 import { registerWidgetTask, saveWidgetInput } from '../services/widgetBackground';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
@@ -24,6 +24,7 @@ import { schedulePrayerNotifications, setupNotificationChannels } from '../servi
 import { prayerScheduleKey } from '../services/prayerScheduleKey';
 import { logError } from '../services/errorLog';
 import { migrateSettings } from '../services/settingsMigration';
+import { legacyDarkMode, reconcileThemeMode, resolveDarkMode, themeModeFields } from '../services/themeMode';
 import { computeHabitScore, loadStats, recordActivity, updatePrayerStreak } from '../services/statistics';
 import { logAIChatExchange, resetAIChatSessionId, trackFeatureAction } from '../services/cloudAnalytics';
 import { getJson, getStorageUser, setJson, storageKeys } from '../services/storage';
@@ -46,6 +47,7 @@ import type {
   QuranProgress,
   SpiritualHabit,
   ThemeId,
+  ThemeMode,
   UserSettings,
 } from '../types';
 
@@ -88,8 +90,10 @@ interface AppContextValue {
   togglePrayerComplete: (prayer: PrayerName) => Promise<void>;
   refreshTodayPrayers: () => Promise<void>;
   loading: boolean;
+  /** Resolved appearance: themeMode applied to the system color scheme */
   darkMode: boolean;
-  toggleDarkMode: () => void;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => Promise<void>;
   setThemeId: (id: ThemeId) => Promise<void>;
 }
 
@@ -108,6 +112,12 @@ const widgetInput = (loc: StoredLocation, s: UserSettings): WidgetInput => ({
   madhab: s.madhab,
   lang: s.appLanguage,
 });
+
+/** Settings from a synced or imported payload, with themeMode filled in for payloads from older clients */
+function withReconciledTheme(payload: SyncPayload): UserSettings {
+  const s = payload.settings;
+  return { ...s, ...themeModeFields(reconcileThemeMode({ themeMode: s.themeMode, darkMode: s.darkMode ?? payload.darkMode })) };
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { session, authReady } = useAuth();
@@ -128,7 +138,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [quranProgress, setQuranProgress] = useState<QuranProgress>({ lastRead: null, bookmarks: [] });
   const [hadithProgress, setHadithProgress] = useState<HadithProgress>({ lastRead: null, bookmarks: [] });
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const systemScheme = useColorScheme();
+  const darkMode = resolveDarkMode(settings.themeMode, systemScheme);
   const [todayPrayers, setTodayPrayers] = useState<PrayerCompletion[]>([]);
 
   const refreshTodayPrayers = useCallback(async () => {
@@ -136,13 +147,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Latest state for async sync work — keeps sync callbacks stable so they don't retrigger effects
-  const stateRef = useRef({ settings, habits, family, stats, darkMode, location });
-  stateRef.current = { settings, habits, family, stats, darkMode, location };
+  const stateRef = useRef({ settings, habits, family, stats, location });
+  stateRef.current = { settings, habits, family, stats, location };
 
   useEffect(() => {
     registerAppDataPayloadBuilder(async () => {
       const s = stateRef.current;
-      return buildSyncPayload(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
+      return buildSyncPayload(s.settings, s.habits, s.family, s.stats, legacyDarkMode(s.settings.themeMode), s.location);
     });
     return () => registerAppDataPayloadBuilder(null);
   }, []);
@@ -180,7 +191,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const savedSettings = migrateSettings(rawSettings);
       if (storedSettings && session) void setJson(storageKeys.deviceLanguage, savedSettings.appLanguage);
       setSettings(savedSettings);
-      setDarkMode(savedSettings.darkMode ?? false);
       void setJson(storageKeys.settings, savedSettings);
       setHabits(savedHabits);
       setLocation(cachedLoc);
@@ -219,9 +229,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const syncAppDataFromCloud = useCallback(async () => {
     const s = stateRef.current;
-    const { payload: merged, ok } = await syncUserDataFromCloud(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
-    setSettings(merged.settings);
-    setDarkMode(merged.darkMode);
+    const { payload: merged, ok } = await syncUserDataFromCloud(
+      s.settings,
+      s.habits,
+      s.family,
+      s.stats,
+      legacyDarkMode(s.settings.themeMode),
+      s.location
+    );
+    setSettings(withReconciledTheme(merged));
     setHabits(merged.habits);
     setFamily(merged.family);
     setStats(merged.stats);
@@ -526,13 +542,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const exportSyncPayload = useCallback(async () => {
-    return buildSyncPayload(settings, habits, family, stats, darkMode, location);
-  }, [settings, habits, family, stats, darkMode, location]);
+    return buildSyncPayload(settings, habits, family, stats, legacyDarkMode(settings.themeMode), location);
+  }, [settings, habits, family, stats, location]);
 
   const importSyncPayload = useCallback(async (payload: SyncPayload) => {
     await importSyncPayloadToStorage(payload);
-    setSettings(payload.settings);
-    setDarkMode(payload.darkMode);
+    setSettings(withReconciledTheme(payload));
     setHabits(payload.habits);
     setFamily(payload.family);
     setStats(payload.stats);
@@ -587,13 +602,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     notifyAppDataChanged();
   }, [trackActivity]);
 
-  const toggleDarkMode = useCallback(() => {
-    setDarkMode((d) => {
-      const next = !d;
-      void updateSettings({ darkMode: next });
-      return next;
-    });
-  }, [updateSettings]);
+  const setThemeMode = useCallback((mode: ThemeMode) => updateSettings(themeModeFields(mode)), [updateSettings]);
 
   const setThemeId = useCallback(
     async (id: ThemeId) => {
@@ -642,7 +651,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         refreshTodayPrayers,
         loading,
         darkMode,
-        toggleDarkMode,
+        themeMode: settings.themeMode,
+        setThemeMode,
         setThemeId,
       }}
     >

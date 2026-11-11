@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function SectionHeader({ title, actionLabel, onAction }: Props) {
-  const { space } = useTheme();
+  const { space, layout } = useTheme();
   return (
     <View
       style={{
@@ -23,7 +23,12 @@ export function SectionHeader({ title, actionLabel, onAction }: Props) {
     >
       <AppText variant="heading">{title}</AppText>
       {actionLabel && onAction ? (
-        <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button">
+        <Pressable
+          onPress={onAction}
+          hitSlop={space[2]}
+          accessibilityRole="button"
+          style={{ minHeight: layout.minTouch, justifyContent: 'center' }}
+        >
           <AppText variant="calloutStrong" tone="brand">
             {actionLabel}
           </AppText>

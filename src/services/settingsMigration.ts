@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS, QURAN_EDITIONS } from '../constants/defaults';
 import type { AppLanguage, QuranView, UserSettings } from '../types';
+import { reconcileThemeMode, themeModeFields } from './themeMode';
 
 function editionForLegacyLanguage(code: string): string {
   const match = QURAN_EDITIONS.find((e) => e.language === code);
@@ -41,7 +42,8 @@ export function migrateSettings(raw: unknown): UserSettings {
     customReminders: base.customReminders ?? [],
     offlineAudioEnabled: base.offlineAudioEnabled ?? true,
     homeLauncher: base.homeLauncher ?? DEFAULT_SETTINGS.homeLauncher,
-    darkMode: base.darkMode ?? false,
+    // Read from the stored value, not the merged defaults: a missing themeMode is a legacy setting
+    ...themeModeFields(reconcileThemeMode(raw as Partial<UserSettings> | null)),
     quranFontScale:
       typeof base.quranFontScale === 'number' ? Math.min(1.6, Math.max(0.85, base.quranFontScale)) : DEFAULT_SETTINGS.quranFontScale,
   };

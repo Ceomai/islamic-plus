@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Pressable, Switch, View } from 'react-native';
+import { Pressable, Switch, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { FamilyMember } from '../types';
-import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { AppText, Button, Chip, IconButton, ListRow, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { confirmDestructive } from '../utils/confirm';
 
 const EMOJIS = ['👨', '👩', '👦', '👧', '🧑', '👴', '👵'];
 const ROLES: FamilyMember['role'][] = ['parent', 'child', 'spouse', 'other'];
@@ -26,11 +27,15 @@ export function FamilyModeScreen() {
     setName('');
   };
 
-  const confirmRemove = (m: FamilyMember) =>
-    Alert.alert(t('family.removeTitle'), t('family.removeBody', { name: m.name }), [
-      { text: t('account.cancel'), style: 'cancel' },
-      { text: t('family.remove'), style: 'destructive', onPress: () => void removeFamilyMember(m.id) },
-    ]);
+  const confirmRemove = async (m: FamilyMember) => {
+    const ok = await confirmDestructive({
+      title: t('family.removeTitle'),
+      message: t('family.removeBody', { name: m.name }),
+      confirm: t('family.remove'),
+      cancel: t('account.cancel'),
+    });
+    if (ok) void removeFamilyMember(m.id);
+  };
 
   return (
     <Screen>
@@ -92,9 +97,14 @@ export function FamilyModeScreen() {
                   </View>
                   {activeId === m.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primaryText} /> : null}
                 </Pressable>
-                <Pressable onPress={() => confirmRemove(m)} hitSlop={10} style={{ paddingLeft: space[3] }} accessibilityLabel={t('family.remove')}>
-                  <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                </Pressable>
+                <IconButton
+                  name="trash-outline"
+                  size={18}
+                  color={colors.textMuted}
+                  onPress={() => void confirmRemove(m)}
+                  accessibilityLabel={`${t('family.remove')} ${m.name}`}
+                  style={{ marginRight: -space[3] }}
+                />
               </View>
             ))}
           </Surface>

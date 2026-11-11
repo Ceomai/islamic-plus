@@ -18,6 +18,8 @@ import {
   summarizeTasbih,
 } from '../services/tasbihStorage';
 import { AppText, Button, Chip, Screen, Surface } from '../ui';
+import { announce } from '../utils/announce';
+import { confirmDestructive } from '../utils/confirm';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tasbih'>;
 type Mode = 'tesbihat' | 33 | 99 | 100;
@@ -29,7 +31,7 @@ const KEEP_AWAKE_TAG = 'tasbih';
 
 export function TasbihScreen({ navigation }: Props) {
   const { trackActivity } = useApp();
-  const { colors, radius, space, component, motion } = useTheme();
+  const { colors, radius, space, component, motion, layout } = useTheme();
   const { t, lang } = useTranslation();
   const [mode, setMode] = useState<Mode>('tesbihat');
   const [dhikrId, setDhikrId] = useState('subhanallah');
@@ -87,6 +89,8 @@ export function TasbihScreen({ navigation }: Props) {
     if (goal > 0 && state.today === goal) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       void trackFeatureAction('tasbih', 'goal_reached', { goal });
+      // The goal line changes on every tap, so it is not a live region: announce only the goal itself
+      announce(t('tasbih.goalReached', { n: String(state.today) }), { hasLiveRegion: false });
     }
 
     // Storage counts the tap and completes the round in one step; the screen doesn't wait for it
@@ -133,7 +137,7 @@ export function TasbihScreen({ navigation }: Props) {
     }
   };
 
-  const reset = async () => {
+  const clearSession = async () => {
     epoch.current += 1;
     live.current.count = 0;
     live.current.step = 0;
@@ -144,15 +148,28 @@ export function TasbihScreen({ navigation }: Props) {
     await resetTasbihSession(target, currentId);
   };
 
+  // A started count (or tesbihat already past its first phrase) is lost by a reset: ask first
+  const confirmLoss = (confirmLabel: string, message: string) => {
+    if (live.current.count === 0 && live.current.step === 0) return Promise.resolve(true);
+    return confirmDestructive({ title: t('tasbih.resetTitle'), message, confirm: confirmLabel, cancel: t('account.cancel') });
+  };
+
+  const reset = async () => {
+    if (!(await confirmLoss(t('tasbih.reset'), t('tasbih.resetBody')))) return;
+    await clearSession();
+  };
+
   const changeMode = async (next: Mode) => {
     if (next === mode) return;
-    await reset();
+    if (!(await confirmLoss(t('tasbih.switchConfirm'), t('tasbih.switchBody')))) return;
+    await clearSession();
     setMode(next);
   };
 
   const changeDhikr = async (id: string) => {
     if (id === dhikrId) return;
-    await reset();
+    if (!(await confirmLoss(t('tasbih.switchConfirm'), t('tasbih.switchBody')))) return;
+    await clearSession();
     setDhikrId(id);
   };
 
@@ -242,10 +259,11 @@ export function TasbihScreen({ navigation }: Props) {
           transform: [{ scale: pressed ? motion.pressedScale : 1 }],
         })}
       >
-        <AppText style={component.tasbihCounter} tone="onPrimary" numeric>
+        {/* The circle is a fixed size: very large text sizes would push "1000" out of it */}
+        <AppText style={component.tasbihCounter} tone="onPrimary" numeric maxFontSizeMultiplier={1.3}>
           {count}
         </AppText>
-        <AppText variant="callout" tone="onHeroMuted" numeric>
+        <AppText variant="callout" tone="onHeroMuted" numeric maxFontSizeMultiplier={1.3}>
           / {target}
         </AppText>
       </Pressable>
@@ -254,7 +272,12 @@ export function TasbihScreen({ navigation }: Props) {
         <View style={{ width: `${progress * 100}%`, height: '100%', backgroundColor: colors.primary }} />
       </View>
 
-      <AppText variant={justFinished ? 'calloutStrong' : 'callout'} tone={justFinished ? 'brand' : 'muted'} align="center" style={{ marginTop: space[3] }}>
+      <AppText
+        variant={justFinished ? 'calloutStrong' : 'callout'}
+        tone={justFinished ? 'brand' : 'muted'}
+        align="center"
+        style={{ marginTop: space[3] }}
+      >
         {status}
       </AppText>
       <AppText variant="caption" tone="secondary" style={{ marginTop: space[1] }}>
@@ -263,7 +286,12 @@ export function TasbihScreen({ navigation }: Props) {
 
       {/* Daily goal */}
       <Surface variant="muted" padding={space[3]} style={{ alignSelf: 'stretch', marginTop: space[5] }}>
-        <Pressable onPress={() => setEditGoal((v) => !v)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+        <Pressable
+          onPress={() => setEditGoal((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: editGoal }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], minHeight: layout.minTouch }}
+        >
           <Ionicons name={goal > 0 && today >= goal ? 'trophy' : 'flag-outline'} size={16} color={colors.primaryText} />
           <AppText variant="callout" style={{ flex: 1 }}>
             {goal > 0 ? (today >= goal ? t('tasbih.goalReached', { n: String(today) }) : t('tasbih.goalProgress', { n: String(today), goal: String(goal) })) : t('tasbih.goalOff')}

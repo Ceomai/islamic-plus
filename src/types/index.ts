@@ -121,6 +121,8 @@ export interface DisabledPrayerRule {
   specificDates: string[];
 }
 
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 export interface UserSettings {
   appLanguage: AppLanguage;
   quranEditionId: string;
@@ -143,6 +145,9 @@ export interface UserSettings {
   /** Multiplier for Quran text size (0.85–1.6) */
   quranFontScale: number;
   homeLauncher: HomeLauncherLayout;
+  /** Appearance: follow the system (default), or always light / dark */
+  themeMode: ThemeMode;
+  /** Legacy mirror of `themeMode === 'dark'`, still read by older app versions through sync */
   darkMode: boolean;
   /** First-run introduction finished (language, prayer settings, permissions) */
   onboardingDone: boolean;

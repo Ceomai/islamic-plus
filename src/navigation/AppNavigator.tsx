@@ -22,6 +22,7 @@ import { EducationScreen } from '../screens/EducationScreen';
 import { FamilyModeScreen } from '../screens/FamilyModeScreen';
 import { HabitsScreen } from '../screens/HabitsScreen';
 import { HadithScreen } from '../screens/HadithScreen';
+import { HadithSectionScreen } from '../screens/HadithSectionScreen';
 import { FeedbackScreen } from '../screens/FeedbackScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ImsakiyeScreen } from '../screens/ImsakiyeScreen';
@@ -92,6 +93,7 @@ function HomeStack() {
       <Stack.Screen name="Quran" component={QuranScreen} options={{ title: t('nav.quran') }} />
       <Stack.Screen name="QuranReader" component={QuranReaderScreen} options={{ title: t('nav.surah') }} />
       <Stack.Screen name="Hadith" component={HadithScreen} options={{ title: t('nav.hadith') }} />
+      <Stack.Screen name="HadithSection" component={HadithSectionScreen} options={{ title: t('nav.hadith') }} />
       <Stack.Screen name="Qibla" component={QiblaScreen} options={{ title: t('nav.qibla') }} />
       <Stack.Screen name="Places" component={PlacesScreen} options={{ title: t('nav.nearby') }} />
       <Stack.Screen name="Tasbih" component={TasbihScreen} options={{ title: t('nav.tasbih') }} />

@@ -8,6 +8,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { payloadToJson } from '../services/cloudSync';
 import { AppText, Button, IconBadge, Screen, SectionHeader, Surface } from '../ui';
+import { announce } from '../utils/announce';
 import { localDateKey } from '../utils/date';
 
 export function CloudSyncScreen() {
@@ -16,7 +17,12 @@ export function CloudSyncScreen() {
   const { colors, space } = useTheme();
   const { t, lang } = useTranslation();
   const [syncing, setSyncing] = useState(false);
-  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const [message, setMessageState] = useState<{ text: string; ok: boolean } | null>(null);
+  // Results appear at the bottom, away from the button: Android reads them via the live region, iOS via announce
+  const setMessage = (next: { text: string; ok: boolean } | null) => {
+    setMessageState(next);
+    if (next) announce(next.text);
+  };
   const cloud = backend === 'supabase' && !isGuest;
   const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
@@ -92,7 +98,12 @@ export function CloudSyncScreen() {
       </Surface>
 
       {message && (
-        <AppText variant="callout" color={message.ok ? colors.success : colors.error} style={{ marginTop: space[3] }}>
+        <AppText
+          variant="callout"
+          color={message.ok ? colors.success : colors.error}
+          style={{ marginTop: space[3] }}
+          accessibilityLiveRegion="polite"
+        >
           {message.text}
         </AppText>
       )}

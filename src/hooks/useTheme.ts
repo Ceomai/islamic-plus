@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { APP_THEMES } from '../constants/themes';
 import { useApp } from '../context/AppContext';
 import { buildThemeColors } from '../theme/colors';
-import { component, fontWeight, motion, numeric, radius, space, type } from '../theme/tokens';
+import { component, fontWeight, layout, motion, numeric, radius, space, type } from '../theme/tokens';
 
 export function useTheme() {
   const { darkMode, settings } = useApp();
@@ -19,6 +19,7 @@ export function useTheme() {
       numeric,
       fontWeight,
       motion,
+      layout,
       component,
       colors: buildThemeColors(preset, darkMode),
     }),

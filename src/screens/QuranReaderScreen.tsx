@@ -11,7 +11,7 @@ import { playRemoteAudio, stopAudio } from '../services/audio';
 import { fetchSurahReading, type ReaderAyah } from '../services/quranApi';
 import { addQuranBookmark, removeQuranBookmark, updateQuranLastRead } from '../services/readingProgress';
 import type { QuranView } from '../types';
-import { AppText, Button, Chip, IconBadge, Surface } from '../ui';
+import { AppText, Button, Chip, IconBadge, IconButton, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuranReader'>;
 
@@ -23,6 +23,8 @@ const VIEWS: { id: QuranView; icon: React.ComponentProps<typeof Ionicons>['name'
   { id: 'mushaf', icon: 'book-outline' },
 ];
 const FONT_STEP = 0.15;
+const MIN_SCALE = 0.85;
+const MAX_SCALE = 1.6;
 const MUSHAF_CHUNK = 8;
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => ARABIC_DIGITS[Number(d)]);
@@ -38,7 +40,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
     navigation.setOptions({ title: surahName ? `${surahNumber}. ${surahName}` : String(surahNumber) });
   }, [navigation, surahNumber, surahName]);
   const { settings, updateSettings, quranProgress, refreshReadingProgress, trackActivity } = useApp();
-  const { colors, radius, space, type } = useTheme();
+  const { colors, radius, space, type, layout } = useTheme();
   const { t } = useTranslation();
   const view = settings.quranView;
   const scale = settings.quranFontScale;
@@ -184,7 +186,12 @@ export function QuranReaderScreen({ navigation, route }: Props) {
     setPlaying(null);
     void updateSettings({ quranView: next });
   };
-  const setScale = (next: number) => void updateSettings({ quranFontScale: Math.min(1.6, Math.max(0.85, Math.round(next * 100) / 100)) });
+  const setScale = (next: number) => void updateSettings({ quranFontScale: Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(next * 100) / 100)) });
+
+  const atMinScale = scale <= MIN_SCALE;
+  const atMaxScale = scale >= MAX_SCALE;
+  const scaleText = `${Math.round(scale * 100)}%`;
+  const fontButtonStyle = { minWidth: layout.minTouch, minHeight: layout.minTouch, alignItems: 'center', justifyContent: 'center' } as const;
 
   // The reader's own font-size setting scales the shared type tokens
   const scaled = (style: TextStyle): TextStyle => ({
@@ -223,7 +230,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
           paddingHorizontal: space[4],
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: space[2], gap: space[4] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: space[1], gap: space[1] }}>
           <View
             style={{
               minWidth: 32,
@@ -240,31 +247,24 @@ export function QuranReaderScreen({ navigation, route }: Props) {
             </AppText>
           </View>
           <View style={{ flex: 1 }} />
-          <Pressable
+          <IconButton
+            name={isPlaying ? 'stop-circle' : 'play-circle-outline'}
             onPress={() => togglePlay(a.numberInSurah)}
-            hitSlop={10}
-            accessibilityRole="button"
             accessibilityLabel={`${isPlaying ? t('duas.stop') : t('duas.listen')} ${a.numberInSurah}`}
-          >
-            <Ionicons name={isPlaying ? 'stop-circle' : 'play-circle-outline'} size={22} color={colors.primaryText} />
-          </Pressable>
-          <Pressable
+          />
+          <IconButton
+            name="share-outline"
+            size={20}
             onPress={() => shareAyah(a)}
-            hitSlop={10}
-            accessibilityRole="button"
             accessibilityLabel={`${t('quran.share')} ${a.numberInSurah}`}
-          >
-            <Ionicons name="share-outline" size={20} color={colors.primaryText} />
-          </Pressable>
-          <Pressable
+          />
+          <IconButton
+            name={marked ? 'bookmark' : 'bookmark-outline'}
+            size={20}
             onPress={() => bookmarkAyah(a.numberInSurah)}
-            hitSlop={10}
-            accessibilityRole="button"
             accessibilityLabel={`${marked ? t('reading.removeBookmark') : t('reading.bookmark')} ${a.numberInSurah}`}
             accessibilityState={{ selected: marked }}
-          >
-            <Ionicons name={marked ? 'bookmark' : 'bookmark-outline'} size={20} color={colors.primaryText} />
-          </Pressable>
+          />
         </View>
         {a.arabic ? <AppText style={arabicStyle}>{a.arabic}</AppText> : null}
         {a.transliteration ? (
@@ -313,19 +313,23 @@ export function QuranReaderScreen({ navigation, route }: Props) {
           <View style={{ width: 1, height: 24, backgroundColor: colors.border, marginHorizontal: space[1] }} />
           <Pressable
             onPress={() => setScale(scale - FONT_STEP)}
+            disabled={atMinScale}
             accessibilityRole="button"
             accessibilityLabel={t('quran.smaller')}
-            hitSlop={6}
-            style={{ padding: space[1] }}
+            accessibilityState={{ disabled: atMinScale }}
+            accessibilityValue={{ text: scaleText }}
+            style={[fontButtonStyle, { opacity: atMinScale ? 0.4 : 1 }]}
           >
             <AppText variant="calloutStrong">A−</AppText>
           </Pressable>
           <Pressable
             onPress={() => setScale(scale + FONT_STEP)}
+            disabled={atMaxScale}
             accessibilityRole="button"
             accessibilityLabel={t('quran.larger')}
-            hitSlop={6}
-            style={{ padding: space[1] }}
+            accessibilityState={{ disabled: atMaxScale }}
+            accessibilityValue={{ text: scaleText }}
+            style={[fontButtonStyle, { opacity: atMaxScale ? 0.4 : 1 }]}
           >
             <AppText variant="heading">A+</AppText>
           </Pressable>
@@ -334,7 +338,7 @@ export function QuranReaderScreen({ navigation, route }: Props) {
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.primary} accessibilityLabel={t('common.loading')} />
         </View>
       ) : failed ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6] }}>
@@ -347,7 +351,13 @@ export function QuranReaderScreen({ navigation, route }: Props) {
       ) : (
         <FlatList
           ref={listRef}
-          contentContainerStyle={{ padding: space[4], paddingBottom: space[10] }}
+          contentContainerStyle={{
+            padding: space[4],
+            paddingBottom: space[10],
+            width: '100%',
+            maxWidth: layout.contentMaxWidth,
+            alignSelf: 'center',
+          }}
           data={rows}
           keyExtractor={(r) => r.key}
           renderItem={renderRow}

@@ -56,3 +56,13 @@ export async function getCurrentLocation(): Promise<StoredLocation | null> {
 export async function getCachedLocation(): Promise<StoredLocation | null> {
   return getJson<StoredLocation | null>(storageKeys.lastLocation, null);
 }
+
+/** True when location was refused and the system will not ask again (only Settings can change it). */
+export async function isLocationPermissionBlocked(): Promise<boolean> {
+  try {
+    const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+    return status !== 'granted' && !canAskAgain;
+  } catch {
+    return false;
+  }
+}

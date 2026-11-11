@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import React, { useState } from 'react';
-import { Platform, Pressable, ScrollView, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { BackHandler, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, CALCULATION_METHODS, MADHABS } from '../constants/defaults';
 import { searchCities } from '../data/cities';
@@ -32,6 +32,16 @@ export function OnboardingScreen() {
   const [busy, setBusy] = useState(false);
 
   const index = STEPS.indexOf(step);
+
+  // Android's back button returns to the previous step instead of closing the app mid-setup
+  useEffect(() => {
+    if (index === 0) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setStep(STEPS[index - 1]);
+      return true;
+    });
+    return () => sub.remove();
+  }, [index]);
   const next = () => {
     if (index < STEPS.length - 1) setStep(STEPS[index + 1]);
     else void updateSettings({ onboardingDone: true });
@@ -91,7 +101,13 @@ export function OnboardingScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: space[5] }} keyboardShouldPersistTaps="handled">
         {/* Progress */}
-        <View style={{ flexDirection: 'row', gap: space[2], marginBottom: space[6] }}>
+        <View
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={t('onboarding.progress', { n: String(index + 1), total: String(STEPS.length) })}
+          accessibilityValue={{ min: 1, max: STEPS.length, now: index + 1 }}
+          style={{ flexDirection: 'row', gap: space[2], marginBottom: space[6] }}
+        >
           {STEPS.map((s, i) => (
             <View key={s} style={{ flex: 1, height: 4, borderRadius: radius.pill, backgroundColor: i <= index ? colors.primary : colors.surfaceMuted }} />
           ))}

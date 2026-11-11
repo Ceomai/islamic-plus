@@ -5,6 +5,7 @@ export type RootStackParamList = {
   Quran: undefined;
   QuranReader: { surahNumber: number; edition: string; surahName: string; startAyah?: number };
   Hadith: undefined;
+  HadithSection: { collectionId: string; sectionN: number };
   Qibla: undefined;
   Places: { type: 'mosque' | 'prayer_room' | 'halal_restaurant' };
   Tasbih: undefined;

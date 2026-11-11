@@ -1,19 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LEARN_CATEGORIES, LEARN_ENTRIES, searchLearn, type LearnEntry } from '../data/learn';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
 import { loadEducationProgress, markEducationTopicRead } from '../services/educationProgress';
-import { AppText, Chip, Screen, Surface } from '../ui';
+import { AppText, Chip, Screen, SearchField, Surface } from '../ui';
 import { LearnTopicBody } from './EducationDetailScreen';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Education'>;
 
 export function EducationScreen({ navigation }: Props) {
-  const { colors, radius, space, type } = useTheme();
+  const { colors, space } = useTheme();
   const { t, lang } = useTranslation();
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState('all');
@@ -75,33 +75,7 @@ export function EducationScreen({ navigation }: Props) {
         {t('education.progress', { read: String(readCount), total: String(LEARN_ENTRIES.length) })}
       </AppText>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderWidth: 1,
-          borderRadius: radius.md,
-          paddingHorizontal: space[3],
-        }}
-      >
-        <Ionicons name="search" size={18} color={colors.textMuted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('education.searchPlaceholder')}
-          placeholderTextColor={colors.textMuted}
-          autoCorrect={false}
-          returnKeyType="search"
-          style={[type.body, { flex: 1, color: colors.text, paddingVertical: space[3], marginLeft: space[2] }]}
-        />
-        {query ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel={t('quran.clearSearch')}>
-            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-      </View>
+      <SearchField value={query} onChangeText={setQuery} placeholder={t('education.searchPlaceholder')} returnKeyType="search" />
 
       <AppText variant="overline" tone="muted" style={{ marginTop: space[4], marginBottom: space[2] }}>
         {t('education.category')}

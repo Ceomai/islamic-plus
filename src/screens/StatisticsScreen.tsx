@@ -35,6 +35,13 @@ export function StatisticsScreen({ navigation }: Props) {
   const today = localDateKey();
   const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
+  const weekday = (key: string | undefined) =>
+    key ? new Date(`${key}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' }) : '';
+  // One spoken summary instead of seven unlabeled bars
+  const chartLabel = `${t('stats.weeklyChart')}: ${stats.weeklyActivity
+    .map((v, i) => `${weekday(days[i])} ${Math.round(v)}%`)
+    .join(', ')}`;
+
   const tiles = [
     { label: t('stats.streak'), value: `${weekPrayers}/35`, hint: t('stats.streakHint') },
     { label: t('stats.habits'), value: `${summary.habitScore}%`, hint: t('stats.habitsHint') },
@@ -65,7 +72,12 @@ export function StatisticsScreen({ navigation }: Props) {
 
       <SectionHeader title={t('stats.weeklyChart')} />
       <Surface>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_HEIGHT + 24 }}>
+        <View
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={chartLabel}
+          style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_HEIGHT + 24 }}
+        >
           {stats.weeklyActivity.map((v, i) => {
             const key = days[i];
             const isToday = key === today;
@@ -80,7 +92,7 @@ export function StatisticsScreen({ navigation }: Props) {
                   }}
                 />
                 <AppText variant="caption" tone={isToday ? 'brand' : 'muted'} style={{ marginTop: space[1] }}>
-                  {key ? new Date(`${key}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' }) : ''}
+                  {weekday(key)}
                 </AppText>
               </View>
             );
