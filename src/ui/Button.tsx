@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { AppText } from './AppText';
+import { PressableScale } from './PressableScale';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -29,23 +30,26 @@ export function Button({
   fullWidth,
   style,
 }: Props) {
-  const { colors, radius, space } = useTheme();
+  const { colors, radius, space, layout } = useTheme();
 
   const palette = {
     primary: { bg: colors.primary, pressed: colors.primaryPressed, fg: colors.onPrimary, border: 'transparent' },
     secondary: { bg: colors.surface, pressed: colors.surfaceMuted, fg: colors.text, border: colors.borderStrong },
-    ghost: { bg: 'transparent', pressed: colors.primarySoft, fg: colors.primary, border: 'transparent' },
-    danger: { bg: colors.errorSoft, pressed: colors.errorSoft, fg: colors.error, border: 'transparent' },
+    ghost: { bg: 'transparent', pressed: colors.primarySoft, fg: colors.primaryText, border: 'transparent' },
+    danger: { bg: colors.errorSoft, pressed: colors.errorSoftPressed, fg: colors.error, border: 'transparent' },
   }[variant];
 
-  const height = size === 'lg' ? 52 : 44;
+  // Platform minimum: 44pt on iOS, 48dp on Android
+  const height = size === 'lg' ? 52 : layout.minTouch;
   const inactive = disabled || loading;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={inactive}
       accessibilityRole="button"
+      // Keeps the name while the label is replaced by the spinner
+      accessibilityLabel={label}
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       style={({ pressed }) => [
         styles.base,
@@ -71,7 +75,7 @@ export function Button({
           </AppText>
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -3,29 +3,16 @@ import { View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { ZakatCalculationRecord } from '../types';
-import { calculateSadaqaSuggested, calculateZakat, type ZakatInput } from '../services/zakat';
+import { calculateSadaqaSuggested, calculateZakat, parseAmount, type ZakatInput } from '../services/zakat';
 import { loadZakatHistory, saveZakatCalculation } from '../services/zakatHistory';
 import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface, TextField } from '../ui';
 
 type Currency = 'TRY' | 'USD' | 'EUR';
 const CURRENCIES: Currency[] = ['TRY', 'USD', 'EUR'];
 
-/** Accepts "1.250,50", "1,250.50", "1250.5" or "1250,5". */
-function parseAmount(raw: string): number {
-  const s = raw.replace(/\s/g, '');
-  if (!s) return 0;
-  const lastComma = s.lastIndexOf(',');
-  const lastDot = s.lastIndexOf('.');
-  const normalized =
-    lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
-  const n = parseFloat(normalized);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
 export function DutiesScreen() {
   const { colors, space } = useTheme();
-  const { t, lang } = useTranslation();
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  const { t, lang, locale } = useTranslation();
   const [currency, setCurrency] = useState<Currency>(lang === 'tr' ? 'TRY' : 'USD');
   const [fields, setFields] = useState({
     cash: '',
@@ -54,14 +41,14 @@ export function DutiesScreen() {
   };
 
   const input: ZakatInput = {
-    cash: parseAmount(fields.cash),
-    goldGrams: parseAmount(fields.gold),
-    silverGrams: parseAmount(fields.silver),
-    investments: parseAmount(fields.investments),
-    businessAssets: parseAmount(fields.business),
-    debts: parseAmount(fields.debts),
-    goldPricePerGram: parseAmount(fields.goldPrice),
-    silverPricePerGram: parseAmount(fields.silverPrice),
+    cash: parseAmount(fields.cash, lang),
+    goldGrams: parseAmount(fields.gold, lang),
+    silverGrams: parseAmount(fields.silver, lang),
+    investments: parseAmount(fields.investments, lang),
+    businessAssets: parseAmount(fields.business, lang),
+    debts: parseAmount(fields.debts, lang),
+    goldPricePerGram: parseAmount(fields.goldPrice, lang),
+    silverPricePerGram: parseAmount(fields.silverPrice, lang),
     nisabBasis,
   };
   const zakat = calculateZakat(input);
@@ -75,7 +62,7 @@ export function DutiesScreen() {
     setSaved(true);
   };
 
-  const sadaqa = calculateSadaqaSuggested(parseAmount(income), parseAmount(sadaqaPct));
+  const sadaqa = calculateSadaqaSuggested(parseAmount(income, lang), parseAmount(sadaqaPct, lang));
 
   return (
     <Screen>
@@ -132,7 +119,7 @@ export function DutiesScreen() {
         <AppText variant="display" color={colors.onHero}>
           {priceMissing ? '—' : money(zakat.zakatDue)}
         </AppText>
-        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: space[3] }} />
+        <View style={{ height: 1, backgroundColor: colors.heroDivider, marginVertical: space[3] }} />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <AppText variant="caption" color={colors.onHeroMuted}>
             {t('duties.totalWealth')}
@@ -149,7 +136,7 @@ export function DutiesScreen() {
             {priceMissing ? '—' : money(zakat.nisabThreshold)}
           </AppText>
         </View>
-        <AppText variant="callout" color={colors.accent} style={{ marginTop: space[3], fontWeight: '600' }}>
+        <AppText variant="calloutStrong" tone="onHeroAccent" style={{ marginTop: space[3] }}>
           {priceMissing ? t('duties.enterPrice') : zakat.isObligatory ? t('duties.obligatoryYes') : t('duties.obligatoryNo')}
         </AppText>
       </Surface>

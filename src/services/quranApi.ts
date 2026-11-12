@@ -30,37 +30,36 @@ export interface ReaderAyah {
   translation?: string;
 }
 
-async function getJsonWithCache<T>(url: string, cacheKey: string): Promise<T> {
+const TIMEOUT_MS = 12000;
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = (await res.json()) as T;
-    void AsyncStorage.setItem(CACHE_PREFIX + cacheKey, JSON.stringify(json)).catch(() => undefined);
-    return json;
-  } catch (e) {
-    const cached = await AsyncStorage.getItem(CACHE_PREFIX + cacheKey).catch(() => null);
-    if (cached) return JSON.parse(cached) as T;
-    throw e;
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-export async function fetchSurahList(_edition = 'en'): Promise<SurahListItem[]> {
-  const json = await getJsonWithCache<{ data?: SurahListItem[] }>(`${BASE}/surah`, 'surah-list');
-  return json.data ?? [];
-}
-
-export async function fetchSurah(
-  surahNumber: number,
-  edition = 'en.sahih'
-): Promise<{ ayahs: Ayah[]; surah: SurahListItem }> {
-  const json = await getJsonWithCache<{ data: SurahListItem & { ayahs: Ayah[] } }>(
-    `${BASE}/surah/${surahNumber}/${edition}`,
-    `surah-${surahNumber}-${edition}`
-  );
-  return {
-    surah: json.data,
-    ayahs: (json.data?.ayahs ?? []).map((a) => ({ number: a.number, text: a.text, numberInSurah: a.numberInSurah })),
-  };
+/**
+ * Quran text does not change, so a surah opened once is served from the device first; on a weak
+ * connection it used to wait for the network (without a time limit) before falling back.
+ */
+async function getJsonWithCache<T>(url: string, cacheKey: string): Promise<T> {
+  const cached = await AsyncStorage.getItem(CACHE_PREFIX + cacheKey).catch(() => null);
+  if (cached) {
+    try {
+      return JSON.parse(cached) as T;
+    } catch {
+      // corrupt cache entry: fetch it again below
+    }
+  }
+  const json = await fetchJson<T>(url);
+  void AsyncStorage.setItem(CACHE_PREFIX + cacheKey, JSON.stringify(json)).catch(() => undefined);
+  return json;
 }
 
 const BISMILLAH_UTHMANI = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
@@ -119,14 +118,6 @@ export async function fetchSurahReading(
 
   const { edition: _e, ayahs: _a, ...surah } = first ?? ({} as never);
   return { surah: surah as SurahListItem, ayahs, hasBismillahHeader };
-}
-
-export async function searchQuran(query: string, edition = 'en'): Promise<string[]> {
-  const res = await fetch(`${BASE}/search/${encodeURIComponent(query)}/all/${edition}`);
-  const json = await res.json();
-  return (json.data?.matches ?? []).slice(0, 20).map(
-    (m: { surah: { englishName: string }; numberInSurah: number }) => `${m.surah.englishName} ${m.numberInSurah}`
-  );
 }
 
 export { BISMILLAH_UTHMANI };

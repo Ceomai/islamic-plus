@@ -3,6 +3,9 @@ import type { AuthSession } from '../types';
 import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { isSupabaseConfigured } from '../config/supabase';
 import { resetAIChatSessionId } from './cloudAnalytics';
+import { fireAndForget } from './fireAndForget';
+import { cancelPrayerScheduling } from './notifications';
+import { retagPendingPrayerMarks } from './prayerAction';
 import {
   continueLocalGuest,
   deleteLocalUser,
@@ -16,6 +19,7 @@ import { cancelReadingProgressCloudSync, flushReadingProgressCloudSync } from '.
 import { cancelUserDataCloudSync, flushUserDataCloudSync } from './userDataCloud';
 import {
   clearScopedStorage,
+  copyScopeIfMissing,
   getJson,
   migrateLegacyStorage,
   setStorageUser,
@@ -57,9 +61,12 @@ async function activateResult(result: AuthResult): Promise<AuthResult> {
 export async function getAuthSession(): Promise<AuthSession | null> {
   if (isSupabaseConfigured) {
     const restored = await restoreSupabaseSession();
-    if (restored) return activateSession(restored);
-    // Supabase aktifken yalnızca misafir oturumu yerelden geri yüklenebilir
     const local = await getLocalAuthSession();
+    // Offline cold start with an expired token: keep the account signed in on its stored session;
+    // the client refreshes the token once the connection is back
+    if (restored === 'offline' && local) return activateSession(local);
+    if (restored && restored !== 'offline') return activateSession(restored);
+    // Supabase aktifken yalnızca misafir oturumu yerelden geri yüklenebilir
     if (local?.isGuest) return activateSession(local);
     await setLocalAuthSession(null);
     return activateSession(null);
@@ -67,13 +74,16 @@ export async function getAuthSession(): Promise<AuthSession | null> {
   return activateSession(await getLocalAuthSession());
 }
 
-export async function setAuthSession(session: AuthSession | null): Promise<void> {
-  await setLocalAuthSession(session);
-}
-
 export async function registerUser(email: string, password: string): Promise<AuthResult> {
-  if (isSupabaseConfigured) return activateResult(await registerSupabaseUser(email, password));
-  return activateResult(await registerLocalUser(email, password));
+  const result = isSupabaseConfigured ? await registerSupabaseUser(email, password) : await registerLocalUser(email, password);
+  // A new account starts with what was recorded as a guest on this device (prayers, tasbih, kaza…)
+  if (result.ok) {
+    const scope = storageScopeFor(result.session) ?? result.session.userId;
+    await copyScopeIfMissing('guest', scope).catch(() => 0);
+    // "Prayed" taps made as a guest while the app was closed are applied to the new account
+    await retagPendingPrayerMarks('guest', scope).catch(() => 0);
+  }
+  return activateResult(result);
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthResult> {
@@ -83,9 +93,8 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 
 export async function continueAsGuest(): Promise<AuthSession> {
   const session = await continueLocalGuest();
-  if (isSupabaseConfigured) {
-    await logGuestStartSupabase(session.userId);
-  }
+  // Analytics only: the guest session (and the first launch's start-up) never waits for the network
+  if (isSupabaseConfigured) fireAndForget(logGuestStartSupabase(session.userId), 'auth.guestStart');
   return activateSession(session);
 }
 
@@ -102,7 +111,9 @@ export async function logoutUser(): Promise<void> {
 }
 
 async function endLocalSession(): Promise<void> {
-  // Reminders carry the previous user's titles and schedule — the next session reschedules its own
+  // Reminders carry the previous user's titles and schedule — the next session reschedules its own.
+  // A scheduling run still under way is stopped first, or it would add them back after the cancel
+  await cancelPrayerScheduling().catch(() => undefined);
   await Notifications.cancelAllScheduledNotificationsAsync().catch(() => undefined);
   resetAIChatSessionId();
   setStorageUser(null);

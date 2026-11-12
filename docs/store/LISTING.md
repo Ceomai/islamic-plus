@@ -53,7 +53,7 @@ TESBİH, KAZA, ZEKÂT
 ÖĞREN
 • Abdest, namaz, oruç, zekât, hac ve daha fazlası; kategori ve aramayla
 
-Asistan: "Yasin suresini aç", "yolculuk duası" gibi isteklerle sizi doğru sayfaya götürür; Türkçe, İngilizce, Arapça, Almanca ve Fransızca anlar.
+Asistan: "Yasin suresini aç", "yolculuk duası" gibi isteklerle sizi doğru sayfaya götürür; Türkçe, İngilizce, Arapça, Almanca ve Fransızca isteği anlar; açtığı içerikler Türkçe ve İngilizcedir.
 
 Hesap açmadan kullanabilirsiniz. Hesap açarsanız verileriniz cihazlarınız arasında eşitlenir.
 
@@ -95,7 +95,7 @@ TASBIH, MISSED PRAYERS, ZAKAT
 LEARN
 • Wudu, prayer, fasting, zakat, hajj and more, organised by topic with search
 
-Assistant: ask "open Surah Yasin" or "dua for travel" and it takes you there. It understands English, Turkish, Arabic, German and French.
+Assistant: ask "open Surah Yasin" or "dua for travel" and it takes you there. It understands requests in English, Turkish, Arabic, German and French; the content it opens is in English and Turkish.
 
 Use it without an account, or sign in to sync between your devices.
 

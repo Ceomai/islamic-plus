@@ -1,25 +1,8 @@
-Islamic+ — Güncellenmiş sürüm
-================================
+Islamic+ — eski not (güncel değil)
+====================================
 
-Bu klasör, Islamic Pro benzeri premium özellikler eklenmiş güncel projedir.
+Bu dosya ilk paylaşım paketinden kalmıştır ve artık güncel değildir.
+Kurulum ve çalıştırma için README.md ile KURULUM.md'ye, test sürümü dağıtımı için
+BETA-TEST.md ve docs/TEST-HAZIRLIK.md'ye bakın.
 
-Kurulum:
-  1. Klasörü istediğiniz yere kopyalayın
-  2. Terminalde klasöre girin
-  3. npm install
-     (SSL hatası alırsanız: npm install --strict-ssl=false)
-  4. npx expo start --lan
-
-Yeni özellikler:
-  - Dualar + sesli okuma + çevrimdışı indirme
-  - YZ asistanı
-  - Gelişmiş hatırlatıcılar
-  - Bulut senkron (yedekleme)
-  - 5 özel tema
-  - İstatistikler
-  - Aile modu
-  - Widget ayarları
-  - Yenilenen ana sayfa (Islamic+)
-
-Not: node_modules bu pakette yoktur (boyut için).
-     npm install ile bağımlılıkları yükleyin.
+Windows PowerShell'de npm komutları için npm.cmd kullanın (ör. npm.cmd install).

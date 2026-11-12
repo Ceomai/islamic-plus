@@ -21,3 +21,15 @@ export function addDays(date: Date, days: number): Date {
 export function lastDayKeys(count: number, today: Date = new Date()): string[] {
   return Array.from({ length: count }, (_, i) => localDateKey(addDays(today, i - (count - 1))));
 }
+
+/** Milliseconds from `now` to the next local midnight (a DST day is 23 or 25 hours long). */
+export function msUntilNextLocalMidnight(now: Date = new Date()): number {
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return midnight.getTime() - now.getTime();
+}
+
+/** Local midnight of a YYYY-MM-DD key (the reverse of localDateKey). */
+export function dateFromKey(key: string): Date {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}

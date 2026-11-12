@@ -1,6 +1,5 @@
-import { DEFAULT_SETTINGS } from '../constants/defaults';
 import { getSupabase } from '../config/supabase';
-import { isCloudUserActive, profileScope } from './cloudUser';
+import { isCloudUserActive } from './cloudUser';
 import {
   buildSyncPayload,
   importSyncPayloadToStorage,
@@ -14,21 +13,21 @@ import type {
   UserSettings,
 } from '../types';
 import type { StoredLocation } from './location';
-import { getJson, storageKeys } from './storage';
 
 const SYNC_DEBOUNCE_MS = 3000;
-const DEFAULT_STATS: ActivityStats = {
-  tasbihTotal: 0,
-  habitsCompletedTotal: 0,
-  duasReadCount: 0,
-  quranSessions: 0,
-  prayerStreakDays: 0,
-  lastActiveDate: '',
-  weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
-};
+/** Re-merges before the import while local writes keep arriving (each tap would otherwise restart it) */
+const MAX_PRE_IMPORT_MERGES = 3;
+/**
+ * App data (settings, habits, prayers, tasbih, kaza…) is stored once per account on the device, not
+ * per family member, so it is synced under one scope. Syncing it per member mixed one member's
+ * cloud copy into everyone's data and brought deleted items back when switching members.
+ * Reading progress is per member and keeps its own scopes (readingProgressCloud.ts).
+ */
+const APP_DATA_SCOPE = 'default';
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-const listeners = new Set<(memberId: string | null) => void>();
+/** Counts local changes, so a sync can tell whether something changed while it was running */
+let localChanges = 0;
 
 type PayloadBuilder = () => Promise<SyncPayload>;
 let payloadBuilder: PayloadBuilder | null = null;
@@ -38,13 +37,8 @@ export function registerAppDataPayloadBuilder(builder: PayloadBuilder | null): v
 }
 
 export function notifyAppDataChanged(): void {
-  listeners.forEach((fn) => fn(null));
+  localChanges++;
   scheduleUserDataCloudSync(null);
-}
-
-export function onAppDataChanged(listener: (memberId: string | null) => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
 }
 
 export function scheduleUserDataCloudSync(_memberId: string | null): void {
@@ -60,22 +54,27 @@ async function buildCurrentPayload(): Promise<SyncPayload | null> {
   return payloadBuilder();
 }
 
-export async function pushUserDataNow(): Promise<void> {
-  if (!(await isCloudUserActive())) return;
-  const payload = await buildCurrentPayload();
-  if (!payload) return;
+/** Sends the given payload, or the app's current data. Returns false when it did not reach the server. */
+export async function pushUserDataNow(payload?: SyncPayload): Promise<boolean> {
+  if (!(await isCloudUserActive())) return false;
+  const body = payload ?? (await buildCurrentPayload());
+  if (!body) return false;
 
   const supabase = getSupabase();
-  if (!supabase) return;
+  if (!supabase) return false;
 
-  const scope = profileScope(payload.settings.activeFamilyMemberId);
   const { error } = await supabase.rpc('sync_user_app_data', {
-    p_profile_scope: scope,
-    p_payload: payload,
+    p_profile_scope: APP_DATA_SCOPE,
+    p_payload: { ...body, profileScope: APP_DATA_SCOPE },
   });
   if (error) console.warn('[user-data-cloud] push failed:', error.message);
+  return !error;
 }
 
+/**
+ * Pulls the account's cloud copy, merges it with this device and pushes the result back.
+ * `ok` is false when the server could not be reached (the payload is then the local data).
+ */
 export async function syncUserDataFromCloud(
   settings: UserSettings,
   habits: SpiritualHabit[],
@@ -83,35 +82,49 @@ export async function syncUserDataFromCloud(
   stats: ActivityStats,
   darkMode: boolean,
   location: StoredLocation | null
-): Promise<SyncPayload> {
-  const local = await buildSyncPayload(settings, habits, family, stats, darkMode, location);
-
-  if (!(await isCloudUserActive())) return local;
+): Promise<{ payload: SyncPayload; ok: boolean }> {
+  // Built after the network answer, so changes made while the request was in flight are included
+  const localNow = async () => (await buildCurrentPayload()) ?? buildSyncPayload(settings, habits, family, stats, darkMode, location);
 
   const supabase = getSupabase();
-  if (!supabase) return local;
+  if (!supabase || !(await isCloudUserActive())) return { payload: await localNow(), ok: false };
 
-  const scope = profileScope(settings.activeFamilyMemberId);
-  const { data, error } = await supabase.rpc('get_user_app_data', { p_profile_scope: scope });
-
+  const { data, error } = await supabase.rpc('get_user_app_data', { p_profile_scope: APP_DATA_SCOPE });
   if (error) {
     console.warn('[user-data-cloud] pull failed:', error.message);
-    await pushUserDataNow();
-    return local;
+    return { payload: await localNow(), ok: false };
   }
 
+  const changesBefore = localChanges;
+  const local = await localNow();
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.payload) {
-    await pushUserDataNow();
-    return local;
+    const ok = await pushUserDataNow(local);
+    // A change made during the push is newer than `local`; the caller must not roll it back
+    return { payload: localChanges === changesBefore ? local : await localNow(), ok };
   }
 
   const remote = row.payload as SyncPayload;
-  const merged = mergeSyncPayloads({ ...remote, version: 2, profileScope: scope }, local);
+  let merged = mergeSyncPayloads({ ...remote, version: 2, profileScope: APP_DATA_SCOPE }, local);
+  // A write that landed after `local` was read (a tasbih tap, a prayer mark) would be overwritten by
+  // the import below: merge once more with what is stored now
+  let changesSeen = changesBefore;
+  for (let attempt = 0; attempt < MAX_PRE_IMPORT_MERGES && localChanges !== changesSeen; attempt++) {
+    changesSeen = localChanges;
+    merged = mergeSyncPayloads(merged, await localNow());
+  }
 
   await importSyncPayloadToStorage(merged);
-  await pushUserDataNow();
-  return merged;
+  // Push the merged result itself: the app's state still holds the pre-merge values at this point
+  const ok = await pushUserDataNow(merged);
+  if (localChanges === changesSeen) return { payload: merged, ok };
+
+  // Something changed on this device while the merge was written and pushed: the app's state has
+  // the change but not the merge, storage may have either. Merge again so neither is lost (the
+  // change itself already scheduled its own push)
+  const latest = mergeSyncPayloads(merged, await localNow());
+  await importSyncPayloadToStorage(latest);
+  return { payload: latest, ok };
 }
 
 /** Drop a pending push without sending it (account deleted). */
@@ -128,18 +141,4 @@ export async function flushUserDataCloudSync(): Promise<void> {
     debounceTimer = null;
   }
   await pushUserDataNow();
-}
-
-export async function reloadLocalAppData(): Promise<{
-  settings: UserSettings;
-  habits: SpiritualHabit[];
-  family: FamilyMember[];
-  stats: ActivityStats;
-  darkMode: boolean;
-}> {
-  const settings = await getJson(storageKeys.settings, DEFAULT_SETTINGS);
-  const habits = await getJson<SpiritualHabit[]>(storageKeys.habits, []);
-  const family = await getJson<FamilyMember[]>(storageKeys.family, []);
-  const stats = await getJson<ActivityStats>(storageKeys.stats, DEFAULT_STATS);
-  return { settings, habits, family, stats, darkMode: settings.darkMode ?? false };
 }

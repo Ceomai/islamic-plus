@@ -10,6 +10,8 @@ import {
   registerUser,
   requestPasswordReset,
 } from '../services/auth';
+import { logError } from '../services/errorLog';
+import { initialRoute, isFirstRunDone, markFirstRunDone } from '../services/firstRun';
 import type { AuthSession } from '../types';
 import type { AuthBackend } from '../services/auth';
 
@@ -18,6 +20,8 @@ type ActionResult = { ok: boolean; error?: string };
 interface AuthContextValue {
   session: AuthSession | null;
   authReady: boolean;
+  /** False only until this device's first session has started (see firstRun.ts) */
+  firstRunDone: boolean;
   backend: AuthBackend;
   register: (email: string, password: string) => Promise<ActionResult>;
   login: (email: string, password: string) => Promise<ActionResult>;
@@ -34,13 +38,33 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [firstRunDone, setFirstRunDone] = useState(true);
   const backend = getAuthBackend();
 
   useEffect(() => {
-    getAuthSession().then((s) => {
-      setSession(s);
-      setAuthReady(true);
-    });
+    // A failed restore (storage, network, secure store) shows the sign-in screen instead of hanging
+    const restore = async () => {
+      let restored: AuthSession | null = null;
+      try {
+        restored = await getAuthSession();
+      } catch (e) {
+        logError(e, 'promise');
+      }
+      const done = await isFirstRunDone();
+      if (initialRoute({ session: restored, firstRunDone: done, onboardingDone: false }) === 'startGuest') {
+        // First launch on this device: start as a guest; an account stays optional (only sync needs one)
+        try {
+          restored = await continueAsGuest();
+          await markFirstRunDone();
+          setFirstRunDone(true);
+        } catch (e) {
+          logError(e, 'promise');
+          setFirstRunDone(false);
+        }
+      }
+      setSession(restored);
+    };
+    void restore().finally(() => setAuthReady(true));
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
@@ -97,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         session,
         authReady,
+        firstRunDone,
         backend,
         register,
         login,

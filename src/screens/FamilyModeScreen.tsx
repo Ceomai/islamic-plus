@@ -1,18 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Pressable, Switch, View } from 'react-native';
+import { Pressable, Switch, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { FamilyMember } from '../types';
-import { AppText, Button, Chip, ListRow, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { AppText, Button, Chip, IconButton, ListRow, Screen, SectionHeader, Surface, TextField } from '../ui';
+import { animateNextLayout } from '../ui/motion';
+import { confirmDestructive } from '../utils/confirm';
 
 const EMOJIS = ['👨', '👩', '👦', '👧', '🧑', '👴', '👵'];
 const ROLES: FamilyMember['role'][] = ['parent', 'child', 'spouse', 'other'];
+const EMOJI_OPTION = 44;
 
 export function FamilyModeScreen() {
   const { family, addFamilyMember, removeFamilyMember, settings, updateSettings, setActiveFamilyMember } = useApp();
-  const { colors, radius, space } = useTheme();
+  const { colors, radius, space, motion } = useTheme();
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('👨');
@@ -21,15 +24,20 @@ export function FamilyModeScreen() {
 
   const handleAdd = () => {
     if (!name.trim()) return;
+    animateNextLayout();
     void addFamilyMember({ name: name.trim(), avatarEmoji: emoji, role });
     setName('');
   };
 
-  const confirmRemove = (m: FamilyMember) =>
-    Alert.alert(t('family.removeTitle'), t('family.removeBody', { name: m.name }), [
-      { text: t('account.cancel'), style: 'cancel' },
-      { text: t('family.remove'), style: 'destructive', onPress: () => void removeFamilyMember(m.id) },
-    ]);
+  const confirmRemove = async (m: FamilyMember) => {
+    const ok = await confirmDestructive({
+      title: t('family.removeTitle'),
+      message: t('family.removeBody', { name: m.name }),
+      confirm: t('family.remove'),
+      cancel: t('account.cancel'),
+    });
+    if (ok) void removeFamilyMember(m.id);
+  };
 
   return (
     <Screen>
@@ -44,6 +52,7 @@ export function FamilyModeScreen() {
           trailing={
             <Switch
               value={settings.familyModeEnabled}
+              accessibilityLabel={t('family.enable')}
               onValueChange={(v) => updateSettings({ familyModeEnabled: v })}
               trackColor={{ true: colors.primary, false: colors.borderStrong }}
             />
@@ -61,7 +70,7 @@ export function FamilyModeScreen() {
               subtitle={t('family.meHint')}
               onPress={() => setActiveFamilyMember(null)}
               showChevron={false}
-              trailing={activeId === null ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : <View />}
+              trailing={activeId === null ? <Ionicons name="checkmark-circle" size={22} color={colors.primaryText} /> : <View />}
               divider={family.length > 0}
             />
             {family.map((m, i) => (
@@ -76,23 +85,28 @@ export function FamilyModeScreen() {
                     alignItems: 'center',
                     gap: space[3],
                     paddingVertical: space[3],
-                    opacity: pressed ? 0.6 : 1,
+                    opacity: pressed ? motion.pressedOpacity : 1,
                     borderBottomWidth: i < family.length - 1 ? 1 : 0,
                     borderBottomColor: colors.border,
                   })}
                 >
-                  <AppText style={{ fontSize: 26, lineHeight: 32 }}>{m.avatarEmoji}</AppText>
+                  <AppText variant="title">{m.avatarEmoji}</AppText>
                   <View style={{ flex: 1 }}>
                     <AppText variant="bodyStrong">{m.name}</AppText>
                     <AppText variant="caption" tone="secondary">
                       {t(`family.role.${m.role}`)}
                     </AppText>
                   </View>
-                  {activeId === m.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
+                  {activeId === m.id ? <Ionicons name="checkmark-circle" size={22} color={colors.primaryText} /> : null}
                 </Pressable>
-                <Pressable onPress={() => confirmRemove(m)} hitSlop={10} style={{ paddingLeft: space[3] }} accessibilityLabel={t('family.remove')}>
-                  <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-                </Pressable>
+                <IconButton
+                  name="trash-outline"
+                  size={18}
+                  color={colors.textMuted}
+                  onPress={() => void confirmRemove(m)}
+                  accessibilityLabel={`${t('family.remove')} ${m.name}`}
+                  style={{ marginRight: -space[3] }}
+                />
               </View>
             ))}
           </Surface>
@@ -110,8 +124,8 @@ export function FamilyModeScreen() {
                   accessibilityRole="button"
                   accessibilityState={{ selected: emoji === e }}
                   style={{
-                    width: 44,
-                    height: 44,
+                    width: EMOJI_OPTION,
+                    height: EMOJI_OPTION,
                     borderRadius: radius.md,
                     borderWidth: emoji === e ? 2 : 1,
                     borderColor: emoji === e ? colors.primary : colors.border,
@@ -119,7 +133,7 @@ export function FamilyModeScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <AppText style={{ fontSize: 22, lineHeight: 28 }}>{e}</AppText>
+                  <AppText variant="title">{e}</AppText>
                 </Pressable>
               ))}
             </View>

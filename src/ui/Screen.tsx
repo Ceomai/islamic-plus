@@ -14,8 +14,16 @@ interface Props {
 
 /** Standard page: themed background, 16pt gutters, safe area. */
 export function Screen({ children, scroll = true, edges = ['bottom'], contentStyle }: Props) {
-  const { colors, space } = useTheme();
-  const padding: ViewStyle = { paddingHorizontal: space[4], paddingTop: space[4], paddingBottom: space[8] };
+  const { colors, space, layout } = useTheme();
+  // Centered column so lines stay readable on iPad; phones are narrower than the limit
+  const padding: ViewStyle = {
+    paddingHorizontal: space[4],
+    paddingTop: space[4],
+    paddingBottom: space[8],
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+  };
 
   return (
     <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: colors.background }}>

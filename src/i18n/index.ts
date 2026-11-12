@@ -5,8 +5,6 @@ import { tr } from './locales/tr';
 const locales = { en, tr } as const;
 
 export type TranslationKey = keyof typeof en;
-export type NestedKey<K extends TranslationKey> = keyof (typeof en)[K];
-
 function getNested(obj: Record<string, unknown>, path: string): string | undefined {
   const parts = path.split('.');
   let cur: unknown = obj;
@@ -43,4 +41,9 @@ export function getDayNames(lang: AppLanguage): string[] {
   return lang === 'tr'
     ? ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+}
+
+/** BCP 47 locale for number and date formatting in the app language */
+export function localeFor(lang: AppLanguage): 'tr-TR' | 'en-US' {
+  return lang === 'tr' ? 'tr-TR' : 'en-US';
 }

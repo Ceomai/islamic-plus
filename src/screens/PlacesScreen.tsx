@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Platform, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { LocationBlockedNotice } from '../components/LocationBlockedNotice';
 import { useApp } from '../context/AppContext';
+import { useNearbyPlaces } from '../hooks/useNearbyPlaces';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { fetchNearbyPlaces } from '../services/places';
 import type { NearbyPlace } from '../types';
 import { AppText, Button, Chip, IconBadge, Surface } from '../ui';
 
@@ -42,38 +43,28 @@ function searchInMaps(query: string, lat: number, lon: number) {
 export function PlacesScreen({ route, navigation }: Props) {
   const { type } = route.params;
   const { location, refreshLocation } = useApp();
+  // Bumped after each location request so the "blocked" notice checks the permission again
+  const [locationTries, setLocationTries] = useState(0);
+  const retryLocation = async () => {
+    await refreshLocation();
+    setLocationTries((n) => n + 1);
+  };
   const { colors, space } = useTheme();
-  const { t, lang } = useTranslation();
-  const [places, setPlaces] = useState<NearbyPlace[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'noLocation'>('loading');
+  const { t, lang, locale } = useTranslation();
   const [radius, setRadius] = useState(5000);
+  const { places, status, retry } = useNearbyPlaces(location, type, radius, lang);
 
   useEffect(() => {
     navigation.setOptions({ title: t(`places.${type}`) });
   }, [navigation, t, type]);
 
-  // Ask for a location once if none is cached; the search below reruns when it arrives
-  useEffect(() => {
+  // Ask for a location once if none is cached; the search reruns when it arrives
+  const requestLocationOnOpen = useEffectEvent(() => {
     if (!location) void refreshLocation();
-  }, []);
-
-  const search = useCallback(async () => {
-    if (!location) {
-      setStatus('noLocation');
-      return;
-    }
-    setStatus('loading');
-    try {
-      setPlaces(await fetchNearbyPlaces(location.latitude, location.longitude, type, radius, lang));
-      setStatus('ready');
-    } catch {
-      setStatus('error');
-    }
-  }, [location?.latitude, location?.longitude, type, radius, lang]);
-
+  });
   useEffect(() => {
-    void search();
-  }, [search]);
+    requestLocationOnOpen();
+  }, []);
 
   const mapsButton = location ? (
     <Button
@@ -86,7 +77,7 @@ export function PlacesScreen({ route, navigation }: Props) {
   ) : null;
 
   const distance = (km: number) =>
-    km < 1 ? `${Math.round(km * 1000)} m` : `${km.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} km`;
+    km < 1 ? `${Math.round(km * 1000)} m` : `${km.toLocaleString(locale)} km`;
 
   const header = (
     <View style={{ marginBottom: space[4] }}>
@@ -110,7 +101,7 @@ export function PlacesScreen({ route, navigation }: Props) {
   if (status === 'loading') {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.primary} accessibilityLabel={t('common.loading')} />
         <AppText variant="caption" tone="muted" align="center" style={{ marginTop: space[3], paddingHorizontal: space[6] }}>
           {t('places.loading')}
         </AppText>
@@ -128,10 +119,11 @@ export function PlacesScreen({ route, navigation }: Props) {
         <Button
           label={status === 'error' ? t('common.retry') : t('qibla.useLocation')}
           icon={status === 'error' ? 'refresh' : 'locate'}
-          onPress={status === 'error' ? search : refreshLocation}
+          onPress={status === 'error' ? retry : retryLocation}
           variant="secondary"
         />
         {status === 'error' && mapsButton}
+        {status === 'noLocation' && <LocationBlockedNotice recheckKey={locationTries} />}
       </View>
     );
   }
@@ -172,7 +164,7 @@ export function PlacesScreen({ route, navigation }: Props) {
               {item.address ? ` · ${item.address}` : ''}
             </AppText>
           </View>
-          <Ionicons name="navigate-outline" size={18} color={colors.primary} />
+          <Ionicons name="navigate-outline" size={18} color={colors.primaryText} />
         </Surface>
       )}
     />

@@ -116,7 +116,7 @@ export function FeedbackScreen() {
             {t('feedback.attachHint', { n: String(errorCount) })}
           </AppText>
         </View>
-        <Switch value={attachErrors} onValueChange={setAttachErrors} trackColor={{ true: colors.primary, false: colors.borderStrong }} />
+        <Switch value={attachErrors} onValueChange={setAttachErrors} accessibilityLabel={t('feedback.attach')} trackColor={{ true: colors.primary, false: colors.borderStrong }} />
       </View>
 
       <Button

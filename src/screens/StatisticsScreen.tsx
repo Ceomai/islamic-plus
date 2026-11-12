@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import { useApp } from '../context/AppContext';
+import { useHabits, usePrayerDay, useStats } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
-import { statsSummary } from '../services/statistics';
+import { loadPrayerCompletions } from '../services/prayerTracking';
+import { countPrayersInDays, statsSummary } from '../services/statistics';
 import { AppText, ListRow, Screen, SectionHeader, Surface } from '../ui';
 import { lastDayKeys, localDateKey } from '../utils/date';
 
@@ -14,21 +15,36 @@ const CHART_HEIGHT = 120;
 type Props = NativeStackScreenProps<RootStackParamList, 'Statistics'>;
 
 export function StatisticsScreen({ navigation }: Props) {
-  const { stats, habitScore, refreshStats } = useApp();
+  const { stats, refreshStats } = useStats();
+  const { habitScore } = useHabits();
+  const { todayPrayers } = usePrayerDay();
   const { colors, radius, space } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, locale } = useTranslation();
+
+  const [weekPrayers, setWeekPrayers] = useState(0);
 
   useEffect(() => {
     refreshStats();
   }, [refreshStats]);
 
+  // Recounted when today's marks change
+  useEffect(() => {
+    void loadPrayerCompletions().then((list) => setWeekPrayers(countPrayersInDays(list, 7)));
+  }, [todayPrayers]);
+
   const summary = statsSummary(stats, habitScore);
   const days = lastDayKeys(7);
   const today = localDateKey();
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+
+  const weekday = (key: string | undefined) =>
+    key ? new Date(`${key}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' }) : '';
+  // One spoken summary instead of seven unlabeled bars
+  const chartLabel = `${t('stats.weeklyChart')}: ${stats.weeklyActivity
+    .map((v, i) => `${weekday(days[i])} ${Math.round(v)}%`)
+    .join(', ')}`;
 
   const tiles = [
-    { label: t('stats.streak'), value: String(stats.prayerStreakDays), hint: t('stats.streakHint') },
+    { label: t('stats.streak'), value: `${weekPrayers}/35`, hint: t('stats.streakHint') },
     { label: t('stats.habits'), value: `${summary.habitScore}%`, hint: t('stats.habitsHint') },
     { label: t('stats.weekly'), value: String(summary.weeklyAvg), hint: t('stats.weeklyHint') },
   ];
@@ -42,10 +58,10 @@ export function StatisticsScreen({ navigation }: Props) {
       <View style={{ flexDirection: 'row', gap: space[2] }}>
         {tiles.map((tile) => (
           <Surface key={tile.label} variant="soft" padding={space[3]} style={{ flex: 1 }}>
-            <AppText variant="title" color={colors.onPrimarySoft}>
+            <AppText variant="title" tone="onPrimarySoft" numeric>
               {tile.value}
             </AppText>
-            <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }} numberOfLines={2}>
+            <AppText variant="captionStrong" tone="onPrimarySoft" numberOfLines={2}>
               {tile.label}
             </AppText>
           </Surface>
@@ -57,7 +73,12 @@ export function StatisticsScreen({ navigation }: Props) {
 
       <SectionHeader title={t('stats.weeklyChart')} />
       <Surface>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_HEIGHT + 24 }}>
+        <View
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={chartLabel}
+          style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_HEIGHT + 24 }}
+        >
           {stats.weeklyActivity.map((v, i) => {
             const key = days[i];
             const isToday = key === today;
@@ -72,7 +93,7 @@ export function StatisticsScreen({ navigation }: Props) {
                   }}
                 />
                 <AppText variant="caption" tone={isToday ? 'brand' : 'muted'} style={{ marginTop: space[1] }}>
-                  {key ? new Date(`${key}T12:00:00`).toLocaleDateString(locale, { weekday: 'short' }) : ''}
+                  {weekday(key)}
                 </AppText>
               </View>
             );

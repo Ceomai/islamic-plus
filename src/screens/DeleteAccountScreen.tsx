@@ -1,15 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Card } from '../components/Card';
 import { useAuth } from '../context/AuthContext';
 import { useAuthErrorMessage } from '../hooks/useAuthErrorMessage';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
+import { AppText } from '../ui';
+import { confirmDestructive } from '../utils/confirm';
 
 export function DeleteAccountScreen() {
   const { deleteAccount, session, backend } = useAuth();
-  const { colors } = useTheme();
+  const { colors, radius, space, type, component } = useTheme();
   const { t } = useTranslation();
   const errorMessage = useAuthErrorMessage();
   const [password, setPassword] = useState('');
@@ -33,39 +35,63 @@ export function DeleteAccountScreen() {
       setError(errorMessage('empty_password'));
       return;
     }
-    Alert.alert(t('account.confirmTitle'), t('account.confirmBody'), [
-      { text: t('account.cancel'), style: 'cancel' },
-      { text: t('account.deleteForever'), style: 'destructive', onPress: () => void runDelete() },
-    ]);
+    void confirmDestructive({
+      title: t('account.confirmTitle'),
+      message: t('account.confirmBody'),
+      confirm: t('account.deleteForever'),
+      cancel: t('account.cancel'),
+    }).then((ok) => {
+      if (ok) void runDelete();
+    });
   };
 
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={styles.scroll}
+      contentContainerStyle={{ padding: space[5], paddingBottom: space[10] }}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.iconRow}>
+      <View style={[styles.iconRow, { marginBottom: space[2] }]}>
         <Ionicons name="warning" size={40} color={colors.error} />
       </View>
-      <Text style={[styles.title, { color: colors.text }]}>{t('account.deleteTitle')}</Text>
-      <Text style={[styles.body, { color: colors.textSecondary }]}>
+      <AppText variant="title" align="center" style={{ marginBottom: space[2] }}>
+        {t('account.deleteTitle')}
+      </AppText>
+      <AppText variant="callout" tone="secondary">
         {t('account.signedInAs', { name: session?.pseudonym ?? '—' })}
-      </Text>
+      </AppText>
 
       <Card>
-        <Text style={[styles.listTitle, { color: colors.text }]}>{t('account.whatIsDeleted')}</Text>
-        <Text style={[styles.body, { color: colors.textSecondary }]}>
+        <AppText variant="bodyStrong" style={{ marginBottom: space[2] }}>
+          {t('account.whatIsDeleted')}
+        </AppText>
+        <AppText variant="callout" tone="secondary">
           {backend === 'supabase' ? t('account.deletedCloud') : t('account.deletedLocal')}
-        </Text>
-        <Text style={[styles.body, { color: colors.error, marginTop: 8 }]}>{t('account.irreversible')}</Text>
+        </AppText>
+        <AppText variant="callout" tone="danger" style={{ marginTop: space[2] }}>
+          {t('account.irreversible')}
+        </AppText>
       </Card>
 
-      <Text style={[styles.label, { color: colors.text }]}>{t('account.passwordPrompt')}</Text>
+      <AppText variant="calloutStrong" style={{ marginTop: space[4], marginBottom: space[2] }}>
+        {t('account.passwordPrompt')}
+      </AppText>
       <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
+        style={[
+          type.body,
+          {
+            borderWidth: component.textField.borderWidth,
+            borderRadius: radius.md,
+            padding: space[3],
+            marginBottom: space[2],
+            minHeight: component.textField.minHeight,
+            borderColor: colors.inputBorder,
+            color: colors.text,
+            backgroundColor: colors.surface,
+          },
+        ]}
         placeholder={t('auth.password')}
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={colors.textMuted}
         secureTextEntry
         textContentType="password"
         value={password}
@@ -73,28 +99,33 @@ export function DeleteAccountScreen() {
         editable={!loading}
       />
 
-      {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+      {error ? (
+        <AppText variant="callout" tone="danger" align="center" style={{ marginBottom: space[3] }}>
+          {error}
+        </AppText>
+      ) : null}
 
       <Pressable
-        style={[styles.deleteBtn, { backgroundColor: colors.error, opacity: loading ? 0.7 : 1 }]}
+        style={[
+          styles.deleteBtn,
+          { backgroundColor: colors.error, borderRadius: radius.md, padding: space[4], marginTop: space[2], opacity: loading ? 0.7 : 1 },
+        ]}
         onPress={confirmDelete}
         disabled={loading}
       >
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.deleteText}>{t('account.deleteForever')}</Text>}
+        {loading ? (
+          <ActivityIndicator color={colors.onError} accessibilityLabel={t('common.loading')} />
+        ) : (
+          <AppText variant="bodyStrong" color={colors.onError}>
+            {t('account.deleteForever')}
+          </AppText>
+        )}
       </Pressable>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: 20, paddingBottom: 40 },
-  iconRow: { alignItems: 'center', marginBottom: 8 },
-  title: { fontSize: 20, fontWeight: '800', textAlign: 'center', marginBottom: 6 },
-  body: { fontSize: 14, lineHeight: 20 },
-  listTitle: { fontSize: 15, fontWeight: '700', marginBottom: 6 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 8, fontSize: 16 },
-  error: { marginBottom: 12, textAlign: 'center', lineHeight: 20 },
-  deleteBtn: { padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 8, minHeight: 52, justifyContent: 'center' },
-  deleteText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  iconRow: { alignItems: 'center' },
+  deleteBtn: { alignItems: 'center', minHeight: 52, justifyContent: 'center' },
 });

@@ -3,14 +3,15 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator, type NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import React from 'react';
-import { useApp } from '../context/AppContext';
+import { useAppearance } from '../context/AppContext';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { useNavigationAnalytics } from '../hooks/useNavigationAnalytics';
 import { withGuestGate } from '../components/GuestGate';
-import { AdvancedRemindersScreen as AdvancedRemindersScreenBase } from '../screens/AdvancedRemindersScreen';
-import { AIAssistantScreen as AIAssistantScreenBase } from '../screens/AIAssistantScreen';
+import { AdvancedRemindersScreen } from '../screens/AdvancedRemindersScreen';
+import { AIAssistantScreen } from '../screens/AIAssistantScreen';
 import { CalendarScreen } from '../screens/CalendarScreen';
+import { CityPickerScreen } from '../screens/CityPickerScreen';
 import { DeleteAccountScreen } from '../screens/DeleteAccountScreen';
 import { CloudSyncScreen as CloudSyncScreenBase } from '../screens/CloudSyncScreen';
 import { DutiesScreen } from '../screens/DutiesScreen';
@@ -18,9 +19,10 @@ import { DuaDetailScreen } from '../screens/DuaDetailScreen';
 import { DuasScreen } from '../screens/DuasScreen';
 import { EducationDetailScreen } from '../screens/EducationDetailScreen';
 import { EducationScreen } from '../screens/EducationScreen';
-import { FamilyModeScreen as FamilyModeScreenBase } from '../screens/FamilyModeScreen';
+import { FamilyModeScreen } from '../screens/FamilyModeScreen';
 import { HabitsScreen } from '../screens/HabitsScreen';
 import { HadithScreen } from '../screens/HadithScreen';
+import { HadithSectionScreen } from '../screens/HadithSectionScreen';
 import { FeedbackScreen } from '../screens/FeedbackScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ImsakiyeScreen } from '../screens/ImsakiyeScreen';
@@ -32,21 +34,15 @@ import { QiblaScreen } from '../screens/QiblaScreen';
 import { QuranReaderScreen } from '../screens/QuranReaderScreen';
 import { QuranScreen } from '../screens/QuranScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { StatisticsScreen as StatisticsScreenBase } from '../screens/StatisticsScreen';
+import { StatisticsScreen } from '../screens/StatisticsScreen';
 import { TasbihScreen } from '../screens/TasbihScreen';
 import { TasbihStatsScreen } from '../screens/TasbihStatsScreen';
-import { ThemesScreen as ThemesScreenBase } from '../screens/ThemesScreen';
-import { WidgetsScreen as WidgetsScreenBase } from '../screens/WidgetsScreen';
+import { ThemesScreen } from '../screens/ThemesScreen';
+import { WidgetsScreen } from '../screens/WidgetsScreen';
 import type { RootStackParamList } from './types';
 
-// Guest restrictions enforced per screen, not only on the home launcher
-const AIAssistantScreen = withGuestGate('ai_assistant', AIAssistantScreenBase);
+// Guest restrictions enforced per screen, not only on the home launcher (only cloud sync is left)
 const CloudSyncScreen = withGuestGate('cloud_sync', CloudSyncScreenBase);
-const FamilyModeScreen = withGuestGate('family_mode', FamilyModeScreenBase);
-const StatisticsScreen = withGuestGate('statistics', StatisticsScreenBase);
-const AdvancedRemindersScreen = withGuestGate('advanced_reminders', AdvancedRemindersScreenBase);
-const ThemesScreen = withGuestGate('themes', ThemesScreenBase);
-const WidgetsScreen = withGuestGate('widgets', WidgetsScreenBase);
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -56,10 +52,10 @@ function useStackScreenOptions(): NativeStackNavigationOptions {
   const { colors, type } = useTheme();
   return {
     headerShown: true,
-    headerTintColor: colors.primary,
+    headerTintColor: colors.primaryText,
     headerStyle: { backgroundColor: colors.background },
     headerShadowVisible: false,
-    headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: '600', color: colors.text },
+    headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: type.heading.fontWeight, color: colors.text },
     headerBackButtonDisplayMode: 'minimal',
     contentStyle: { backgroundColor: colors.background },
   };
@@ -91,11 +87,13 @@ function HomeStack() {
   const screenOpts = useStackScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOpts}>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      {/* The title names the back button ("Ana Sayfa, geri" instead of the route name "Home") */}
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false, title: t('tabs.home') }} />
       <Stack.Screen name="HomeLauncherEdit" component={HomeLauncherEditScreen} options={{ title: t('home.editLauncher') }} />
       <Stack.Screen name="Quran" component={QuranScreen} options={{ title: t('nav.quran') }} />
       <Stack.Screen name="QuranReader" component={QuranReaderScreen} options={{ title: t('nav.surah') }} />
       <Stack.Screen name="Hadith" component={HadithScreen} options={{ title: t('nav.hadith') }} />
+      <Stack.Screen name="HadithSection" component={HadithSectionScreen} options={{ title: t('nav.hadith') }} />
       <Stack.Screen name="Qibla" component={QiblaScreen} options={{ title: t('nav.qibla') }} />
       <Stack.Screen name="Places" component={PlacesScreen} options={{ title: t('nav.nearby') }} />
       <Stack.Screen name="Tasbih" component={TasbihScreen} options={{ title: t('nav.tasbih') }} />
@@ -118,6 +116,7 @@ function HomeStack() {
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
       <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ title: t('nav.feedback') }} />
       <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: t('account.deleteTitle') }} />
+      <Stack.Screen name="CityPicker" component={CityPickerScreen} options={{ title: t('city.title') }} />
     </Stack.Navigator>
   );
 }
@@ -139,21 +138,24 @@ function MoreStack() {
       <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ title: t('nav.stats') }} />
       <Stack.Screen name="TasbihStats" component={TasbihStatsScreen} options={{ title: t('tasbih.statsTitle') }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: t('nav.notifications') }} />
+      <Stack.Screen name="CityPicker" component={CityPickerScreen} options={{ title: t('city.title') }} />
+      {/* Settings links here: without it "Edit home screen" did nothing in the More tab */}
+      <Stack.Screen name="HomeLauncherEdit" component={HomeLauncherEditScreen} options={{ title: t('home.editLauncher') }} />
     </Stack.Navigator>
   );
 }
 
 export function AppNavigator() {
-  const { darkMode } = useApp();
+  const { darkMode } = useAppearance();
   const { t } = useTranslation();
-  const { colors, type } = useTheme();
+  const { colors, type, component } = useTheme();
   const { onNavigationStateChange } = useNavigationAnalytics();
   const base = darkMode ? DarkTheme : DefaultTheme;
   const navTheme = {
     ...base,
     colors: {
       ...base.colors,
-      primary: colors.primary,
+      primary: colors.primaryText,
       background: colors.background,
       card: colors.surface,
       text: colors.text,
@@ -166,10 +168,10 @@ export function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarActiveTintColor: colors.primary,
+          tabBarActiveTintColor: colors.primaryText,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.surface },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+          tabBarLabelStyle: component.tabBar.label,
           tabBarIcon: ({ color, size, focused }) => {
             const [active, inactive] = TAB_ICONS[route.name] ?? ['ellipse', 'ellipse-outline'];
             return <Ionicons name={focused ? active : inactive} size={size} color={color} />;
@@ -185,7 +187,7 @@ export function AppNavigator() {
             headerShown: true,
             headerStyle: { backgroundColor: colors.background },
             headerShadowVisible: false,
-            headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: '600', color: colors.text },
+            headerTitleStyle: { fontSize: type.heading.fontSize, fontWeight: type.heading.fontWeight, color: colors.text },
           }}
         />
         <Tab.Screen name="LearnTab" component={LearnStack} options={{ title: t('tabs.learn') }} />

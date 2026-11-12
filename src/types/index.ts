@@ -42,13 +42,6 @@ export interface CustomReminder {
   sound: 'default' | 'adhan_short' | 'silent';
 }
 
-export interface WidgetPreferences {
-  showNextPrayer: boolean;
-  showHijriDate: boolean;
-  showDailyDua: boolean;
-  compactMode: boolean;
-}
-
 export interface ActivityStats {
   tasbihTotal: number;
   habitsCompletedTotal: number;
@@ -110,16 +103,13 @@ export interface PrayerNotificationSettings {
   advanceMinutes: number;
 }
 
-export interface PrayerSchedule {
-  date: string;
-  times: Record<PrayerName, string>;
-}
-
 export interface DisabledPrayerRule {
   prayer: PrayerName;
   daysOfWeek: number[];
   specificDates: string[];
 }
+
+export type ThemeMode = 'system' | 'light' | 'dark';
 
 export interface UserSettings {
   appLanguage: AppLanguage;
@@ -135,7 +125,6 @@ export interface UserSettings {
   familyModeEnabled: boolean;
   activeFamilyMemberId: string | null;
   cloudSync: CloudSyncMeta;
-  widgetPrefs: WidgetPreferences;
   customReminders: CustomReminder[];
   offlineAudioEnabled: boolean;
   /** How the Quran reader lays out ayahs */
@@ -143,9 +132,14 @@ export interface UserSettings {
   /** Multiplier for Quran text size (0.85–1.6) */
   quranFontScale: number;
   homeLauncher: HomeLauncherLayout;
+  /** Appearance: follow the system (default), or always light / dark */
+  themeMode: ThemeMode;
+  /** Legacy mirror of `themeMode === 'dark'`, still read by older app versions through sync */
   darkMode: boolean;
   /** First-run introduction finished (language, prayer settings, permissions) */
   onboardingDone: boolean;
+  /** When the user last changed a setting; decides which device's settings win in a sync */
+  updatedAt?: string;
 }
 
 export type HomeFeatureId =
@@ -203,6 +197,8 @@ export interface QuranProgress {
   completedSurahs?: number[];
   /** Completed khatms */
   khatmCount?: number;
+  /** Removed bookmarks ("surah:ayah" → when), so a sync does not bring them back */
+  removedBookmarks?: Record<string, string>;
   /** Local/cloud merge timestamp */
   updatedAt?: string;
 }
@@ -226,6 +222,8 @@ export interface HadithBookmark {
 export interface HadithProgress {
   lastRead: HadithLastRead | null;
   bookmarks: HadithBookmark[];
+  /** Removed bookmarks ("collection:index" → when), so a sync does not bring them back */
+  removedBookmarks?: Record<string, string>;
   /** Local/cloud merge timestamp */
   updatedAt?: string;
 }
@@ -299,29 +297,4 @@ export interface NearbyPlace {
   type: 'mosque' | 'prayer_room' | 'halal_restaurant';
   /** Where the data came from, for attribution */
   source?: 'google' | 'osm';
-}
-
-export interface EducationTopic {
-  id: string;
-  title: string;
-  summary: string;
-  perspectives: {
-    sect: string;
-    approach: string;
-  }[];
-}
-
-export interface QuranEdition {
-  id: string;
-  name: string;
-  language: string;
-  translator?: string;
-  sect?: SectPreference;
-}
-
-export interface HadithCollection {
-  id: string;
-  name: string;
-  language: string;
-  sect?: SectPreference;
 }

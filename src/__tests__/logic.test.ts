@@ -101,3 +101,53 @@ describe('tasbih statistics', () => {
     expect(s.byDay.at(-1)).toEqual({ key: today, count: 33 });
   });
 });
+
+describe('zakat amount input (Y1)', () => {
+  const { parseAmount } = require('../services/zakat') as typeof import('../services/zakat');
+  it('reads Turkish thousands separators as thousands', () => {
+    expect(parseAmount('1.500')).toBe(1500);
+    expect(parseAmount('100.000')).toBe(100000);
+    expect(parseAmount('1.250.000')).toBe(1250000);
+    expect(parseAmount('1.250,50')).toBe(1250.5);
+  });
+  it('still reads decimals and English formats', () => {
+    expect(parseAmount('80.18')).toBe(80.18);
+    expect(parseAmount('1250,5')).toBe(1250.5);
+    expect(parseAmount('1,250.50')).toBe(1250.5);
+    expect(parseAmount('1,250,000')).toBe(1250000);
+    expect(parseAmount('1,500', 'en')).toBe(1500);
+    expect(parseAmount('1.5', 'en')).toBe(1.5);
+    expect(parseAmount(' 2 500 ')).toBe(2500);
+  });
+  it('rejects negative, empty and non-numeric input', () => {
+    expect(parseAmount('-500')).toBe(0);
+    expect(parseAmount('')).toBe(0);
+    expect(parseAmount('abc')).toBe(0);
+    expect(parseAmount('1e9')).toBe(0);
+  });
+});
+
+describe('prayer times far north and south (Y6)', () => {
+  const { getPrayerDates, formatClock } = require('../services/prayerTimes') as typeof import('../services/prayerTimes');
+  const ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+  const cases: [string, number, number, Date][] = [
+    ['Svalbard, polar night', 78.2232, 15.6267, new Date(2026, 10, 3, 12)],
+    ['Svalbard, midnight sun', 78.2232, 15.6267, new Date(2026, 5, 21, 12)],
+    ['Tromsø, December', 69.6492, 18.9553, new Date(2026, 11, 21, 12)],
+    ['Oslo, midsummer', 59.9139, 10.7522, new Date(2026, 5, 21, 12)],
+    ['Antarctic station', -77.85, 166.67, new Date(2026, 5, 21, 12)],
+  ];
+  for (const [name, lat, lon, date] of cases) {
+    for (const method of ['turkey', 'muslimWorldLeague'] as const) {
+      it(`${name} (${method}): every time is real and in the day's order`, () => {
+        const t = getPrayerDates(lat, lon, date, method, 'hanafi');
+        for (const p of ORDER) expect(Number.isNaN(t[p].getTime())).toBe(false);
+        for (let i = 1; i < ORDER.length; i++) expect(t[ORDER[i]].getTime()).toBeGreaterThan(t[ORDER[i - 1]].getTime());
+        for (const p of ORDER) expect(formatClock(t[p], 'tr')).not.toContain('NaN');
+      });
+    }
+  }
+  it('formatClock never prints NaN', () => {
+    expect(formatClock(new Date(NaN), 'tr')).toBe('--:--');
+  });
+});

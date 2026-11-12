@@ -32,7 +32,7 @@ export function ListRow({
   divider,
   destructive,
 }: Props) {
-  const { colors, space } = useTheme();
+  const { colors, space, motion } = useTheme();
 
   const content = (
     <View
@@ -44,7 +44,7 @@ export function ListRow({
     >
       {icon ? <IconBadge name={icon} size="sm" tone={destructive ? 'danger' : iconTone} /> : null}
       <View style={styles.text}>
-        <AppText variant="bodyStrong" tone={destructive ? 'danger' : 'default'} numberOfLines={1}>
+        <AppText variant="bodyStrong" tone={destructive ? 'danger' : 'default'} numberOfLines={2}>
           {title}
         </AppText>
         {subtitle ? (
@@ -71,7 +71,7 @@ export function ListRow({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+      style={({ pressed }) => ({ opacity: pressed ? motion.pressedOpacity : 1 })}
     >
       {content}
     </Pressable>

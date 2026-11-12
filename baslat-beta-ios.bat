@@ -5,7 +5,7 @@ echo.
 echo  Islamic+ — iOS beta (TestFlight)
 echo  -------------------------------
 echo  1) Apple Developer + App Store Connect uygulamasi gerekli
-echo  2) Bundle ID: com.islamic.app
+echo  2) Bundle ID: com.islamicplus.app
 echo.
 set /p step="Adim [1=build, 2=submit, 3=ikisi]: "
 if "%step%"=="2" goto submit

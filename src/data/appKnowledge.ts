@@ -1,5 +1,3 @@
-import type { AppLanguage } from '../types';
-
 export interface AppKnowledgeEntry {
   id: string;
   keywords: string[];
@@ -21,15 +19,15 @@ export const APP_KNOWLEDGE: AppKnowledgeEntry[] = [
     id: 'prayer_times',
     keywords: ['prayer', 'namaz', 'vakit', 'fajr', 'imsak', 'dhuhr', 'öğle', 'asr', 'maghrib', 'isha', 'adhan', 'calculation'],
     routeHint: 'Home → Prayer module / Settings',
-    en: 'Prayer times use your GPS location and the `adhan` library. Change calculation method and madhab (Hanafi/Shafi Asr) in **Settings**. Add the prayer-times module on Home if removed.',
-    tr: 'Namaz vakitleri konumunuza ve `adhan` kütüphanesine göredir. **Ayarlar**’dan hesaplama yöntemi ve mezhep (Hanefi/Şafii ikindi) değiştirilir. Ana ekrandan namaz modülünü ekleyebilirsiniz.',
+    en: 'Prayer times are calculated for your location or the city you choose (tap the city name on Home). Change the calculation method and madhab (Hanafi/Shafi Asr) in **Settings**.',
+    tr: 'Namaz vakitleri konumunuza ya da seçtiğiniz şehre göre hesaplanır (Ana sayfada şehir adına dokunun). Hesaplama yöntemi ve mezhep (Hanefi/Şafii ikindi) **Ayarlar**’dan değiştirilir.',
   },
   {
     id: 'notifications',
     keywords: ['notification', 'bildirim', 'reminder', 'hatırlat', 'adhan sound', 'alarm'],
     routeHint: 'More → Notifications / Advanced Reminders',
-    en: '**Notifications**: per-prayer on/off, sounds, and weekday mute chips. **Advanced Reminders**: custom dhikr, dua, or Quran times by weekday. Full alerts need a real app build (not Expo Go on Android).',
-    tr: '**Bildirimler**: namaz bazlı aç/kapa, ses ve haftanın günlerine göre kapatma. **Gelişmiş hatırlatıcılar**: özel zikir, dua, Kur’an saati. Tam bildirim için gerçek uygulama derlemesi gerekir (Android Expo Go’da sınırlı).',
+    en: '**Notifications**: per-prayer on/off, sounds, and weekday mute chips. **Advanced Reminders**: custom dhikr, dua, or Quran times by weekday.',
+    tr: '**Bildirimler**: namaz bazlı aç/kapa, ses ve haftanın günlerine göre kapatma. **Gelişmiş hatırlatıcılar**: özel zikir, dua, Kur’an saati.',
   },
   {
     id: 'quran',
@@ -133,7 +131,7 @@ export const APP_KNOWLEDGE: AppKnowledgeEntry[] = [
     id: 'widgets',
     keywords: ['widget', 'home widget', 'ana ekran widget'],
     routeHint: 'Settings → Widgets / Home module',
-    en: '**Widgets**: configure next prayer, Hijri date, and daily dua on the home widget module. Add `Widget` from Home → Edit.',
+    en: '**Widgets**: configure next prayer, Hijri date, and daily dua on the home widget module. Add the widget module from Home → Edit, or add the “Prayer Times” widget to your phone’s home screen.',
     tr: '**Widget**: sıradaki namaz, Hicri tarih, günlük dua. Ana ekrandan Düzenle ile widget modülünü ekleyin.',
   },
   {
@@ -147,8 +145,8 @@ export const APP_KNOWLEDGE: AppKnowledgeEntry[] = [
     id: 'auth',
     keywords: ['sign in', 'login', 'register', 'giriş', 'kayıt', 'guest', 'misafir', 'account', 'hesap'],
     routeHint: 'App launch / Settings',
-    en: '**Account**: register or sign in with email. Data uses pseudonym + hashed email in Supabase when configured. **Guest** skips login but locks premium features (AI, cloud, family, stats, themes, widgets, advanced reminders) — see developer config `featureAccess.ts`.',
-    tr: '**Hesap**: e-posta ile kayıt/giriş. Supabase açıksa takma ad + e-posta hash saklanır. **Misafir** girişsiz devam eder; premium özellikler kilitli (YZ, bulut, aile, istatistik, tema, widget, gelişmiş hatırlatıcı) — `featureAccess.ts`.',
+    en: '**Account**: register or sign in with email to sync between devices. **Guest** use needs no account but some features are locked (assistant, cloud sync, family, statistics, themes, widgets, advanced reminders); what you record as a guest moves to your account when you create one.',
+    tr: '**Hesap**: cihazlar arasında eşitlemek için e-posta ile kayıt olun ya da giriş yapın. **Misafir** olarak hesapsız kullanılır ama bazı özellikler kilitlidir (asistan, bulut, aile, istatistik, tema, widget, gelişmiş hatırlatıcı); hesap açınca misafirken kaydettikleriniz hesabınıza taşınır.',
   },
   {
     id: 'settings',
@@ -191,10 +189,3 @@ export const ISLAMIC_KNOWLEDGE: AppKnowledgeEntry[] = [
     tr: 'Hadisler Peygamber Efendimiz ﷺ hakkındaki rivayetlerdir. İnceleme için Hadis bölümünü kullanın; hüküm için alime danışın.',
   },
 ];
-
-export function getKnowledgeCatalog(lang: AppLanguage): string {
-  const lines = APP_KNOWLEDGE.map((e) => `• ${lang === 'tr' ? e.tr.split('.')[0] : e.en.split('.')[0]}`);
-  return lang === 'tr'
-    ? `Uygulama konuları:\n${lines.join('\n')}`
-    : `App topics I can guide:\n${lines.join('\n')}`;
-}

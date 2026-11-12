@@ -54,3 +54,30 @@ export function calculateZakat(input: ZakatInput): ZakatResult {
 export function calculateSadaqaSuggested(monthlyIncome: number, percentage: number): number {
   return (monthlyIncome * percentage) / 100;
 }
+
+/**
+ * Reads an amount as people type it: "1.250,50" and "1,250.50" (both separators: the last one is
+ * the decimal mark), "1.500" or "100.000" (a dot before exactly three digits is a Turkish thousands
+ * separator, not 1.5), "1250,5" (a single comma is a decimal mark) and "80.18". In English the
+ * roles of a lone separator swap: "1,500" is 1500 and "1.500" is 1.5.
+ */
+export function parseAmount(raw: string, lang: 'tr' | 'en' = 'tr'): number {
+  const s = raw.replace(/\s/g, '');
+  if (!s) return 0;
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  let normalized: string;
+  if (lastComma >= 0 && lastDot >= 0) {
+    normalized = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (lastComma >= 0) {
+    const thousands = lang === 'en' ? /^\d{1,3}(,\d{3})+$/ : /^\d{1,3}(,\d{3}){2,}$/;
+    normalized = thousands.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  } else if (lastDot >= 0) {
+    normalized = lang === 'tr' && /^\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g, '') : s;
+  } else {
+    normalized = s;
+  }
+  if (!/^\d*\.?\d+$/.test(normalized)) return 0;
+  const n = Number(normalized);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}

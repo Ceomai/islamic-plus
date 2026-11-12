@@ -1,5 +1,6 @@
 import type { TasbihData, TasbihSession } from '../types';
 import { lastDayKeys, localDateKey } from '../utils/date';
+import { createSerialQueue } from '../utils/serial';
 import { getJson, setJson, storageKeys } from './storage';
 import { notifyAppDataChanged } from './userDataCloud';
 
@@ -22,46 +23,67 @@ function pruneLog(log: Record<string, number[]>): Record<string, number[]> {
   return Object.fromEntries(Object.entries(log).filter(([k]) => keep.has(k)));
 }
 
-export async function setTasbihGoal(goal: number): Promise<TasbihData> {
-  const data = await loadTasbihData();
-  const next = { ...data, dailyGoal: Math.max(0, Math.round(goal)) };
-  await saveTasbihData(next);
-  return next;
-}
+// Every change below goes through one queue so fast taps are all counted
+const serial = createSerialQueue();
 
-/** One tap: advances the current round and records the hour it happened in. */
-export async function incrementTasbih(at: Date = new Date()): Promise<TasbihData> {
-  const data = await loadTasbihData();
-  const day = localDateKey(at);
-  const log = { ...(data.log ?? {}) };
-  const hours = [...(log[day] ?? new Array(24).fill(0))];
-  hours[at.getHours()] += 1;
-  log[day] = hours;
-  const next = { ...data, count: data.count + 1, total: data.total + 1, log: pruneLog(log) };
-  await saveTasbihData(next);
-  return next;
+export function setTasbihGoal(goal: number): Promise<TasbihData> {
+  return serial(async () => {
+    const data = await loadTasbihData();
+    const next = { ...data, dailyGoal: Math.max(0, Math.round(goal)) };
+    await saveTasbihData(next);
+    return next;
+  });
 }
 
 function withSession(data: TasbihData, count: number, target: number, dhikrId?: string): TasbihSession[] {
-  const session: TasbihSession = { id: `tb-${Date.now()}`, count, target, completedAt: new Date().toISOString(), dhikrId };
+  const session: TasbihSession = { id: `tb-${Date.now()}-${data.sessions.length}`, count, target, completedAt: new Date().toISOString(), dhikrId };
   return [session, ...data.sessions].slice(0, MAX_SESSIONS);
 }
 
-/** A round reached its target: keep it in history and start the next round from zero. */
-export async function completeTasbihRound(target: number, dhikrId?: string): Promise<TasbihData> {
-  const data = await loadTasbihData();
-  const next = { ...data, count: 0, sessions: withSession(data, data.count, target, dhikrId) };
-  await saveTasbihData(next);
-  return next;
+export interface TasbihTapResult {
+  data: TasbihData;
+  /** The round's count after this tap (0 once the round is complete) */
+  count: number;
+  /** This tap reached the target: the round is in history and the next one starts from zero */
+  roundCompleted: boolean;
+}
+
+/**
+ * One tap: advances the current round, records the hour it happened in and, when the round reaches
+ * `target`, keeps it in history and starts the next one, all in one step. Done as two steps, two
+ * quick taps at the target could both complete the round.
+ */
+export function incrementTasbih(target: number, dhikrId?: string, at: Date = new Date()): Promise<TasbihTapResult> {
+  return serial(async () => {
+    const data = await loadTasbihData();
+    const day = localDateKey(at);
+    const log = { ...(data.log ?? {}) };
+    const hours = [...(log[day] ?? new Array(24).fill(0))];
+    hours[at.getHours()] += 1;
+    log[day] = hours;
+    const count = data.count + 1;
+    const roundCompleted = count >= target;
+    const next: TasbihData = {
+      ...data,
+      count: roundCompleted ? 0 : count,
+      total: data.total + 1,
+      log: pruneLog(log),
+      ...(roundCompleted ? { sessions: withSession(data, count, target, dhikrId) } : {}),
+    };
+    await saveTasbihData(next);
+    return { data: next, count: next.count, roundCompleted };
+  });
 }
 
 /** Manual reset: an unfinished round is still kept in history so the lifetime numbers stay true. */
-export async function resetTasbihSession(target: number, dhikrId?: string): Promise<TasbihData> {
-  const data = await loadTasbihData();
-  const sessions = data.count > 0 ? withSession(data, data.count, target, dhikrId) : data.sessions;
-  const next = { ...data, count: 0, sessions };
-  await saveTasbihData(next);
-  return next;
+export function resetTasbihSession(target: number, dhikrId?: string): Promise<TasbihData> {
+  return serial(async () => {
+    const data = await loadTasbihData();
+    const sessions = data.count > 0 ? withSession(data, data.count, target, dhikrId) : data.sessions;
+    const next = { ...data, count: 0, sessions };
+    await saveTasbihData(next);
+    return next;
+  });
 }
 
 export interface TasbihSummary {

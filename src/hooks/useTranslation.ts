@@ -1,11 +1,9 @@
 import { useCallback, useMemo } from 'react';
-import { translate } from '../i18n';
-import { useApp } from '../context/AppContext';
-import type { AppLanguage } from '../types';
+import { localeFor, translate } from '../i18n';
+import { useAppLanguage } from '../context/AppContext';
 
 export function useTranslation() {
-  const { settings } = useApp();
-  const lang = settings.appLanguage;
+  const lang = useAppLanguage();
 
   const t = useCallback(
     (key: string, params?: Record<string, string>) => translate(lang, key, params),
@@ -18,7 +16,8 @@ export function useTranslation() {
   );
 
   return useMemo(
-    () => ({ t, prayer, appLanguage: lang as AppLanguage, lang: lang as AppLanguage }),
+    // locale: BCP 47 tag for toLocaleString / Intl formatting in the app language
+    () => ({ t, prayer, appLanguage: lang, lang, locale: localeFor(lang) }),
     [t, prayer, lang]
   );
 }

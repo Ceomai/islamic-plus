@@ -14,8 +14,7 @@ const CHART_HEIGHT = 110;
 
 export function TasbihStatsScreen() {
   const { colors, radius, space } = useTheme();
-  const { t, lang } = useTranslation();
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  const { t, locale } = useTranslation();
   const [data, setData] = useState<TasbihData | null>(null);
   const [period, setPeriod] = useState<Period>('7');
 
@@ -51,10 +50,10 @@ export function TasbihStatsScreen() {
       <View style={{ flexDirection: 'row', gap: space[2] }}>
         {tiles.map((tile) => (
           <Surface key={tile.label} variant="soft" padding={space[3]} style={{ flex: 1 }}>
-            <AppText variant="title" color={colors.onPrimarySoft}>
+            <AppText variant="title" tone="onPrimarySoft" numeric>
               {num(tile.value)}
             </AppText>
-            <AppText variant="caption" color={colors.onPrimarySoft} style={{ fontWeight: '600' }}>
+            <AppText variant="captionStrong" tone="onPrimarySoft">
               {tile.label}
             </AppText>
           </Surface>
@@ -83,7 +82,7 @@ export function TasbihStatsScreen() {
                   backgroundColor: peak && r.label === peak.label ? colors.primary : colors.primarySoft,
                 }}
               />
-              <AppText variant="caption" tone="muted" style={{ marginTop: 4, fontSize: 10 }}>
+              <AppText variant="caption" tone="muted" style={{ marginTop: space[1] }}>
                 {r.label.slice(0, 2)}
               </AppText>
             </View>
@@ -97,13 +96,13 @@ export function TasbihStatsScreen() {
       {/* Same data as a table: range, count and share of the period */}
       <Surface padding={0} style={{ paddingHorizontal: space[4], marginTop: space[3] }}>
         <View style={{ flexDirection: 'row', paddingVertical: space[2], borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <AppText variant="caption" tone="muted" style={{ flex: 1, fontWeight: '600' }}>
+          <AppText variant="captionStrong" tone="muted" style={{ flex: 1 }}>
             {t('tasbih.timeRange')}
           </AppText>
-          <AppText variant="caption" tone="muted" style={{ width: 70, textAlign: 'right', fontWeight: '600' }}>
+          <AppText variant="captionStrong" tone="muted" style={{ width: 70, textAlign: 'right' }}>
             {t('tasbih.count')}
           </AppText>
-          <AppText variant="caption" tone="muted" style={{ width: 56, textAlign: 'right', fontWeight: '600' }}>
+          <AppText variant="captionStrong" tone="muted" style={{ width: 56, textAlign: 'right' }}>
             %
           </AppText>
         </View>
@@ -120,7 +119,7 @@ export function TasbihStatsScreen() {
             <AppText variant="callout" style={{ flex: 1 }}>
               {r.label}
             </AppText>
-            <AppText variant="callout" style={{ width: 70, textAlign: 'right', fontWeight: '600' }}>
+            <AppText variant="calloutStrong" numeric style={{ width: 70, textAlign: 'right' }}>
               {num(r.count)}
             </AppText>
             <AppText variant="callout" tone="secondary" style={{ width: 56, textAlign: 'right' }}>
@@ -135,7 +134,7 @@ export function TasbihStatsScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_HEIGHT + 40 }}>
           {summary.byDay.map((d) => (
             <View key={d.key} style={{ flex: 1, alignItems: 'center' }}>
-              <AppText variant="caption" tone="secondary" style={{ fontSize: 10 }}>
+              <AppText variant="caption" tone="secondary" numeric numberOfLines={1}>
                 {d.count ? num(d.count) : ''}
               </AppText>
               <View

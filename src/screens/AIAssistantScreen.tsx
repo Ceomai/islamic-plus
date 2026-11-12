@@ -1,20 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from 'react-native';
-import { useApp } from '../context/AppContext';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View, type ScrollViewInstance } from 'react-native';
+import { ChatBubble } from '../components/assistant/ChatBubble';
+import { ChatComposer } from '../components/assistant/ChatComposer';
+import { useAIChat, useAppLocation, useSettings } from '../context/AppContext';
+import { useEventCallback } from '../hooks/useEventCallback';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { askAssistant, getAIWelcome } from '../services/aiAssistant';
-import { askRemoteAssistant, isRemoteAssistantAvailable } from '../services/assistantRemote';
-import { trackFeatureAction } from '../services/cloudAnalytics';
+import { getAIWelcome } from '../services/assistant';
+import { getReply, spokenReply } from '../services/assistantSession';
 import { formatClock, getNextPrayer } from '../services/prayerTimes';
-import type { AssistantAction, AssistantTarget } from '../types';
+import type { AssistantTarget } from '../types';
 import { AppText, Chip } from '../ui';
+import { announce } from '../utils/announce';
 import { localDateKey } from '../utils/date';
+import { confirmDestructive } from '../utils/confirm';
 
 const SUGGESTIONS: Record<'tr' | 'en', string[]> = {
   tr: ['Yasin suresini aç', 'Yolculuk duasını açıkla', 'Sıradaki namaz ne zaman?', 'Orucu bozan şeyler nedir?', 'Kıbleyi göster', 'دعاء قبل النوم'],
@@ -26,18 +31,38 @@ const LEARN_ONLY = new Set(['Education', 'EducationDetail']);
 const AUTO_NAVIGATE_DELAY = 1200;
 
 export function AIAssistantScreen() {
-  const { aiMessages, sendAIMessage, clearAIChat, settings, location } = useApp();
+  const { aiMessages, sendAIMessage, clearAIChat } = useAIChat();
+  const { settings } = useSettings();
+  const { location } = useAppLocation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { canAccess } = useFeatureAccess();
-  const { colors, radius, space, type } = useTheme();
+  const { colors, radius, space, layout } = useTheme();
+  const reduced = useReducedMotion();
+  const headerHeight = useHeaderHeight();
   const { t, lang } = useTranslation();
-  const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const pendingNav = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against a double tap sending the same question twice (busy is only set later)
+  const sending = useRef(false);
+  // Messages already in the chat when the screen opened appear in place; new ones fade up
+  const [initialIds] = useState(() => new Set(aiMessages.map((m) => m.id)));
 
-  useEffect(() => {
+  // Leaving the screen cancels a pending jump, so the user is not pulled to a page from elsewhere
+  useEffect(
+    () =>
+      navigation.addListener('blur', () => {
+        if (pendingNav.current) clearTimeout(pendingNav.current);
+        pendingNav.current = null;
+      }),
+    [navigation]
+  );
+
+  // Once on open: an empty chat starts with the welcome message
+  const welcomeOnOpen = useEffectEvent(() => {
     if (aiMessages.length === 0) void sendAIMessage('', getAIWelcome(settings.appLanguage));
+  });
+  useEffect(() => {
+    welcomeOnOpen();
     return () => {
       if (pendingNav.current) clearTimeout(pendingNav.current);
     };
@@ -45,7 +70,7 @@ export function AIAssistantScreen() {
 
   // The assistant screen is mounted in several stacks; open the target in this stack when it
   // exists here, otherwise in the tab that owns it.
-  const open = (target: AssistantTarget) => {
+  const open = useEventCallback((target: AssistantTarget) => {
     if (pendingNav.current) clearTimeout(pendingNav.current);
     // Targets come from stored chat JSON, so the route/params pairing is checked by the assistant, not the type system
     const nav = navigation as unknown as { navigate: (screen: string, params?: object) => void };
@@ -57,68 +82,63 @@ export function AIAssistantScreen() {
     const parent = navigation.getParent() as unknown as typeof nav | undefined;
     // initial: false keeps the tab's first screen underneath, so the back button returns to it
     parent?.navigate(tab, { screen: target.screen, params: target.params, initial: false });
+  });
+
+  /** Starts answering; false when the question is not taken (empty, or another is on its way) */
+  const send = (raw: string): boolean => {
+    const text = raw.trim();
+    if (!text || busy || sending.current) return false;
+    sending.current = true;
+    void sendNow(text).finally(() => {
+      sending.current = false;
+    });
+    return true;
   };
 
-  const send = async (raw: string) => {
-    const text = raw.trim();
-    if (!text || busy) return;
-    setInput('');
+  const sendNow = async (text: string) => {
     const next = location ? getNextPrayer(location.latitude, location.longitude, settings.calculationMethod, settings.madhab) : null;
-    const nextPrayer = next ? { name: next.name, time: formatClock(next.time, lang) } : null;
-    const scrollDown = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-
-    let reply: { text: string; actions: AssistantAction[]; autoNavigate?: AssistantTarget } | null = null;
-    let note = '';
-    if (await isRemoteAssistantAvailable()) {
+    const ctx = {
+      appLang: lang,
+      quranEdition: settings.quranEditionId,
+      nextPrayer: next ? { name: next.name, time: formatClock(next.time, lang) } : null,
+      today: localDateKey(),
+      history: aiMessages.filter((m) => m.content.length > 0),
+      limitedNote: t('ai.limited'),
+    };
+    const reply = await getReply(text, ctx, async () => {
       // Show the question right away; the server answer can take a few seconds
-      const history = aiMessages.filter((m) => m.content.length > 0);
       await sendAIMessage(text, '');
-      scrollDown();
       setBusy(true);
-      const remote = await askRemoteAssistant(text, history, {
-        appLang: lang,
-        quranEdition: settings.quranEditionId,
-        nextPrayer,
-        today: localDateKey(),
-      });
-      setBusy(false);
-      if (remote?.limited) note = `\n\n${t('ai.limited')}`;
-      else if (remote) reply = remote;
-      if (!reply) {
-        const local = askAssistant(text, { appLang: lang, quranEdition: settings.quranEditionId, nextPrayer });
-        reply = { ...local, text: local.text + note };
-      }
-      await sendAIMessage('', reply.text, reply.actions);
-    } else {
-      const local = askAssistant(text, { appLang: lang, quranEdition: settings.quranEditionId, nextPrayer });
-      // Unanswered questions show which words the on-device vocabulary still lacks
-      if (local.matched === false) void trackFeatureAction('ai', 'unmatched', { lang: local.lang });
-      reply = local;
-      await sendAIMessage(text, reply.text, reply.actions);
-    }
-    scrollDown();
+      // Android reads the "thinking" bubble through its live region
+      announce(t('ai.thinking'));
+    });
+    setBusy(false);
+    await sendAIMessage(reply.questionPosted ? '' : text, reply.text, reply.actions);
+    // The new reply is not in a live region (the whole chat would be re-read), so announce it
+    announce(spokenReply(reply.text), { hasLiveRegion: false });
     // Let the reply be read for a moment, then open the page; the chat stays when coming back
     const target = reply.autoNavigate;
-    if (target) pendingNav.current = setTimeout(() => open(target), AUTO_NAVIGATE_DELAY);
+    if (target && navigation.isFocused()) {
+      pendingNav.current = setTimeout(() => {
+        pendingNav.current = null;
+        if (navigation.isFocused()) open(target);
+      }, AUTO_NAVIGATE_DELAY);
+    }
   };
 
-  if (!canAccess('ai_assistant')) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6], backgroundColor: colors.background }}>
-        <AppText tone="secondary" align="center">
-          {t('auth.guestBanner')}
-        </AppText>
-      </View>
-    );
-  }
+  const clearChat = async () => {
+    const ok = await confirmDestructive({ title: t('ai.clearTitle'), message: t('ai.clearBody'), confirm: t('ai.clear'), cancel: t('account.cancel') });
+    if (ok) await clearAIChat();
+  };
 
-  const messages = aiMessages.filter((m) => m.content.length > 0);
+  const messages = useMemo(() => aiMessages.filter((m) => m.content.length > 0), [aiMessages]);
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      // The native header sits above this view; its height differs per device and orientation
+      keyboardVerticalOffset={headerHeight}
     >
       <View style={{ flexDirection: 'row', gap: space[2], padding: space[3], backgroundColor: colors.surfaceMuted }}>
         <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
@@ -127,47 +147,21 @@ export function AIAssistantScreen() {
         </AppText>
       </View>
 
-      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: space[4], gap: space[3] }} keyboardShouldPersistTaps="handled">
-        {messages.map((m) => {
-          const mine = m.role === 'user';
-          // Arabic replies read right to left
-          const rtl = !mine && /[؀-ۿ]/.test(m.content.slice(0, 40));
-          return (
-            <View key={m.id} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
-              <View
-                style={{
-                  backgroundColor: mine ? colors.primary : colors.surface,
-                  borderColor: colors.border,
-                  borderWidth: mine ? 0 : 1,
-                  borderRadius: radius.lg,
-                  borderBottomRightRadius: mine ? 4 : radius.lg,
-                  borderBottomLeftRadius: mine ? radius.lg : 4,
-                  paddingHorizontal: space[4],
-                  paddingVertical: space[3],
-                }}
-              >
-                <AppText variant="body" color={mine ? colors.onPrimary : colors.text} style={rtl ? { writingDirection: 'rtl', textAlign: 'right' } : undefined}>
-                  {m.content}
-                </AppText>
-              </View>
-              {m.actions?.length ? (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[2] }}>
-                  {m.actions.map((a, i) => (
-                    <Chip
-                      key={`${a.target.screen}-${i}`}
-                      label={a.label}
-                      icon={(a.icon as keyof typeof Ionicons.glyphMap | undefined) ?? 'arrow-forward'}
-                      selected={i === 0}
-                      onPress={() => open(a.target)}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          );
-        })}
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ padding: space[4], gap: space[3], width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' }}
+        keyboardShouldPersistTaps="handled"
+        // Follows the chat to its newest message once it is laid out (no timer guessing when that is)
+        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: !reduced })}
+      >
+        {messages.map((m) => (
+          <ChatBubble key={m.id} message={m} animate={!initialIds.has(m.id)} onOpen={open} />
+        ))}
         {busy && (
           <View
+            accessible
+            accessibilityLiveRegion="polite"
+            accessibilityLabel={t('ai.thinking')}
             style={{
               alignSelf: 'flex-start',
               flexDirection: 'row',
@@ -197,59 +191,7 @@ export function AIAssistantScreen() {
         )}
       </ScrollView>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          gap: space[2],
-          padding: space[3],
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          backgroundColor: colors.surface,
-        }}
-      >
-        <Pressable onPress={clearAIChat} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('ai.clear')} style={{ padding: space[2] }}>
-          <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
-        </Pressable>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder={t('ai.placeholder')}
-          placeholderTextColor={colors.textMuted}
-          multiline
-          blurOnSubmit
-          onSubmitEditing={() => send(input)}
-          returnKeyType="send"
-          style={[
-            type.body,
-            {
-              flex: 1,
-              maxHeight: 120,
-              color: colors.text,
-              backgroundColor: colors.background,
-              borderRadius: radius.md,
-              paddingHorizontal: space[3],
-              paddingVertical: space[2],
-            },
-          ]}
-        />
-        <Pressable
-          onPress={() => send(input)}
-          accessibilityRole="button"
-          accessibilityLabel={t('ai.send')}
-          style={({ pressed }) => ({
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: pressed ? colors.primaryPressed : colors.primary,
-            opacity: input.trim() && !busy ? 1 : 0.5,
-          })}
-        >
-          <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
-        </Pressable>
-      </View>
+      <ChatComposer busy={busy} onSend={send} onClear={() => void clearChat()} />
     </KeyboardAvoidingView>
   );
 }

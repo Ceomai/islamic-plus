@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import type { NavigationState } from '@react-navigation/native';
 import {
@@ -20,7 +20,8 @@ function getActiveRouteName(state: NavigationState | undefined): string | undefi
 
 export function useNavigationAnalytics() {
   const routeNameRef = useRef<string | undefined>(undefined);
-  const startTimeRef = useRef<number>(Date.now());
+  const [mountedAt] = useState(() => Date.now());
+  const startTimeRef = useRef<number>(mountedAt);
   const appOpenLoggedRef = useRef(false);
 
   const leaveCurrentScreen = useCallback(async () => {

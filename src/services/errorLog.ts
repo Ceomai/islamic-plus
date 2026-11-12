@@ -113,10 +113,6 @@ export async function getErrorLog(): Promise<ErrorEntry[]> {
   }
 }
 
-export async function clearErrorLog(): Promise<void> {
-  await AsyncStorage.removeItem(KEY);
-}
-
 export async function logError(error: unknown, source: ErrorEntry['source'], fatal = false): Promise<void> {
   const err = error instanceof Error ? error : new Error(String(error));
   const entry: ErrorEntry = {

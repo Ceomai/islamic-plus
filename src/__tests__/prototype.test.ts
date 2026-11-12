@@ -190,3 +190,10 @@ describe('hadith library', () => {
     expect(sectionOfHadith(bukhari, 999999)).toBeUndefined();
   });
 });
+
+describe('kaza estimate limits (O9)', () => {
+  it('never adds more than a lifetime', () => {
+    const k = estimateKaza(EMPTY_KAZA, 1e9, 1e9, true);
+    expect(k.counts.fajr).toBe(80 * 365 + 30000);
+  });
+});

@@ -74,20 +74,20 @@ Islamic/
 
 ## Dua audio
 
-Each dua has a dedicated MP3 (Hisnul Muslim via [Alsarmad/Adhkar-json](https://github.com/Alsarmad/Adhkar-json)). Regenerate mapping:
+Each dua has a dedicated MP3 (Hisnul Muslim via [Alsarmad/Adhkar-json](https://github.com/Alsarmad/Adhkar-json)). The licence is still being confirmed (docs/store/DUA-AUDIO-PERMISSION.md); `ADHKAR_AUDIO_ENABLED` in src/data/duas.ts turns it off. Check texts and audio links:
 
 ```bash
-npm run dua-audio:sync
+npm run duas:verify
 ```
 
 ## Production checklist
 
 - [x] EAS Build configured (`eas.json`)
-- [x] Placeholder app icons under `assets/`
 - [x] Privacy policy ([docs/PRIVACY.md](docs/PRIVACY.md))
-- [ ] Replace placeholder icons with final branding
-- [ ] Add adhan sound files under `assets/sounds/`
-- [ ] Full Hadith API integration
+- [x] Final icons (mosque logo) under `assets/`
+- [x] Adhan sounds under `assets/sounds/`
+- [x] Hadith collections (fawazahmed0/hadith-api) with Turkish chapter names
+- [x] Pre-release audit: DENETIM_RAPORU.md
 - [ ] App Store / Play Store listing (after beta)
 
 ## License

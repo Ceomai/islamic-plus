@@ -7,12 +7,11 @@ import { AppText, ListRow, Screen, SectionHeader, Surface } from '../ui';
 
 export function CalendarScreen() {
   const { colors, radius, space } = useTheme();
-  const { t, lang } = useTranslation();
+  const { t, lang, locale } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const hijri = useMemo(() => gregorianToHijri(today, lang), [today, lang]);
   const events = useMemo(() => getUpcomingIslamicEvents(today, 9, lang), [today, lang]);
   const months = hijriMonthNames(lang);
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
 
   const daysLabel = (n: number) =>
     n === 0 ? t('calendar.today') : n === 1 ? t('calendar.tomorrow') : t('calendar.daysLeft', { n: String(n) });
@@ -26,10 +25,10 @@ export function CalendarScreen() {
         <AppText variant="display" color={colors.onHero} style={{ marginTop: space[1] }}>
           {hijri.day} {hijri.monthName}
         </AppText>
-        <AppText variant="heading" color={colors.onHero} style={{ fontWeight: '400' }}>
+        <AppText variant="body" tone="onHero">
           {hijri.year}
         </AppText>
-        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: space[4] }} />
+        <View style={{ height: 1, backgroundColor: colors.heroDivider, marginVertical: space[4] }} />
         <AppText variant="caption" color={colors.onHeroMuted}>
           {t('calendar.gregorian')}
         </AppText>
@@ -76,7 +75,7 @@ export function CalendarScreen() {
               <AppText variant="caption" color={current ? colors.onPrimary : colors.textMuted}>
                 {i + 1}
               </AppText>
-              <AppText variant="callout" color={current ? colors.onPrimary : colors.text} numberOfLines={1} style={{ fontWeight: '600' }}>
+              <AppText variant="calloutStrong" color={current ? colors.onPrimary : colors.text} numberOfLines={1}>
                 {m}
               </AppText>
             </View>

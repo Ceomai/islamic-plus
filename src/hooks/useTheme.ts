@@ -1,38 +1,31 @@
 import { useMemo } from 'react';
 import { APP_THEMES } from '../constants/themes';
-import { useApp } from '../context/AppContext';
-import { neutralDark, neutralLight, radius, space, type } from '../theme/tokens';
+import { useAppearance } from '../context/AppContext';
+import { buildThemeColors } from '../theme/colors';
+import { component, fontWeight, layout, motion, numeric, radius, space, type } from '../theme/tokens';
 
 export function useTheme() {
-  const { darkMode, settings } = useApp();
-  const preset = APP_THEMES[settings.themeId] ?? APP_THEMES.emerald;
+  const { darkMode, themeId } = useAppearance();
+  const preset = APP_THEMES[themeId] ?? APP_THEMES.emerald;
 
-  return useMemo(() => {
-    const neutral = darkMode ? neutralDark : neutralLight;
-    const brand = darkMode ? preset.dark : preset.light;
-    return {
+  return useMemo(
+    () => ({
       dark: darkMode,
-      themeId: settings.themeId,
+      themeId,
       preset,
       space,
       radius,
       type,
-      colors: {
-        ...neutral,
-        ...brand,
-        onPrimary: '#FFFFFF',
-        onHero: '#FFFFFF',
-        onHeroMuted: 'rgba(255, 255, 255, 0.72)',
-        // Legacy aliases — older screens still read these names
-        primaryLight: brand.primary,
-        primaryDark: brand.primaryPressed,
-        accentLight: brand.accentSoft,
-        textOnPrimary: '#FFFFFF',
-        gradient: [brand.hero, brand.hero, brand.hero] as [string, string, string],
-      },
-    };
-  }, [darkMode, settings.themeId, preset]);
+      numeric,
+      fontWeight,
+      motion,
+      layout,
+      component,
+      colors: buildThemeColors(preset, darkMode),
+    }),
+    [darkMode, themeId, preset]
+  );
 }
 
 export type Theme = ReturnType<typeof useTheme>;
-export type ThemeColors = Theme['colors'];
+export type { ThemeColors } from '../theme/colors';

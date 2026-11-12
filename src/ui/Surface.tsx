@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { PressableScale } from './PressableScale';
 
 export type SurfaceVariant = 'default' | 'muted' | 'hero' | 'soft';
 
@@ -28,14 +29,9 @@ export function Surface({ children, variant = 'default', padding, onPress, style
 
   if (onPress) {
     return (
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        style={({ pressed }) => [base, { opacity: pressed ? 0.85 : 1 }, style]}
-      >
+      <PressableScale onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel} style={[base, style]}>
         {children}
-      </Pressable>
+      </PressableScale>
     );
   }
   return <View style={[base, style]}>{children}</View>;

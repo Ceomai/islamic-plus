@@ -1,59 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, ScrollView, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DUA_CATEGORIES, DUA_PURPOSES, DUAS, getDuaCategoryIcon, searchDuas, type Dua, type DuaCategory } from '../data/duas';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import type { RootStackParamList } from '../navigation/types';
-import { AppText, Chip, IconBadge, Surface } from '../ui';
+import { AppText, Chip, IconBadge, SearchField, Surface } from '../ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Duas'>;
 
 export function DuasScreen({ navigation }: Props) {
-  const { colors, radius, space, type } = useTheme();
+  const { colors, space } = useTheme();
   const { t, lang } = useTranslation();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<DuaCategory | 'all'>('all');
 
-  const categoryLabel = (c: DuaCategory) => t(`duas.cat.${c}`);
+  const categoryLabel = useCallback((c: DuaCategory) => t(`duas.cat.${c}`), [t]);
 
   const results = useMemo(() => {
     const base = query.trim() ? searchDuas(query, lang, categoryLabel) : DUAS;
     return category === 'all' ? base : base.filter((d) => d.category === category);
-  }, [query, category, lang, t]);
+  }, [query, category, lang, categoryLabel]);
 
   const searching = query.trim().length > 0;
 
   const header = (
     <View style={{ paddingBottom: space[2] }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderWidth: 1,
-          borderRadius: radius.md,
-          paddingHorizontal: space[3],
-        }}
-      >
-        <Ionicons name="search" size={18} color={colors.textMuted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('duas.searchPlaceholder')}
-          placeholderTextColor={colors.textMuted}
-          autoCorrect={false}
-          returnKeyType="search"
-          style={[type.body, { flex: 1, color: colors.text, paddingVertical: space[3], marginLeft: space[2] }]}
-        />
-        {query ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel={t('quran.clearSearch')}>
-            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-      </View>
+      <SearchField value={query} onChangeText={setQuery} placeholder={t('duas.searchPlaceholder')} returnKeyType="search" />
 
       {!searching && (
         <>
@@ -104,7 +78,7 @@ export function DuasScreen({ navigation }: Props) {
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </View>
-      <AppText tone="brand" numberOfLines={1} style={{ fontSize: 20, lineHeight: 34, textAlign: 'right', marginTop: space[2] }}>
+      <AppText variant="arabicPreview" tone="brand" numberOfLines={2} style={{ marginTop: space[2] }}>
         {item.arabic}
       </AppText>
     </Surface>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { askAssistant, detectLanguage, type AssistantContext } from '../services/aiAssistant';
+import { askAssistant, detectLanguage, type AssistantContext } from '../services/assistant';
+import { ISLAMIC_KNOWLEDGE } from '../data/appKnowledge';
 
 const ctx: AssistantContext = { appLang: 'tr', quranEdition: 'tr.diyanet', nextPrayer: { name: 'maghrib', time: '18:15' } };
 
@@ -110,5 +111,22 @@ describe('language detection', () => {
     ['la ilahe illa ente', 'tr'],
   ])('%s → %s', (q, lang) => {
     expect(detectLanguage(q, 'tr')).toBe(lang);
+  });
+});
+
+describe('general knowledge fallback', () => {
+  // Read as English (no Turkish hint words), no surah, dua, Learn topic or page matches it, so the
+  // short ISLAMIC_KNOWLEDGE answer is what is left
+  it('answers "islamin bes sarti" with the pillars entry', () => {
+    const pillars = ISLAMIC_KNOWLEDGE.find((e) => e.id === 'pillars');
+    const reply = askAssistant('islamin bes sarti', { ...ctx, appLang: 'en' });
+    expect(reply.lang).toBe('en');
+    expect(reply.text).toBe(pillars?.en);
+    expect(reply.actions).toEqual([]);
+    expect(reply.matched).toBeUndefined();
+  });
+
+  it('falls back to "try asking…" when nothing matches at all', () => {
+    expect(askAssistant('xyzzy qwerty', ctx).matched).toBe(false);
   });
 });

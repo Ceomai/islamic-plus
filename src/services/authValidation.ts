@@ -1,4 +1,6 @@
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Letters, digits and . _ % + - before the @; a dotted domain ending in 2+ letters
+// (the old pattern accepted "<script>alert(1)</script>@x.com")
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();

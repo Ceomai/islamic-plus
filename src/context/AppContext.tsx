@@ -1,574 +1,166 @@
-import { localDateKey } from '../utils/date';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
-import { updatePrayerWidget, type WidgetInput } from '../services/homeWidget';
-import { registerWidgetTask, saveWidgetInput } from '../services/widgetBackground';
-import { DEFAULT_SETTINGS } from '../constants/defaults';
+import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
-import { scheduleCustomReminders } from '../services/advancedReminders';
-import { initAudio } from '../services/audio';
-import { buildSyncPayload, importSyncPayloadToStorage, type SyncPayload } from '../services/cloudSync';
-import { isCloudUserActive } from '../services/cloudUser';
-import { getCachedLocation, getCurrentLocation, type StoredLocation } from '../services/location';
-import { getTodayCompletions, loadPrayerCompletions, togglePrayerCompletion } from '../services/prayerTracking';
 import {
-  notifyAppDataChanged,
-  registerAppDataPayloadBuilder,
-  syncUserDataFromCloud,
-} from '../services/userDataCloud';
-import { schedulePrayerNotifications, setupNotificationChannels } from '../services/notifications';
-import { migrateSettings } from '../services/settingsMigration';
-import { computeHabitScore, loadStats, recordActivity, updatePrayerStreak } from '../services/statistics';
-import { logAIChatExchange, resetAIChatSessionId, trackFeatureAction } from '../services/cloudAnalytics';
-import { getJson, setJson, storageKeys } from '../services/storage';
-import { loadHadithProgress, loadQuranProgress, onReadingProgressChanged } from '../services/readingProgress';
-import {
-  scheduleReadingProgressCloudSync,
-  syncReadingProgressFromCloud,
-} from '../services/readingProgressCloud';
-import type {
-  ActivityStats,
-  AIChatMessage,
-  AssistantAction,
-  AppLanguage,
-  CustomReminder,
-  FamilyMember,
-  HadithProgress,
-  HomeFeatureId,
-  PrayerCompletion,
-  PrayerName,
-  QuranProgress,
-  SpiritualHabit,
-  ThemeId,
-  UserSettings,
-} from '../types';
+  ActivityProvider,
+  AIChatProvider,
+  AppearanceProvider,
+  FamilyProvider,
+  HabitsProvider,
+  LanguageProvider,
+  LocationProvider,
+  PrayerDayProvider,
+  ReadingProvider,
+  SettingsProvider,
+  StatsProvider,
+  SyncProvider,
+  useActivity,
+  useAIChat,
+  useAppearance,
+  useAppLocation,
+  useFamily,
+  useHabits,
+  usePrayerDay,
+  useReading,
+  useSettings,
+  useStats,
+  useSync,
+} from './app/slices';
+import { useActivityState } from './app/useActivityState';
+import { useAIChatState } from './app/useAIChatState';
+import { useCloudSync } from './app/useCloudSync';
+import { useFamilyState } from './app/useFamilyState';
+import { useHabitsState } from './app/useHabitsState';
+import { useInitialLoad } from './app/useInitialLoad';
+import { useLocationState } from './app/useLocationState';
+import { usePrayerDayState } from './app/usePrayerDayState';
+import { useNotificationPermissionPrompt } from './app/useNotificationPermissionPrompt';
+import { usePrayerSchedule } from './app/usePrayerSchedule';
+import { useReadingState } from './app/useReadingState';
+import { useSettingsState } from './app/useSettingsState';
 
-interface AppContextValue {
-  settings: UserSettings;
-  updateSettings: (patch: Partial<UserSettings>) => Promise<void>;
-  location: StoredLocation | null;
-  refreshLocation: () => Promise<void>;
-  habits: SpiritualHabit[];
-  addHabit: (habit: Omit<SpiritualHabit, 'id' | 'completedDates'>) => Promise<void>;
-  toggleHabitToday: (id: string) => Promise<void>;
-  removeHabit: (id: string) => Promise<void>;
-  family: FamilyMember[];
-  addFamilyMember: (member: Omit<FamilyMember, 'id' | 'habitIds'>) => Promise<void>;
-  removeFamilyMember: (id: string) => Promise<void>;
-  setActiveFamilyMember: (id: string | null) => Promise<void>;
-  stats: ActivityStats;
-  refreshStats: () => Promise<void>;
-  /** `report: false` records locally without an analytics event (e.g. every single tasbih tap) */
-  trackActivity: (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report?: boolean) => Promise<void>;
-  habitScore: number;
-  aiMessages: AIChatMessage[];
-  sendAIMessage: (text: string, reply: string, actions?: AssistantAction[]) => Promise<void>;
-  clearAIChat: () => Promise<void>;
-  syncNow: () => Promise<{ success: boolean; mergedAt: string }>;
-  exportSyncPayload: () => Promise<SyncPayload>;
-  importSyncPayload: (payload: SyncPayload) => Promise<void>;
-  addCustomReminder: (reminder: Omit<CustomReminder, 'id'>) => Promise<void>;
-  removeCustomReminder: (id: string) => Promise<void>;
-  markDuaRead: (duaId: string) => Promise<void>;
-  quranProgress: QuranProgress;
-  hadithProgress: HadithProgress;
-  refreshReadingProgress: () => Promise<void>;
-  updateHomeLauncher: (order: HomeFeatureId[]) => Promise<void>;
-  todayPrayers: PrayerCompletion[];
-  togglePrayerComplete: (prayer: PrayerName) => Promise<void>;
-  refreshTodayPrayers: () => Promise<void>;
-  loading: boolean;
-  darkMode: boolean;
-  toggleDarkMode: () => void;
-  setThemeId: (id: ThemeId) => Promise<void>;
-}
+export {
+  useActivity,
+  useAIChat,
+  useAppearance,
+  useAppLanguage,
+  useAppLocation,
+  useFamily,
+  useHabits,
+  usePrayerDay,
+  useReading,
+  useSettings,
+  useStats,
+  useSync,
+} from './app/slices';
 
-const AppContext = createContext<AppContextValue | null>(null);
-
-const widgetInput = (loc: StoredLocation, s: UserSettings): WidgetInput => ({
-  latitude: loc.latitude,
-  longitude: loc.longitude,
-  city: loc.city,
-  method: s.calculationMethod,
-  madhab: s.madhab,
-  lang: s.appLanguage,
-});
-
+/**
+ * Owns the app's state and publishes it in slices (see app/slices.ts). Each slice value is
+ * memoized, so a change reaches only the screens that read that slice.
+ */
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { session, authReady } = useAuth();
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
-  const [location, setLocation] = useState<StoredLocation | null>(null);
-  const [habits, setHabits] = useState<SpiritualHabit[]>([]);
-  const [family, setFamily] = useState<FamilyMember[]>([]);
-  const [stats, setStats] = useState<ActivityStats>({
-    tasbihTotal: 0,
-    habitsCompletedTotal: 0,
-    duasReadCount: 0,
-    quranSessions: 0,
-    prayerStreakDays: 0,
-    lastActiveDate: '',
-    weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
-  });
-  const [aiMessages, setAiMessages] = useState<AIChatMessage[]>([]);
-  const [quranProgress, setQuranProgress] = useState<QuranProgress>({ lastRead: null, bookmarks: [] });
-  const [hadithProgress, setHadithProgress] = useState<HadithProgress>({ lastRead: null, bookmarks: [] });
+  // True until the stored data is read (useInitialLoad below ends it)
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [todayPrayers, setTodayPrayers] = useState<PrayerCompletion[]>([]);
 
-  const refreshTodayPrayers = useCallback(async () => {
-    setTodayPrayers(await getTodayCompletions());
-  }, []);
+  const settingsState = useSettingsState(loading);
+  const { settings, settingsRef } = settingsState;
+  const locationState = useLocationState(settingsRef);
+  const activityState = useActivityState();
+  const habitsState = useHabitsState(activityState.refreshStats);
+  const familyState = useFamilyState(settingsRef, settingsState.updateSettings);
+  const readingState = useReadingState(settings.activeFamilyMemberId, session);
+  const aiChatState = useAIChatState();
+  const prayerDay = usePrayerDayState({
+    session,
+    loading,
+    trackActivity: activityState.trackActivity,
+    setStats: activityState.setStats,
+  });
 
-  // Latest state for async sync work — keeps sync callbacks stable so they don't retrigger effects
-  const stateRef = useRef({ settings, habits, family, stats, darkMode, location });
-  stateRef.current = { settings, habits, family, stats, darkMode, location };
+  useInitialLoad(session, setLoading, {
+    setSettings: settingsState.setSettings,
+    setHabits: habitsState.setHabits,
+    setLocation: locationState.setLocation,
+    setFamily: familyState.setFamily,
+    setStats: activityState.setStats,
+    setAiMessages: aiChatState.setAiMessages,
+    loadReadingProgress: readingState.loadReadingProgress,
+    refreshTodayPrayers: prayerDay.refreshTodayPrayers,
+  });
 
-  useEffect(() => {
-    registerAppDataPayloadBuilder(async () => {
-      const s = stateRef.current;
-      return buildSyncPayload(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
-    });
-    return () => registerAppDataPayloadBuilder(null);
-  }, []);
-
-  const refreshStats = useCallback(async () => {
-    const s = await loadStats();
-    setStats(s);
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      await setupNotificationChannels();
-      void initAudio();
-      const [storedSettings, deviceLanguage, savedHabits, cachedLoc, savedFamily, savedStats, savedChat] = await Promise.all([
-        getJson<UserSettings | null>(storageKeys.settings, null),
-        getJson<AppLanguage | null>(storageKeys.deviceLanguage, null),
-        getJson<SpiritualHabit[]>(storageKeys.habits, []),
-        getCachedLocation(),
-        getJson<FamilyMember[]>(storageKeys.family, []),
-        loadStats(),
-        getJson<AIChatMessage[]>(storageKeys.aiChat, []),
-      ]);
-      // New accounts and the sign-in screen start in the language last chosen on this device
-      // Settings saved before the introduction existed belong to people who are past it
-      const baseSettings = storedSettings
-        ? { ...storedSettings, onboardingDone: storedSettings.onboardingDone ?? true }
-        : {
-        ...DEFAULT_SETTINGS,
-        appLanguage: deviceLanguage ?? DEFAULT_SETTINGS.appLanguage,
-        quranEditionId: deviceLanguage === 'tr' ? 'tr.yazir' : DEFAULT_SETTINGS.quranEditionId,
-        calculationMethod: deviceLanguage === 'tr' ? 'turkey' : DEFAULT_SETTINGS.calculationMethod,
-      };
-      const rawSettings = !session && deviceLanguage ? { ...baseSettings, appLanguage: deviceLanguage } : baseSettings;
-      const savedSettings = migrateSettings(rawSettings);
-      if (storedSettings && session) void setJson(storageKeys.deviceLanguage, savedSettings.appLanguage);
-      setSettings(savedSettings);
-      setDarkMode(savedSettings.darkMode ?? false);
-      void setJson(storageKeys.settings, savedSettings);
-      setHabits(savedHabits);
-      setLocation(cachedLoc);
-      setFamily(savedFamily);
-      setStats(savedStats);
-      setAiMessages(savedChat);
-      const [qp, hp] = await Promise.all([
-        loadQuranProgress(savedSettings.activeFamilyMemberId),
-        loadHadithProgress(savedSettings.activeFamilyMemberId),
-      ]);
-      setQuranProgress(qp);
-      setHadithProgress(hp);
-      await refreshTodayPrayers();
-      if (savedSettings.customReminders.length > 0) {
-        void scheduleCustomReminders(savedSettings.customReminders, savedSettings.appLanguage);
-      }
-      setLoading(false);
-    })();
-  }, []);
-
-  const refreshReadingProgress = useCallback(async () => {
-    const memberId = settings.activeFamilyMemberId;
-    const [qp, hp] = await Promise.all([loadQuranProgress(memberId), loadHadithProgress(memberId)]);
-    setQuranProgress(qp);
-    setHadithProgress(hp);
-  }, [settings.activeFamilyMemberId]);
-
-  const syncReadingFromCloud = useCallback(async () => {
-    const memberId = stateRef.current.settings.activeFamilyMemberId;
-    const { quran, hadith } = await syncReadingProgressFromCloud(memberId);
-    setQuranProgress(quran);
-    setHadithProgress(hadith);
-  }, []);
-
-  const syncAppDataFromCloud = useCallback(async () => {
-    const s = stateRef.current;
-    const merged = await syncUserDataFromCloud(s.settings, s.habits, s.family, s.stats, s.darkMode, s.location);
-    setSettings(merged.settings);
-    setDarkMode(merged.darkMode);
-    setHabits(merged.habits);
-    setFamily(merged.family);
-    setStats(merged.stats);
-    if (merged.locationPref) {
-      setLocation({
-        latitude: merged.locationPref.latitude,
-        longitude: merged.locationPref.longitude,
-        city: merged.locationPref.city,
-        country: merged.locationPref.country,
-        updatedAt: merged.locationPref.updatedAt,
-      });
-    }
-    await refreshTodayPrayers();
-    await refreshStats();
-  }, [refreshStats, refreshTodayPrayers]);
-
-  // Pull from cloud once per mount (AppProvider is remounted per account), after local data has loaded
-  const initialSyncDone = useRef(false);
-  useEffect(() => {
-    if (loading || initialSyncDone.current || !authReady || !session || session.isGuest) return;
-    initialSyncDone.current = true;
-    void syncAppDataFromCloud();
-    void syncReadingFromCloud();
-  }, [loading, authReady, session, syncAppDataFromCloud, syncReadingFromCloud]);
-
-  // Switching family member loads that member's cloud scope
-  const lastMemberId = useRef<string | null | undefined>(undefined);
-  useEffect(() => {
-    if (loading) return;
-    const memberId = settings.activeFamilyMemberId;
-    if (lastMemberId.current === undefined) {
-      lastMemberId.current = memberId;
-      return;
-    }
-    if (lastMemberId.current === memberId) return;
-    lastMemberId.current = memberId;
-    if (!session || session.isGuest) return;
-    void syncReadingFromCloud();
-    void syncAppDataFromCloud();
-  }, [loading, settings.activeFamilyMemberId, session, syncReadingFromCloud, syncAppDataFromCloud]);
-
-  useEffect(() => {
-    return onReadingProgressChanged((memberId) => {
-      if (session && !session.isGuest) {
-        scheduleReadingProgressCloudSync(memberId);
-      }
-    });
-  }, [session?.userId, session?.isGuest]);
-
-  const refreshLocation = useCallback(async () => {
-    const loc = await getCurrentLocation();
-    setLocation(loc);
-    if (loc) {
-      await schedulePrayerNotifications(loc.latitude, loc.longitude, settings);
-      notifyAppDataChanged();
-    }
-  }, [settings]);
-
-  // Always call: with notifications switched off it cancels what was scheduled before
-  const lastScheduleRef = useRef(0);
-  useEffect(() => {
-    if (location) {
-      lastScheduleRef.current = Date.now();
-      void schedulePrayerNotifications(location.latitude, location.longitude, settings);
-      const input = widgetInput(location, settings);
-      updatePrayerWidget(input);
-      // Android refreshes the widget in the background from this copy
-      void saveWidgetInput(input).then(registerWidgetTask);
-    }
-  }, [location, settings]);
-
-  // Prayer notifications cover a limited number of days; extend the window and roll "today"
-  // over whenever the app comes back to the foreground (at most once an hour)
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') return;
-      void refreshTodayPrayers();
-      if (location && Date.now() - lastScheduleRef.current > 60 * 60 * 1000) {
-        lastScheduleRef.current = Date.now();
-        void schedulePrayerNotifications(location.latitude, location.longitude, settings);
-        updatePrayerWidget(widgetInput(location, settings));
-      }
-    });
-    return () => sub.remove();
-  }, [location, settings, refreshTodayPrayers]);
-
-  const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...patch };
-      void setJson(storageKeys.settings, next);
-      if (patch.appLanguage) void setJson(storageKeys.deviceLanguage, patch.appLanguage);
-      if (location) {
-        void schedulePrayerNotifications(location.latitude, location.longitude, next);
-      }
-      if (patch.customReminders || next.customReminders) {
-        void scheduleCustomReminders(next.customReminders, next.appLanguage);
-      }
-      notifyAppDataChanged();
-      return next;
-    });
-  }, [location]);
-
-  const updateHomeLauncher = useCallback(
-    async (order: HomeFeatureId[]) => {
-      await updateSettings({ homeLauncher: { order } });
-    },
-    [updateSettings]
+  usePrayerSchedule(settings, locationState.location, settingsRef, locationState.locationRef);
+  useNotificationPermissionPrompt(
+    !!session && !loading,
+    settings,
+    !!locationState.location,
+    settingsRef,
+    locationState.locationRef
   );
 
-  const addHabit = useCallback(async (habit: Omit<SpiritualHabit, 'id' | 'completedDates'>) => {
-    const newHabit: SpiritualHabit = {
-      ...habit,
-      id: Date.now().toString(),
-      completedDates: [],
-    };
-    setHabits((prev) => {
-      const next = [...prev, newHabit];
-      setJson(storageKeys.habits, next);
-      notifyAppDataChanged();
-      return next;
-    });
-  }, []);
-
-  const toggleHabitToday = useCallback(async (id: string) => {
-    const today = localDateKey();
-    setHabits((prev) => {
-      const next = prev.map((h) => {
-        if (h.id !== id) return h;
-        const has = h.completedDates.includes(today);
-        if (!has) void recordActivity('habit');
-        return {
-          ...h,
-          completedDates: has
-            ? h.completedDates.filter((d) => d !== today)
-            : [...h.completedDates, today],
-        };
-      });
-      setJson(storageKeys.habits, next);
-      void refreshStats();
-      notifyAppDataChanged();
-      return next;
-    });
-  }, [refreshStats]);
-
-  const removeHabit = useCallback(async (id: string) => {
-    setHabits((prev) => {
-      const next = prev.filter((h) => h.id !== id);
-      void setJson(storageKeys.habits, next);
-      notifyAppDataChanged();
-      return next;
-    });
-  }, []);
-
-  const addFamilyMember = useCallback(async (member: Omit<FamilyMember, 'id' | 'habitIds'>) => {
-    const newMember: FamilyMember = {
-      ...member,
-      id: Date.now().toString(),
-      habitIds: [],
-    };
-    setFamily((prev) => {
-      const next = [...prev, newMember];
-      void setJson(storageKeys.family, next);
-      notifyAppDataChanged();
-      return next;
-    });
-  }, []);
-
-  const removeFamilyMember = useCallback(async (id: string) => {
-    setFamily((prev) => {
-      const next = prev.filter((m) => m.id !== id);
-      void setJson(storageKeys.family, next);
-      notifyAppDataChanged();
-      return next;
-    });
-    if (settings.activeFamilyMemberId === id) {
-      await updateSettings({ activeFamilyMemberId: null });
-    }
-  }, [settings.activeFamilyMemberId, updateSettings]);
-
-  const setActiveFamilyMember = useCallback(
-    async (id: string | null) => {
-      await updateSettings({ activeFamilyMemberId: id });
-    },
-    [updateSettings]
-  );
-
-  const trackActivity = useCallback(
-    async (type: 'tasbih' | 'habit' | 'dua' | 'quran' | 'prayer', report = true) => {
-      const next = await recordActivity(type);
-      setStats(next);
-      if (report) void trackFeatureAction(type, 'activity_recorded');
-      notifyAppDataChanged();
-    },
-    []
-  );
-
-  const togglePrayerComplete = useCallback(
-    async (prayer: PrayerName) => {
-      const added = await togglePrayerCompletion(prayer);
-      if (added) await trackActivity('prayer');
-      // Streak depends on full days of prayers, so recompute on every toggle (including un-marking)
-      setStats(await updatePrayerStreak(await loadPrayerCompletions()));
-      await refreshTodayPrayers();
-    },
-    [trackActivity, refreshTodayPrayers]
-  );
-
-  const sendAIMessage = useCallback(async (text: string, reply: string, actions?: AssistantAction[]) => {
-    const now = new Date().toISOString();
-    const userText = text.trim();
-    const assistantText = reply.trim();
-
-    setAiMessages((prev) => {
-      const next: AIChatMessage[] = [...prev];
-      if (userText) {
-        next.push({ id: `${now}-u`, role: 'user', content: userText, timestamp: now });
-      }
-      if (assistantText) {
-        next.push({ id: `${now}-a`, role: 'assistant', content: assistantText, timestamp: now, ...(actions?.length ? { actions } : {}) });
-      }
-      void setJson(storageKeys.aiChat, next);
-      return next;
-    });
-
-    if (userText || assistantText) {
-      void logAIChatExchange(userText, assistantText);
-    }
-  }, []);
-
-  const clearAIChat = useCallback(async () => {
-    setAiMessages([]);
-    await setJson(storageKeys.aiChat, []);
-    resetAIChatSessionId();
-  }, []);
-
-  const exportSyncPayload = useCallback(async () => {
-    return buildSyncPayload(settings, habits, family, stats, darkMode, location);
-  }, [settings, habits, family, stats, darkMode, location]);
-
-  const importSyncPayload = useCallback(async (payload: SyncPayload) => {
-    await importSyncPayloadToStorage(payload);
-    setSettings(payload.settings);
-    setDarkMode(payload.darkMode);
-    setHabits(payload.habits);
-    setFamily(payload.family);
-    setStats(payload.stats);
-    if (payload.locationPref) {
-      setLocation({
-        latitude: payload.locationPref.latitude,
-        longitude: payload.locationPref.longitude,
-        city: payload.locationPref.city,
-        country: payload.locationPref.country,
-        updatedAt: payload.locationPref.updatedAt,
-      });
-    }
-    await refreshTodayPrayers();
-    if (payload.settings.customReminders.length > 0) {
-      await scheduleCustomReminders(payload.settings.customReminders, payload.settings.appLanguage);
-    }
-  }, [refreshTodayPrayers]);
-
-  /** Pulls the account's cloud copy, merges it with this device and pushes the result back. */
-  const syncNow = useCallback(async () => {
-    if (!(await isCloudUserActive())) throw new Error('cloud_unavailable');
-    await syncAppDataFromCloud();
-    await syncReadingFromCloud();
-    const mergedAt = new Date().toISOString();
-    await updateSettings({
-      cloudSync: { ...stateRef.current.settings.cloudSync, lastSyncAt: mergedAt, syncEnabled: true },
-    });
-    return { success: true, mergedAt };
-  }, [syncAppDataFromCloud, syncReadingFromCloud, updateSettings]);
-
-  const addCustomReminder = useCallback(
-    async (reminder: Omit<CustomReminder, 'id'>) => {
-      const newR: CustomReminder = { ...reminder, id: Date.now().toString() };
-      const next = [...settings.customReminders, newR];
-      await updateSettings({ customReminders: next });
-      await scheduleCustomReminders(next, settings.appLanguage);
-    },
-    [settings.customReminders, updateSettings]
-  );
-
-  const removeCustomReminder = useCallback(
-    async (id: string) => {
-      const next = settings.customReminders.filter((r) => r.id !== id);
-      await updateSettings({ customReminders: next });
-      await scheduleCustomReminders(next, settings.appLanguage);
-    },
-    [settings.customReminders, updateSettings]
-  );
-
-  const markDuaRead = useCallback(async (duaId: string) => {
-    const progress = await getJson<Record<string, number>>(storageKeys.duaProgress, {});
-    progress[duaId] = (progress[duaId] ?? 0) + 1;
-    await setJson(storageKeys.duaProgress, progress);
-    await trackActivity('dua');
-    notifyAppDataChanged();
-  }, [trackActivity]);
-
-  const toggleDarkMode = useCallback(() => {
-    setDarkMode((d) => {
-      const next = !d;
-      void updateSettings({ darkMode: next });
-      return next;
-    });
-  }, [updateSettings]);
-
-  const setThemeId = useCallback(
-    async (id: ThemeId) => {
-      await updateSettings({ themeId: id });
-    },
-    [updateSettings]
-  );
-
-  const habitScore = computeHabitScore(habits);
+  const syncValue = useCloudSync({
+    session,
+    authReady,
+    loading,
+    activeFamilyMemberId: settings.activeFamilyMemberId,
+    settingsRef,
+    habitsRef: habitsState.habitsRef,
+    familyRef: familyState.familyRef,
+    statsRef: activityState.statsRef,
+    locationRef: locationState.locationRef,
+    setSettings: settingsState.setSettings,
+    setHabits: habitsState.setHabits,
+    setFamily: familyState.setFamily,
+    setStats: activityState.setStats,
+    setLocation: locationState.setLocation,
+    setReadingProgress: readingState.setReadingProgress,
+    updateSettings: settingsState.updateSettings,
+    refreshTodayPrayers: prayerDay.refreshTodayPrayers,
+    refreshStats: activityState.refreshStats,
+  });
 
   return (
-    <AppContext.Provider
-      value={{
-        settings,
-        updateSettings,
-        location,
-        refreshLocation,
-        habits,
-        addHabit,
-        toggleHabitToday,
-        removeHabit,
-        family,
-        addFamilyMember,
-        removeFamilyMember,
-        setActiveFamilyMember,
-        stats,
-        refreshStats,
-        trackActivity,
-        habitScore,
-        aiMessages,
-        sendAIMessage,
-        clearAIChat,
-        syncNow,
-        exportSyncPayload,
-        importSyncPayload,
-        addCustomReminder,
-        removeCustomReminder,
-        markDuaRead,
-        quranProgress,
-        hadithProgress,
-        refreshReadingProgress,
-        updateHomeLauncher,
-        todayPrayers,
-        togglePrayerComplete,
-        refreshTodayPrayers,
-        loading,
-        darkMode,
-        toggleDarkMode,
-        setThemeId,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <SettingsProvider value={settingsState.settingsValue}>
+      <AppearanceProvider value={settingsState.appearanceValue}>
+        <LanguageProvider value={settings.appLanguage}>
+          <LocationProvider value={locationState.locationValue}>
+            <PrayerDayProvider value={prayerDay.prayerDayValue}>
+              <StatsProvider value={activityState.statsValue}>
+                <ActivityProvider value={activityState.activityValue}>
+                  <HabitsProvider value={habitsState.habitsValue}>
+                    <FamilyProvider value={familyState.familyValue}>
+                      <ReadingProvider value={readingState.readingValue}>
+                        <AIChatProvider value={aiChatState.aiChatValue}>
+                          <SyncProvider value={syncValue}>{children}</SyncProvider>
+                        </AIChatProvider>
+                      </ReadingProvider>
+                    </FamilyProvider>
+                  </HabitsProvider>
+                </ActivityProvider>
+              </StatsProvider>
+            </PrayerDayProvider>
+          </LocationProvider>
+        </LanguageProvider>
+      </AppearanceProvider>
+    </SettingsProvider>
   );
 }
 
+/**
+ * Every slice in one object, as before the split. It re-renders on any app state change: screens
+ * on a hot path read the narrow hooks (useSettings, useAppLocation, …) instead.
+ */
 export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useApp must be used within AppProvider');
-  return ctx;
+  return {
+    ...useSettings(),
+    ...useAppearance(),
+    ...useAppLocation(),
+    ...usePrayerDay(),
+    ...useStats(),
+    ...useActivity(),
+    ...useHabits(),
+    ...useFamily(),
+    ...useReading(),
+    ...useAIChat(),
+    ...useSync(),
+  };
 }
