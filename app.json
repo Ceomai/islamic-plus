@@ -125,6 +125,15 @@
     },
     "updates": {
       "url": "https://u.expo.dev/f0b025b3-ca20-44b4-98e6-e257b7124521"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "Islamic+",
+      "shortName": "Islamic+",
+      "lang": "tr",
+      "themeColor": "#0F5C4A",
+      "backgroundColor": "#F7F5F0"
     }
   }
 }

@@ -1,11 +1,25 @@
 name: Pages
 
-# Publishes site/ (privacy policy, account deletion page) to GitHub Pages.
-# One-time setup: repository Settings › Pages › Source: "GitHub Actions".
+# Publishes site/ (privacy policy, account deletion page) and the web build of the app under /app/
+# to GitHub Pages: https://ceomai.github.io/islamic-plus/app/
+# One-time setup: repository Settings › Pages › Source: "GitHub Actions", plus the repository
+# variable EXPO_PUBLIC_SUPABASE_URL and secret EXPO_PUBLIC_SUPABASE_ANON_KEY (without them the web
+# app runs in on-device demo mode).
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths:
+      - 'site/**'
+      - 'src/**'
+      - 'assets/**'
+      - 'public/**'
+      - 'App.tsx'
+      - 'index.js'
+      - 'app.json'
+      - 'app.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,9 +39,26 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the web app
+        env:
+          WEB_BASE_URL: /islamic-plus/app
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: npx expo export --platform web --output-dir web-dist
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          cp -r web-dist _site/app
+          touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
